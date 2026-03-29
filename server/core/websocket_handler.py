@@ -272,10 +272,16 @@ async def handle_client_messages(websocket: Any, live_request_queue: LiveRequest
                     live_request_queue.send_realtime(Blob(data=decoded_data, mime_type='audio/pcm'))
                     logger.debug("Audio sent to Agent")
                 elif msg_type == "image":
-                    print("---------data",data,"------")
                     logger.debug("Client -> Agent: Handling image data...")
-                    # Assuming image data is base64 encoded after 'base64,'
-                    image_data_str = data.get("data").split(",")[1]
+                    # Handle both data URI format and raw base64
+                    image_data_raw = data.get("data")
+                    if "," in image_data_raw:
+                        # Data URI format: "data:image/jpeg;base64,<base64data>"
+                        image_data_str = image_data_raw.split(",")[1]
+                    else:
+                        # Raw base64 format
+                        image_data_str = image_data_raw
+
                     decoded_data = base64.b64decode(image_data_str)
                     live_request_queue.send_realtime(Blob(data=decoded_data, mime_type='image/jpeg'))
                     logger.debug("Image sent to Agent")
