@@ -213,7 +213,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Function to reset the cart
     async function resetCustomerCart() {
-        const customerId = 'GR-1234-1234'; // Hardcoded default customer ID
+        const customerId = customerIdInput.value.trim(); // Use customer ID from input field
+        if (!customerId) {
+            console.warn('Customer ID input is empty.');
+            displayError('Please enter a Customer ID.');
+            return;
+        }
         const resetApiUrl = `/api/v1/reset_cart/${customerId}`; // Adjust path as needed
         console.log(`Sending POST request to reset cart for customer ID: ${customerId} at ${resetApiUrl}`);
 
