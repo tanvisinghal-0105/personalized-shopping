@@ -3,8 +3,8 @@ export class GeminiAPI {
         // If no endpoint is provided, try to construct it from the current URL
         if (!endpoint) {
             // Use the backend URL directly
-            endpoint = 'wss://live-agent-backend-lyja7bi4gq-uc.a.run.app'; // deployed backend
-            //endpoint = 'ws://localhost:8081'; // local development
+            //endpoint = 'wss://live-agent-backend-lyja7bi4gq-uc.a.run.app'; // deployed backend
+            endpoint = 'ws://localhost:8081'; // local development
         }
         
         this.endpoint = endpoint;

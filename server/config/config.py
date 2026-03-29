@@ -88,13 +88,17 @@ api_config = ApiConfig()
 if USE_VERTEX == 1:
     MODEL = os.getenv('MODEL_VERTEX_API', 'gemini-live-2.5-flash-native-audio')
     AGENT_MODEL = os.getenv('AGENT_MODEL_VERTEX_API', MODEL)
+    RECOMMENDATION_MODEL = os.getenv('RECOMMENDATION_MODEL', 'gemini-3.1-pro-preview')
     VOICE = os.getenv('VOICE_VERTEX_API', 'Aoede')
     print(f"Use Vertex API with live model: {MODEL}, agent model: {AGENT_MODEL}, and voice {VOICE}")
+    print(f"Recommendation model: {RECOMMENDATION_MODEL}")
 else:
     MODEL = os.getenv('MODEL_DEV_API', 'gemini-3.1-flash-live-preview')
     AGENT_MODEL = os.getenv('AGENT_MODEL_DEV_API', MODEL)
+    RECOMMENDATION_MODEL = os.getenv('RECOMMENDATION_MODEL', 'gemini-3.1-pro-preview')
     VOICE = os.getenv('VOICE_DEV_API', 'Puck')
     print(f"Use Dev API (AI Studio) with live model: {MODEL}, agent model: {AGENT_MODEL}, and voice {VOICE}")
+    print(f"Recommendation model: {RECOMMENDATION_MODEL}")
 
 # ADK Feature Flags
 USE_INTERACTIONS_API = os.getenv('USE_INTERACTIONS_API', 'false').lower() == 'true'

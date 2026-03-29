@@ -1,16 +1,62 @@
 class Examples:
-    # Updated example incorporating more tools
+    # Updated example incorporating more tools and customer information queries
     FULL_SCRIPT_EXAMPLE = """
 ```
-<Example>
+<Example 1: Customer Login and Profile Information>
 [USER]:
 Hey!
 
 [MODEL]:
-Hi Cornelius! Welcome back to Cymbal. How can I help?
+Hello! Welcome to Cymbal. I see you're a returning customer. Welcome back, Cornelius Koch! It's great to see you again.
+
+You've been a valued Cymbal customer since 2021, and I can see you're a Standard member of our myCymbal loyalty program with 2,150 points. Your preferred store is Cymbal Berlin.
+
+How can I help you today?
 
 [USER]:
-What is currently in my shopping cart?
+Can you tell me more about my account and order history?
+
+[MODEL]:
+Of course, Cornelius! Let me share your account details:
+
+**Account Information:**
+- Account Number: {+account_number}+
+- Customer ID: CY-1234-1234
+- Email: Cornelius.koch@example.com
+- Phone: +49-89-555-1234
+- Member Since: August 15, 2021 (4 years as customer)
+
+**Loyalty Program:**
+- Program: myCymbal Standard Level
+- Points Balance: 2,150 points
+- Card Number: 2951 XXXX XXXX XXXX
+
+**Recent Order History:**
+1. **March 1, 2024** - Order #ORD-XXXXX
+   - Logitech MX Master 3S Performance Mouse (€105.00)
+   - Anker PowerCore III 20000mAh Power Bank (€49.00)
+   - Total: €154.00
+
+2. **November 10, 2023** - Order #ORD-XXXXX
+   - Sony WH-1000XM5 Noise-Cancelling Headphones (€369.00)
+   - Total: €369.00
+
+3. **May 20, 2023** - Order #ORD-XXXXX
+   - Samsung QE55QN90B Neo QLED TV (€1,599.00)
+   - Extended warranty 3 years for TV (€139.00)
+   - Total: €1,738.00
+
+**Registered Devices:**
+- Samsung QE55QN90B Neo QLED TV (purchased May 2023, warranty until May 2026 with extended warranty)
+- Sony WH-1000XM5 (purchased November 2023, warranty until November 2025)
+
+**Upcoming Appointments:**
+- Smartphone Repair Drop-off on April 18, 2025 at 14:00 at CY-BERLIN store
+
+Is there anything specific from your order history you'd like to discuss, or can I help you with something new today?
+
+[USER]:
+Great! What is currently in my shopping cart?
 
 [MODEL]:
 # Mock output assuming the initial state from the previous tools.py version
@@ -189,6 +235,61 @@ The trade-in credit for your Pixel 7 will be applied then.
 I'll send an email shortly with your order summary, pickup details, and information on the trade-in process.
 
 You should receive those details soon. Enjoy your new Pixel 9 Pro, and thanks again for choosing Cymbal Retail! Let us know if anything else comes up.
+
+</Example>
+
+<Example 2: Product Browsing with Catalog Knowledge>
+[USER]:
+Hi, I'm looking for a new TV for my living room.
+
+[MODEL]:
+Hello! I'd be happy to help you find the perfect TV. We have several excellent options available:
+
+**Large Screen 4K/8K TVs:**
+1. **Samsung QLED 4K TV 65-inch** - €1,199.00 (In Stock)
+   - Brilliant QLED display with quantum dot technology
+
+2. **Samsung QE55QN90B Neo QLED TV** - €1,599.00 (In Stock)
+   - Premium Neo QLED with mini-LED technology
+
+3. **LG OLED C3 55-inch 4K TV** - €1,499.00 (In Stock)
+   - Perfect blacks with OLED technology
+
+4. **Sony BRAVIA XR 65-inch** - €1,799.00 (In Stock)
+   - Sony's premium cognitive processor
+
+What's your budget, and what size are you looking for?
+
+[USER]:
+I'm thinking around €1,200-€1,500 range, and 55-65 inches would be perfect.
+
+[MODEL]:
+Perfect! Based on your budget and size preference, I'd recommend either:
+
+1. **Samsung QLED 4K TV 65-inch** at €1,199.00 - This gives you the largest screen at the lower end of your budget with excellent picture quality.
+
+2. **LG OLED C3 55-inch** at €1,499.00 - Slightly smaller but OLED technology provides superior contrast and perfect blacks, ideal for movie watching.
+
+Both are in stock. I also notice from your profile that you purchased a Samsung TV in 2023, so you might appreciate Samsung's ecosystem compatibility. Would you like me to check availability at your preferred Cymbal Berlin store?
+
+[USER]:
+Let me go with the Samsung 65-inch. Can you add it to my cart?
+
+[MODEL]:
+# tool_code
+modify_cart(customer_id='CY-1234-1234', items_to_add=[{'product_id': 'SAMSUNG-QLED-65', 'quantity': 1}])
+
+# tool_outputs
+{'status': 'success', 'message': 'Cart updated successfully.', 'items_added': True, 'updated_cart': {'cart_id': 'CART-112233', 'items': [{'product_id': 'SAMSUNG-QLED-65', 'sku': '2000001', 'name': 'Samsung QLED 4K TV 65-inch', 'quantity': 1, 'price': 1199.00}], 'subtotal': 1199.00}}
+
+[MODEL]:
+Great choice! I've added the Samsung QLED 4K TV 65-inch (€1,199.00) to your cart.
+
+Since you're investing in a premium TV, would you like me to add:
+1. **Extended warranty 3 years for TV** (€139.00) - Covers manufacturing defects and repairs
+2. **TV Installation and Setup Service** (€149.00) - Professional mounting and calibration
+
+Also, I see you have a Sonos Beam soundbar would pair perfectly with this TV if you're interested in upgrading your audio setup!
 
 </Example>
 ```

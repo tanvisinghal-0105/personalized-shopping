@@ -38,9 +38,8 @@ async def send_error_message(websocket: Any, error_data: dict) -> None:
     except Exception as e:
         logger.error(f"Failed to send error message: {e}")
 
-async def start_agent_session(user_id: str, run_config: RunConfig, initial_session_state: Dict[str, Any]) -> tuple[Any, LiveRequestQueue]:
+async def start_agent_session(user_id: str, run_config: RunConfig, initial_session_state: Dict[str, Any], agent_config: dict) -> tuple[Any, LiveRequestQueue]:
     """Starts an agent session with a new runner and request queue."""
-    agent_config = get_agent_config()
     root_agent = agent_config.get("root_agent")
     app_name = agent_config.get("app_name")
 
@@ -66,7 +65,8 @@ async def start_agent_session(user_id: str, run_config: RunConfig, initial_sessi
 
 async def create_session(
     session_id: str,
-    context: Dict[str, Any]
+    context: Dict[str, Any],
+    agent_config: dict
 ) -> Any:
     """
     Creates and stores a new session, leveraging the new ADK live session runner.
@@ -80,7 +80,7 @@ async def create_session(
         response_modalities=response_modalities_from_config
     )
 
-    live_events, live_request_queue = await start_agent_session(session_id, run_config, context)
+    live_events, live_request_queue = await start_agent_session(session_id, run_config, context, agent_config)
 
     ACTIVE_SESSIONS[session_id] = live_request_queue
     logger.info(f"Session {session_id} created with new ADK runner.")
@@ -286,6 +286,7 @@ async def handle_client(websocket: Any) -> None:
     logger.info(f"New client connected. Session ID: {session_id}")
 
     try:
+        # Get agent config ONCE to avoid creating agent twice
         agent_config = get_agent_config()
         initial_session_state = agent_config.get("context", {})
 
@@ -294,7 +295,7 @@ async def handle_client(websocket: Any) -> None:
         current_time_munich = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=2) # CEST is UTC+2
         initial_session_state["current_datetime"] = current_time_munich.strftime("%Y-%m-%d %H:%M:%S %Z")
 
-        live_events = await create_session(session_id, context=initial_session_state)
+        live_events = await create_session(session_id, context=initial_session_state, agent_config=agent_config)
         live_request_queue = get_session_request_queue(session_id)
 
         if not live_request_queue:

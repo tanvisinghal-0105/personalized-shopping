@@ -66,9 +66,16 @@ def create_retail_agent(
         global_instructions: str = Prompts.GLOBAL_PROMPT,
         instruction: str = Prompts.RETAIL_ASSIST_MAIN,
         tools: List[BaseTool] = [],
-        sub_agents: List[Agent] = []
+        sub_agents: List[Agent] = [],
+        context: Dict[str, Any] = None
         ) -> Agent:
     """Factory method to create a configured cymbalCustomerServiceRetailAgent."""
+
+    # Don't format prompts here - let ADK inject session state at runtime
+    # Just log that context was provided
+    if context:
+        logger.info(f"Context provided with keys: {list(context.keys())}")
+        logger.info(f"Product catalog has {len(context.get('product_catalog_raw', []))} products")
 
     default_tools = [
         send_call_companion_link,
@@ -131,12 +138,10 @@ def create_retail_agent(
 
 class AgentModule:
     def __init__(self):
-        
+
         self.root_agent = create_retail_agent()
 
-agent = AgentModule()
-
-agent = AgentModule()
+# Agent instance is created in agent_factory.py, not here
 
 
 

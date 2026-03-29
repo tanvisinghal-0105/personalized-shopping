@@ -7,6 +7,8 @@ from ...logger import logger
 from datetime import datetime, timedelta
 
 from google.cloud import firestore
+from .context import RetailContext
+from config.config import RECOMMENDATION_MODEL
 
 # Initialize Firestore client with error handling
 db = None
@@ -22,75 +24,24 @@ try:
     logger.info("Connecting to Firestore...")
     db = firestore.Client()
     logger.info("Connected to Firestore")
-    
-    logger.info("Setting up mock cart info...")
-    db.collection('carts').document("GR-1234-1234").set(CUSTOMER_CART_INFO)
-    logger.info("Mock cart info set up")
+
+    # Carts will be created dynamically per customer when needed
+    # No need for hardcoded cart initialization
+    logger.info("Firestore ready - carts will be created per customer dynamically")
 except Exception as e:
     logger.warning(f"Firestore initialization failed: {e}. Running without Firestore support.")
     db = None
 
 
-# Comprehensive Retail Product Catalog for Cymbal
+# Use the product catalog from context.py to ensure consistency
+# Convert list of dicts to dict keyed by product_id for easy lookup
 PRODUCT_CATALOG = {
-    # Electronics - Smartphones & Accessories
-    'APPLE-IPHONE-16': {'name': 'Apple iPhone 16', 'price': 999, 'sku': 'SKU-IP16-BLK'},
-    'GOOGLE-PIXEL9PRO-CASE': {'name': 'Google Defender Series for Pixel 9 Pro', 'price': 249.99, 'sku': 'SKU-OTTER'},
-    'ZAGG-IS-PIXEL9PRO': {'name': 'ZAGG InvisibleShield Glass Elite+ Pixel 9 Pro', 'price': 169.99, 'sku': 'SKU-ZAGG'},
-    'PLUSGARANTIE-PIXEL': {'name': 'Google Preferred Care for Pixel Pro 9', 'price': 839, 'sku': 'SKU-ACPLUS'},
-    'GOOGLE-30W-POWERADAPTER': {'name': 'Google 30W USB-C Power Adapter', 'price': 105, 'sku': 'SKU-ADAPTER'},
-    'PIXEL-6-128GB-BLK': {'sku': '4455667', 'name': 'Google Pixel 6 128GB Black', 'price': 599.0},
-    'GENERIC-PIXEL-CASE': {'sku': '1122334', 'name': 'Generic Google Pixel Case', 'price': 79},
-
-    # Electronics - TVs & Home Entertainment
-    'SAMSUNG-QLED-65': {'name': 'SAMSUNG QLED 4K TV 65-inch', 'price': 1199, 'sku': 'SKU-TV-QLED65'},
-    'SONY-BRAVIA-55': {'name': 'Sony BRAVIA 55-inch 4K OLED TV', 'price': 1499, 'sku': 'SKU-TV-BRAVIA55'},
-    'LG-OLED-77': {'name': 'LG OLED evo 77-inch 4K TV', 'price': 2499, 'sku': 'SKU-TV-LG77'},
-
-    # Kitchen Appliances
-    'WMF-COFFEE-MACHINE': {'name': 'WMF Coffee Machine', 'price': 749, 'sku': 'SKU-WMF-COFFEE'},
-    'DELONGHI-ESPRESSO': {'name': 'DeLonghi Espresso Machine', 'price': 899, 'sku': 'SKU-DELONGHI-ESP'},
-    'KITCHENAID-MIXER': {'name': 'KitchenAid Stand Mixer', 'price': 449, 'sku': 'SKU-KA-MIXER'},
-    'NINJA-BLENDER': {'name': 'Ninja Professional Blender', 'price': 129, 'sku': 'SKU-NINJA-BLEND'},
-    'SMEG-TOASTER': {'name': 'SMEG 2-Slice Toaster', 'price': 179, 'sku': 'SKU-SMEG-TOAST'},
-
-    # Fashion - Footwear
-    'ADIDAS-SNEAKER': {'name': 'Adidas Originals Sneaker', 'price': 99, 'sku': 'SKU-ADIDAS-SNEAK'},
-    'NIKE-AIR-MAX': {'name': 'Nike Air Max 90', 'price': 139, 'sku': 'SKU-NIKE-AM90'},
-    'PUMA-RUNNING': {'name': 'Puma Running Shoes', 'price': 89, 'sku': 'SKU-PUMA-RUN'},
-
-    # Fashion - Clothing
-    'LEVIS-501-JEANS': {'name': "LEVI'S 501 Original Jeans", 'price': 89, 'sku': 'SKU-LEVIS-501'},
-    'NORTHFACE-JACKET': {'name': 'The North Face Waterproof Jacket', 'price': 199, 'sku': 'SKU-TNF-JACKET'},
-    'PATAGONIA-FLEECE': {'name': 'Patagonia Better Sweater Fleece', 'price': 139, 'sku': 'SKU-PATA-FLEECE'},
-
-    # Furniture & Home
-    'IKEA-BILLY-BOOKCASE': {'name': 'IKEA Billy Bookcase', 'price': 79, 'sku': 'SKU-IKEA-BILLY'},
-    'MUJI-DESK-LAMP': {'name': 'MUJI LED Desk Lamp', 'price': 49, 'sku': 'SKU-MUJI-LAMP'},
-    'HERMAN-MILLER-CHAIR': {'name': 'Herman Miller Aeron Chair', 'price': 1299, 'sku': 'SKU-HM-AERON'},
-
-    # Sports & Outdoors
-    'YOGA-MAT-PRO': {'name': 'Professional Yoga Mat', 'price': 49, 'sku': 'SKU-YOGA-MAT'},
-    'DUMBBELLS-SET': {'name': 'Adjustable Dumbbell Set 20kg', 'price': 129, 'sku': 'SKU-DUMB-20KG'},
-    'BIKE-MOUNTAIN': {'name': 'Mountain Bike 27.5"', 'price': 599, 'sku': 'SKU-BIKE-MTN'},
-
-    # Computing & Office
-    'LOGI-MX-KEYS': {'name': 'Logitech MX Keys Advanced Wireless Keyboard', 'price': 129, 'sku': 'SKU-LOGI-KEYS'},
-    'DELL-S2721QS': {'name': 'Dell 27 4K UHD Monitor (S2721QS)', 'price': 449, 'sku': 'SKU-DELL-MON'},
-    'SANDISK-EXTREME-1TB': {'name': 'SanDisk Extreme Portable SSD 1TB', 'price': 149, 'sku': 'SKU-SSD-1TB'},
-    'LOGI-MX-MASTER3S': {'name': 'Logitech MX Master 3S Mouse', 'price': 99, 'sku': 'SKU-LOGI-MOUSE'},
-
-    # Audio & Accessories
-    'ANKER-NANO-POWERBANK': {'name': 'Anker Nano Power Bank with Built-in USB-C', 'price': 39, 'sku': 'SKU-ANKER-PB'},
-    'JBL-TUNE-FLEX': {'name': 'JBL Tune Flex True Wireless Earbuds', 'price': 99, 'sku': 'SKU-JBL-FLEX'},
-    'SONY-WH1000XM5': {'name': 'Sony WH-1000XM5 Noise Cancelling Headphones', 'price': 399, 'sku': 'SKU-SONY-WH5'},
-    'BOSE-SOUNDLINK': {'name': 'Bose SoundLink Bluetooth Speaker', 'price': 149, 'sku': 'SKU-BOSE-LINK'},
-
-    # Tablets
-    'APPLE-IPAD-AIR-M1-64GB': {'name': 'Apple iPad Air M1 64GB', 'price': 599, 'sku': 'SKU-IPAD-AIR'},
-
-    # Additional Services
-    'GOOGLE-WIRELESS-CHARGER': {'name': 'Google Wireless Charger', 'price': 79, 'sku': 'SKU-GWIRELESS'},
+    product['product_id']: {
+        'name': product['name'],
+        'price': product['price'],
+        'sku': product['sku']
+    }
+    for product in RetailContext.PRODUCT_CATALOG
 }
 
 def send_call_companion_link(phone_number: str) -> str:
@@ -244,28 +195,50 @@ def access_cart_information(customer_id: str) -> dict:
         A dictionary representing the cart contents.
     """
     logger.info(f"Accessing cart information for customer ID: {customer_id}")
-    # MOCK API RESPONSE - Reflects a potential state from example.py
-    if customer_id == "GR-1234-1234":
-        if db is not None:
-            try:
-                mock_cart = db.collection('carts').document("GR-1234-1234").get()
+
+    # Use dynamic customer_id instead of hardcoded value
+    if db is not None:
+        try:
+            mock_cart = db.collection('carts').document(customer_id).get()
+            if mock_cart.exists:
                 mock_cart = mock_cart.to_dict()
-            except Exception as e:
-                logger.warning(f"Failed to access Firestore: {e}. Using fallback data.")
-                mock_cart = CUSTOMER_CART_INFO
-        else:
-            mock_cart = CUSTOMER_CART_INFO
-        # mock_cart = CUSTOMER_CART_INFO.get(customer_id, "GR-1234-1234")
-        # mock_cart = {
-        #     'cart_id': 'CART-112233', # Use example ID for consistency
-        #     'items': [
-        #         {'product_id': 'GENERIC-PIXEL-CASE', 'sku': '1122334', 'name': 'Generic Google Pixel Case', 'quantity': 1, 'price': 19},
-        #       ],
-        #     'subtotal': 19,
-        #     'last_updated': '2025-04-23 11:05:00' # Use example timestamp
-        # }
+                # Convert items from dict to array if needed
+                if mock_cart and 'items' in mock_cart and isinstance(mock_cart['items'], dict):
+                    mock_cart['items'] = [
+                        {
+                            'product_id': product_id,
+                            'name': data['name'],
+                            'price': data['price'],
+                            'sku': data['sku'],
+                            'quantity': data['quantity']
+                        } for product_id, data in mock_cart['items'].items()
+                    ]
+            else:
+                # Cart doesn't exist yet, initialize empty cart
+                logger.info(f"No cart found for customer {customer_id}, initializing empty cart")
+                mock_cart = {
+                    "cart_id": f"CART-{customer_id[-6:]}",
+                    "items": [],
+                    "subtotal": 0.0,
+                    "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+        except Exception as e:
+            logger.warning(f"Failed to access Firestore: {e}. Using empty cart.")
+            mock_cart = {
+                "cart_id": f"CART-{customer_id[-6:]}",
+                "items": [],
+                "subtotal": 0.0,
+                "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
     else:
-        mock_cart = {"cart_id": None, "items": [], "subtotal": 0.0, "last_updated": None}
+        # No Firestore connection, return empty cart
+        logger.info("No Firestore connection, returning empty cart")
+        mock_cart = {
+            "cart_id": f"CART-{customer_id[-6:]}",
+            "items": [],
+            "subtotal": 0.0,
+            "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
 
     return mock_cart
 
@@ -277,36 +250,101 @@ def modify_cart(customer_id: str, items_to_add: Optional[List[Dict[str, Any]]] =
     items_removed_flag = False
 
     # --- MOCK BACKEND CART STATE ---
+    # Use dynamic customer_id to fetch cart
     if db is not None:
         try:
-            mock_cart = db.collection('carts').document("GR-1234-1234").get()
-            current_mock_backend_cart = mock_cart.to_dict()
+            mock_cart = db.collection('carts').document(customer_id).get()
+            if mock_cart.exists:
+                current_mock_backend_cart = mock_cart.to_dict()
+                # Ensure items is a dict for manipulation
+                if 'items' not in current_mock_backend_cart or not isinstance(current_mock_backend_cart['items'], dict):
+                    current_mock_backend_cart['items'] = {}
+            else:
+                # Cart doesn't exist yet, initialize empty cart for this customer
+                logger.info(f"No cart found for customer {customer_id}, initializing empty cart")
+                current_mock_backend_cart = {
+                    'cart_id': f"CART-{customer_id[-6:]}",
+                    'items': {},
+                    'subtotal': 0.0,
+                    'last_updated': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
         except Exception as e:
-            logger.warning(f"Failed to access Firestore: {e}. Using fallback data.")
-            current_mock_backend_cart = CUSTOMER_CART_INFO.copy()
+            logger.warning(f"Failed to access Firestore: {e}. Using empty cart.")
+            current_mock_backend_cart = {
+                'cart_id': f"CART-{customer_id[-6:]}",
+                'items': {},
+                'subtotal': 0.0,
+                'last_updated': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
     else:
-        current_mock_backend_cart = CUSTOMER_CART_INFO.copy()
+        # No Firestore connection, use empty cart
+        logger.info("No Firestore connection, using empty cart")
+        current_mock_backend_cart = {
+            'cart_id': f"CART-{customer_id[-6:]}",
+            'items': {},
+            'subtotal': 0.0,
+            'last_updated': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
 
 
     if items_to_add:
         logger.info(f"Adding items: {items_to_add}")
-        # Mock adding items
+        # Validate all product IDs BEFORE adding any items
+        invalid_products = []
+        for item in items_to_add:
+            prod_id = item.get('product_id')
+            # Check for None or empty product_id
+            if not prod_id or prod_id not in PRODUCT_CATALOG:
+                invalid_products.append(prod_id if prod_id else "None")
+                logger.warning(f"INVALID PRODUCT ID: {prod_id} not found in catalog")
+
+        # If any invalid products, return error immediately
+        if invalid_products:
+            # Find similar products to suggest
+            suggestions = []
+            for invalid_id in invalid_products:
+                # Skip None values for suggestions
+                if not invalid_id or invalid_id == "None":
+                    continue
+                # Look for similar product IDs (e.g., same brand/category)
+                invalid_lower = invalid_id.lower()
+                for valid_id in list(PRODUCT_CATALOG.keys())[:10]:  # Sample first 10
+                    if any(word in valid_id.lower() for word in invalid_lower.split('-')[:2]):
+                        suggestions.append(valid_id)
+                        if len(suggestions) >= 3:
+                            break
+
+            error_msg = f"ERROR: Invalid product ID(s): {', '.join(invalid_products)}. "
+            error_msg += "These products do not exist in the catalog. "
+            error_msg += "You MUST use EXACT product IDs from the available_products catalog table. "
+            error_msg += "NEVER create or modify product IDs. "
+            if suggestions:
+                error_msg += f"Did you mean one of these valid IDs: {', '.join(suggestions[:3])}? "
+            error_msg += "Please check the catalog and try again with the exact Product ID from the table."
+
+            return {
+                "status": "error",
+                "message": error_msg,
+                "invalid_product_ids": invalid_products,
+                "items_added": False,
+                "items_removed": False,
+                "updated_cart": access_cart_information(customer_id)
+            }
+
+        # All products valid, proceed with adding
         for item in items_to_add:
             prod_id = item.get('product_id')
             quantity = item.get('quantity', 1)
-            if prod_id in PRODUCT_CATALOG:
-                if prod_id in current_mock_backend_cart['items']:
-                    current_mock_backend_cart['items'][prod_id]['quantity'] += quantity
-                else:
-                    current_mock_backend_cart['items'][prod_id] = {
-                        'name': PRODUCT_CATALOG[prod_id]['name'],
-                        'price': PRODUCT_CATALOG[prod_id]['price'],
-                        'sku': PRODUCT_CATALOG[prod_id]['sku'],
-                        'quantity': quantity
-                    }
-                items_added_flag = True
+            if prod_id in current_mock_backend_cart['items']:
+                current_mock_backend_cart['items'][prod_id]['quantity'] += quantity
             else:
-                 logger.warning(f"Product ID {prod_id} not found in mock catalog for adding.")
+                current_mock_backend_cart['items'][prod_id] = {
+                    'name': PRODUCT_CATALOG[prod_id]['name'],
+                    'price': PRODUCT_CATALOG[prod_id]['price'],
+                    'sku': PRODUCT_CATALOG[prod_id]['sku'],
+                    'quantity': quantity
+                }
+            items_added_flag = True
 
 
     if items_to_remove:
@@ -336,20 +374,16 @@ def modify_cart(customer_id: str, items_to_add: Optional[List[Dict[str, Any]]] =
              current_mock_backend_cart['items']['GOOGLE-PIXEL9PRO-CASE']['price'] = matched_price
 
 
-        updated_cart_list = {
-            product_id: {
+        # Convert items dict to array for client compatibility
+        updated_cart_list = [
+            {
+                'product_id': product_id,
                 'name': data['name'],
                 'price': data['price'],
                 'sku': data['sku'],
                 'quantity': data['quantity']
             } for product_id, data in current_mock_backend_cart['items'].items()
-        }
-
-        # updated_cart_list = [
-        #     {'product_id': pid, **data} for pid, data in current_mock_backend_cart['items'].items()
-        # ]
-
-        
+        ]
 
         # Construct the final updated cart structure
         final_updated_cart = {
@@ -359,10 +393,11 @@ def modify_cart(customer_id: str, items_to_add: Optional[List[Dict[str, Any]]] =
             'last_updated': datetime.now().strftime("%Y-%m-%d %H:%M:%S") # Update timestamp
         }
 
-        # Update the mock backend cart state
+        # Update the mock backend cart state using dynamic customer_id
         if db is not None:
             try:
-                db.collection('carts').document("GR-1234-1234").set(final_updated_cart)
+                db.collection('carts').document(customer_id).set(final_updated_cart)
+                logger.info(f"Cart updated in Firestore for customer {customer_id}")
             except Exception as e:
                 logger.warning(f"Failed to update cart in Firestore: {e}")
 
@@ -386,37 +421,102 @@ def modify_cart(customer_id: str, items_to_add: Optional[List[Dict[str, Any]]] =
 
 
 def get_product_recommendations(interest: str = "", customer_id: str = "", current_product_id: str = "") -> dict:
-    """Provides product recommendations based on interests, purchase history, or related items."""
+    """Provides product recommendations based on interests, purchase history, or related items using Gemini AI."""
     logger.info(f"Getting product recommendations for interest: {interest}, customer: {customer_id}, related_to: {current_product_id}")
 
-    # MOCK API RESPONSE/Logic - Incorporate example.py products
-    recommendations = []
-    if "pixel" in interest.lower() or current_product_id in ['PIXEL-6-128GB-BLK', 'GENERIC-PIXEL-CASE']:
-        recommendations = [
-            {"product_id": "GOOGLE-PIXEL9PRO-CASE", "name": "Google Defender Series for Pixel 9 Pro", "description": "Highly protective case, great against drops."},
-            {"product_id": "ZAGG-IS-PIXEL9PRO", "name": "ZAGG InvisibleShield Glass Elite+ Pixel 9 Pro", "description": "Durable screen protection with antimicrobial properties."},
-            {"product_id": "GOOGLE-30W-POWERADAPTER", "name": "Google 30W USB-C Power Adapter", "description": "Required for fast charging, not included with the phone."},
-            {"product_id": "PLUSGARANTIE-PIXEL", "name": "Google Preferred Care for Pixel Pro 9", "description": "Adds accidental damage protection and extended warranty."},
-            {"product_id": "GOOGLE-WIRELESS-CHARGER", "name": "Google Wireless Charger", "description": "Convenient wireless charging for Pixel 9 Pro."},
-        ]
-    elif interest and "computing" in interest.lower():
-         recommendations = [
-                {"product_id": "LOGI-MX-KEYS", "name": "Logitech MX Keys Advanced Wireless Illuminated Keyboard", "description": "Pairs well with the MX Master mouse."},
-                {"product_id": "DELL-S2721QS", "name": "Dell 27 4K UHD Monitor (S2721QS)", "description": "A great monitor for productivity."},
-                {"product_id": "SANDISK-EXTREME-1TB", "name": "SanDisk Extreme Portable SSD 1TB", "description": "Fast external storage."}
-            ]
-    # Add more specific recommendations based on other interests or profile if needed
-    else: # Fallback generic recommendations
-        recommendations = [
-             {"product_id": "ANKER-NANO-POWERBANK", "name": "Anker Nano Power Bank with Built-in USB-C", "description": "Compact power bank for charging on the go."},
-             {"product_id": "JBL-TUNE-FLEX", "name": "JBL Tune Flex True Wireless Earbuds", "description": "Versatile earbuds with good sound quality."}
-            ]
+    if not interest:
+        # Return random products if no interest specified
+        fallback_recommendations = []
+        for product in RetailContext.PRODUCT_CATALOG:
+            if product['product_id'] != current_product_id and product.get('in_stock', True):
+                fallback_recommendations.append({
+                    "product_id": product['product_id'],
+                    "name": product['name'],
+                    "description": f"{product['category']} - €{product['price']:.2f}"
+                })
+        random.shuffle(fallback_recommendations)
+        return {"recommendations": fallback_recommendations[:3]}
 
-    # Filter out the current product if it appears in recommendations
-    if current_product_id:
-        recommendations = [rec for rec in recommendations if rec.get('product_id') != current_product_id]
+    # Use Gemini to intelligently match products
+    try:
+        from google import genai
+        from google.genai import types
 
-    return {"recommendations": recommendations[:3]} # Limit to 3 recommendations
+        client = genai.Client()
+
+        # Build a concise product catalog for Gemini
+        catalog_text = "Available products:\n"
+        for product in RetailContext.PRODUCT_CATALOG:
+            if product['product_id'] != current_product_id:
+                catalog_text += f"- {product['product_id']}: {product['name']} ({product['category']}) - €{product['price']:.2f}\n"
+
+        prompt = f"""You are a product recommendation expert. Based on the customer's interest, recommend the 3 most relevant products from the catalog.
+
+Customer interest: "{interest}"
+
+{catalog_text}
+
+Return ONLY a JSON array with exactly 3 product IDs, nothing else. Format: ["PRODUCT-ID-1", "PRODUCT-ID-2", "PRODUCT-ID-3"]
+
+Choose products that best match the customer's interest. For example:
+- "sneakers" or "shoes" → Footwear products (Nike, Adidas, etc.)
+- "laptop" or "computer" → Laptop products
+- "TV" or "television" → TV products
+- "phone" or "smartphone" → Phone products"""
+
+        response = client.models.generate_content(
+            model=RECOMMENDATION_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.3,
+                max_output_tokens=200
+            )
+        )
+
+        # Parse the response to get product IDs
+        import json
+        response_text = response.text.strip()
+        # Remove markdown code blocks if present
+        if response_text.startswith('```'):
+            response_text = response_text.split('```')[1]
+            if response_text.startswith('json'):
+                response_text = response_text[4:]
+
+        product_ids = json.loads(response_text)
+
+        # Build recommendations from the matched product IDs
+        recommendations = []
+        for pid in product_ids[:3]:
+            for product in RetailContext.PRODUCT_CATALOG:
+                if product['product_id'] == pid:
+                    recommendations.append({
+                        "product_id": product['product_id'],
+                        "name": product['name'],
+                        "description": f"{product['category']} - €{product['price']:.2f}"
+                    })
+                    break
+
+        logger.info(f"Gemini recommended {len(recommendations)} products for '{interest}'")
+
+        if recommendations:
+            return {"recommendations": recommendations[:3]}
+
+    except Exception as e:
+        logger.error(f"Error using Gemini for recommendations: {e}")
+        # Fall through to fallback logic
+
+    # Fallback: return random popular products if Gemini fails
+    fallback_recommendations = []
+    for product in RetailContext.PRODUCT_CATALOG:
+        if product['product_id'] != current_product_id and product.get('in_stock', True):
+            fallback_recommendations.append({
+                "product_id": product['product_id'],
+                "name": product['name'],
+                "description": f"{product['category']} - €{product['price']:.2f}"
+            })
+
+    random.shuffle(fallback_recommendations)
+    return {"recommendations": fallback_recommendations[:3]}
 
 
 def check_product_availability(product_id: str, store_id: str = "GR-ONLINE", quantity: int = 1) -> dict:
