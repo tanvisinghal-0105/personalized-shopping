@@ -97,8 +97,7 @@ def create_retail_agent(
         temperature=0.2,
         top_p=0.9,
         top_k=40,
-        max_output_tokens=2048,  # Increased for better responses
-        stop_sequences=["## END"]
+        max_output_tokens=2048  # Increased for better responses
     )
 
     # Note: Context caching is configured at the App level, not Agent level

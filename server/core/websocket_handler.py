@@ -77,14 +77,7 @@ async def create_session(
     print(f"Modalities for session {session_id} (from CONFIG): {response_modalities_from_config}")
 
     run_config = RunConfig(
-        response_modalities=response_modalities_from_config,
-        speech_config=types.SpeechConfig(
-            voice_config=types.VoiceConfigDict(
-                {"prebuilt_voice_config": {"voice_name": CONFIG["generation_config"]["speech_config"]}}
-            ),
-            language_code=CONFIG["generation_config"]["language_code"]
-        ),
-        output_audio_transcription=types.AudioTranscriptionConfig()
+        response_modalities=response_modalities_from_config
     )
 
     live_events, live_request_queue = await start_agent_session(session_id, run_config, context)

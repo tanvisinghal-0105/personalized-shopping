@@ -17,9 +17,6 @@ PROJECT_ID = os.environ.get('PROJECT_ID', 'next-2025-ces')
 LOCATION = os.environ.get('VERTEX_LOCATION', 'us-central1')
 DEMO_TYPE = os.environ.get('DEMO_TYPE', 'retail')
 
-USE_VERTEX = int(os.getenv('GOOGLE_GENAI_USE_VERTEXAI', 0))
-logger.info(f"Initialized API configuration with Vertex AI: {USE_VERTEX}")
-
 class ConfigurationError(Exception):
     """Custom exception for configuration errors."""
     pass
@@ -28,17 +25,43 @@ def get_secret(secret_id: str) -> str:
     """Get secret from Secret Manager."""
     client = secretmanager.SecretManagerServiceClient()
     project_id = PROJECT_ID
-    
+
     if not project_id:
         raise ConfigurationError("PROJECT_ID environment variable is not set")
-    
+
     name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
-    
+
     try:
         response = client.access_secret_version(request={"name": name})
         return response.payload.data.decode("UTF-8")
     except Exception as e:
         raise
+
+def check_api_key_available() -> bool:
+    """Check if AI Studio API key is available from Secret Manager or environment."""
+    try:
+        api_key = get_secret('GOOGLE_API_KEY')
+        if api_key:
+            logger.info("AI Studio API key found in Secret Manager")
+            return True
+    except Exception as e:
+        logger.debug(f"API key not found in Secret Manager: {e}")
+
+    api_key = os.getenv('GOOGLE_API_KEY')
+    if api_key:
+        logger.info("AI Studio API key found in environment")
+        return True
+
+    logger.info("No AI Studio API key found")
+    return False
+
+USE_VERTEX_OVERRIDE = os.getenv('GOOGLE_GENAI_USE_VERTEXAI')
+if USE_VERTEX_OVERRIDE is not None:
+    USE_VERTEX = int(USE_VERTEX_OVERRIDE)
+    logger.info(f"Using explicit GOOGLE_GENAI_USE_VERTEXAI setting: {USE_VERTEX}")
+else:
+    USE_VERTEX = 0 if check_api_key_available() else 1
+    logger.info(f"Auto-detected backend based on API key availability - Vertex AI: {USE_VERTEX}")
 
 
 class ApiConfig:

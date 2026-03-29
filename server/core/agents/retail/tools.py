@@ -1,6 +1,6 @@
 import random
 import time
-from typing import Optional
+from typing import Optional, List, Dict, Any
 import uuid
 import requests
 from ...logger import logger
@@ -270,7 +270,7 @@ def access_cart_information(customer_id: str) -> dict:
     return mock_cart
 
 
-def modify_cart(customer_id: str, items_to_add: Optional[list] = None, items_to_remove: Optional[list] = None, has_manager_approval: bool = False) -> dict:
+def modify_cart(customer_id: str, items_to_add: Optional[List[Dict[str, Any]]] = None, items_to_remove: Optional[List[str]] = None, has_manager_approval: bool = False) -> dict:
     """Modifies the user's shopping cart by adding and/or removing items."""
     logger.info(f"Modifying cart for customer ID: {customer_id}")
     items_added_flag = False
