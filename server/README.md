@@ -1,15 +1,48 @@
 # Cymbal Shopping Assistant - Backend Server
 
-WebSocket-based backend server for Cymbal's AI shopping assistant, powered by Google Gemini 2.0 Flash Live API.
+WebSocket-based backend server for Cymbal's AI shopping assistant, powered by Google Gemini Live API with multimodal capabilities.
 
 ## Overview
 
 The server handles:
 - WebSocket connections from client applications
-- Real-time audio/video/text processing via Gemini 2.0 Flash
+- Real-time audio/video/text processing via Gemini Live API
 - Tool execution (product lookup, cart management, approvals)
 - Session management for customer conversations
 - Manager approval workflow integration with Firestore
+
+## Model Configuration
+
+This application supports two Gemini model deployment options:
+
+### Option 1: AI Studio (Recommended for Development)
+
+**Model:** `gemini-3.1-flash-live-preview`
+
+**Setup:**
+1. Get your API key from [AI Studio](https://aistudio.google.com/apikey)
+2. Configure `.env`:
+   ```bash
+   GOOGLE_GENAI_USE_VERTEXAI=0
+   GOOGLE_API_KEY=your_api_key_here
+   MODEL_DEV_API=gemini-3.1-flash-live-preview
+   AGENT_MODEL_DEV_API=gemini-3.1-flash-live-preview
+   ```
+
+### Option 2: Vertex AI (Recommended for Production)
+
+**Model:** `gemini-live-2.5-flash-native-audio`
+
+**Setup:**
+1. Enable Vertex AI in your Google Cloud project
+2. Configure `.env`:
+   ```bash
+   GOOGLE_GENAI_USE_VERTEXAI=1
+   GOOGLE_CLOUD_PROJECT=your_project_id
+   GOOGLE_CLOUD_LOCATION=us-central1
+   MODEL_VERTEX_API=gemini-live-2.5-flash-native-audio
+   AGENT_MODEL_VERTEX_API=gemini-live-2.5-flash-native-audio
+   ```
 
 ## Architecture
 

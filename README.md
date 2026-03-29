@@ -48,8 +48,25 @@ personalized-shopping/
 ### Prerequisites
 
 - Python 3.11+
-- Google Cloud account with Gemini API access
-- Google Cloud SDK (gcloud CLI)
+- **EITHER:**
+  - Google AI Studio API key (recommended for development) - [Get API key](https://aistudio.google.com/apikey)
+  - OR Google Cloud account with Vertex AI access (recommended for production)
+
+### Model Options
+
+This application supports two Gemini model deployment options:
+
+#### Option 1: AI Studio (Development)
+- **Model:** `gemini-3.1-flash-live-preview`
+- **Setup:** Get API key from [AI Studio](https://aistudio.google.com/apikey)
+- **Best for:** Local development, testing, demos
+
+#### Option 2: Vertex AI (Production)
+- **Model:** `gemini-live-2.5-flash-native-audio`
+- **Setup:** Enable Vertex AI in Google Cloud project
+- **Best for:** Production deployments, enterprise use
+
+See [Server README](server/README.md) for detailed configuration instructions.
 
 ### Local Development
 
@@ -63,8 +80,23 @@ personalized-shopping/
    ```bash
    cd server
    cp .env.example .env
-   # Edit .env with your Google API key and configuration
+   # Edit .env with your API key or Vertex AI configuration
    pip install -r requirements.txt
+   ```
+
+   **For AI Studio (quickest):**
+   ```bash
+   # In .env file:
+   GOOGLE_GENAI_USE_VERTEXAI=0
+   GOOGLE_API_KEY=your_api_key_here
+   ```
+
+   **For Vertex AI:**
+   ```bash
+   # In .env file:
+   GOOGLE_GENAI_USE_VERTEXAI=1
+   GOOGLE_CLOUD_PROJECT=your_project_id
+   GOOGLE_CLOUD_LOCATION=us-central1
    ```
 
 3. **Start backend server**
