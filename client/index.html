@@ -722,8 +722,10 @@
     if (currentGeminiMessageElement) removeSpeakingIndicator(currentGeminiMessageElement);
     currentGeminiMessageElement = null;
     hasLoggedUserAction = false;
-    if (isRecording) resetRecordingState();
-    textInput.disabled = false;
+    // DO NOT stop recording on interruption - user is still speaking!
+    // The interruption happened BECAUSE the user started speaking (VAD detection)
+    // if (isRecording) resetRecordingState();  // <-- REMOVED: This was stopping the microphone
+    textInput.disabled = isRecording || !apiReady;  // Keep text disabled if still recording
     micButton.disabled = !apiReady;
     updateSendButtonState();
   };

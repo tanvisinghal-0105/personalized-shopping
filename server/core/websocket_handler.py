@@ -21,7 +21,15 @@ from google.genai.types import (
 
 from core.agent_factory import get_agent_config
 from .logger import logger
-from config.config import CONFIG
+from config.config import (
+    CONFIG,
+    VAD_ENABLED,
+    VAD_START_SENSITIVITY,
+    VAD_END_SENSITIVITY,
+    VAD_PREFIX_PADDING_MS,
+    VAD_SILENCE_DURATION_MS,
+    ALLOW_INTERRUPTION
+)
 
 # Global session storage now holds the request queue for each session.
 ACTIVE_SESSIONS: Dict[str, LiveRequestQueue] = {}
@@ -76,8 +84,47 @@ async def create_session(
     print(f"Voice: {CONFIG['generation_config']['speech_config']}")
     print(f"Modalities for session {session_id} (from CONFIG): {response_modalities_from_config}")
 
+    # Configure Voice Activity Detection (VAD) for interruption handling
+    vad_config = None
+    if VAD_ENABLED:
+        # Map string sensitivity to enum values
+        start_sensitivity = (
+            types.StartSensitivity.START_SENSITIVITY_HIGH
+            if VAD_START_SENSITIVITY == "HIGH"
+            else types.StartSensitivity.START_SENSITIVITY_LOW
+        )
+        end_sensitivity = (
+            types.EndSensitivity.END_SENSITIVITY_HIGH
+            if VAD_END_SENSITIVITY == "HIGH"
+            else types.EndSensitivity.END_SENSITIVITY_LOW
+        )
+
+        vad_config = types.AutomaticActivityDetection(
+            disabled=False,
+            start_of_speech_sensitivity=start_sensitivity,
+            end_of_speech_sensitivity=end_sensitivity,
+            prefix_padding_ms=VAD_PREFIX_PADDING_MS,
+            silence_duration_ms=VAD_SILENCE_DURATION_MS,
+        )
+        logger.info(f"VAD configured - Start: {VAD_START_SENSITIVITY}, End: {VAD_END_SENSITIVITY}, "
+                   f"Padding: {VAD_PREFIX_PADDING_MS}ms, Silence: {VAD_SILENCE_DURATION_MS}ms")
+    else:
+        vad_config = types.AutomaticActivityDetection(disabled=True)
+        logger.info("VAD disabled - manual activity control required")
+
+    # Configure realtime input with VAD settings
+    realtime_config = types.RealtimeInputConfig(
+        automatic_activity_detection=vad_config
+    )
+
+    # Set activity handling based on interruption configuration
+    if not ALLOW_INTERRUPTION:
+        realtime_config.activity_handling = types.ActivityHandling.NO_INTERRUPTION
+        logger.info("Interruptions disabled - model responses cannot be interrupted")
+
     run_config = RunConfig(
-        response_modalities=response_modalities_from_config
+        response_modalities=response_modalities_from_config,
+        realtime_input_config=realtime_config
     )
 
     live_events, live_request_queue = await start_agent_session(session_id, run_config, context, agent_config)
@@ -118,20 +165,41 @@ async def cleanup_session(session_id: str) -> None:
 async def handle_agent_responses(websocket: Any, live_events: Any) -> None:
     """
     Handles responses from the agent, forwarding data to the client/frontend via websocket.
+    Enhanced with improved interruption handling using Gemini SDK features.
     """
     try:
         full_text = ""
         async for event in live_events:
             logger.info(event)
 
-            # --- Interruption ---
+            # --- PRIORITY 1: Check for interruption FIRST (before processing any other data) ---
+            # This ensures immediate handling of user interruptions via VAD
             if event.interrupted:
-                print("Interrupted event detected")
+                logger.info("Interruption detected via VAD - user started speaking")
                 await websocket.send(json.dumps({
                     "type": "interrupted",
-                    "data": {"message": "Response interrupted by user input"}
+                    "data": {
+                        "message": "Response interrupted by user input",
+                        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+                    }
                 }))
+                # Clear any buffered text
+                full_text = ""
                 continue
+
+            # --- PRIORITY 2: Check for alternative interruption pattern (server_content.interrupted) ---
+            if hasattr(event, 'server_content') and event.server_content:
+                if getattr(event.server_content, 'interrupted', False):
+                    logger.info("Interruption detected via server_content.interrupted pattern")
+                    await websocket.send(json.dumps({
+                        "type": "interrupted",
+                        "data": {
+                            "message": "Response interrupted",
+                            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+                        }
+                    }))
+                    full_text = ""
+                    continue
 
             if event.content is None:
                 logger.info(f"None content - turn_complete:{event.turn_complete}")

@@ -105,6 +105,17 @@ USE_INTERACTIONS_API = os.getenv('USE_INTERACTIONS_API', 'false').lower() == 'tr
 ENABLE_CONTEXT_CACHING = os.getenv('ENABLE_CONTEXT_CACHING', 'true').lower() == 'true'
 logger.info(f"ADK Features - Interactions API: {USE_INTERACTIONS_API}, Context Caching: {ENABLE_CONTEXT_CACHING}")
 
+# Voice Activity Detection (VAD) Configuration
+VAD_ENABLED = os.getenv('VAD_ENABLED', 'true').lower() == 'true'
+VAD_START_SENSITIVITY = os.getenv('VAD_START_SENSITIVITY', 'LOW')  # LOW or HIGH
+VAD_END_SENSITIVITY = os.getenv('VAD_END_SENSITIVITY', 'LOW')  # LOW or HIGH
+VAD_PREFIX_PADDING_MS = int(os.getenv('VAD_PREFIX_PADDING_MS', '20'))
+VAD_SILENCE_DURATION_MS = int(os.getenv('VAD_SILENCE_DURATION_MS', '100'))
+ALLOW_INTERRUPTION = os.getenv('ALLOW_INTERRUPTION', 'true').lower() == 'true'
+
+logger.info(f"VAD Configuration - Enabled: {VAD_ENABLED}, Start Sensitivity: {VAD_START_SENSITIVITY}, End Sensitivity: {VAD_END_SENSITIVITY}")
+logger.info(f"VAD Timing - Prefix Padding: {VAD_PREFIX_PADDING_MS}ms, Silence Duration: {VAD_SILENCE_DURATION_MS}ms, Allow Interruption: {ALLOW_INTERRUPTION}")
+
 # Load system instructions
 try:
     with open('config/system-instructions.txt', 'r') as f:
