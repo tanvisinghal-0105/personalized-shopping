@@ -253,9 +253,9 @@ Response (model name only):"""
         logger.warning("No image data was provided to the identify_phone_from_camera_feed tool.")
 
         return {
-            "status": "success",
-            "identified_phone_model": "Pixel 9 Pro (default/no image provided)",
-            "message": "Could not process specific image as none was provided to the tool. Assuming Pixel 9 Pro based on general context or default mock.",
+            "status": "error",
+            "identified_phone_model": "Unknown - No Image Data",
+            "message": "This tool requires image data to identify a phone. However, you have access to the live camera feed in your context - you can see the camera images directly and should analyze them without calling this tool. Look at the visual content you're receiving and identify the phone based on what you actually see (brand logos, camera design, shape, etc.). Do not make assumptions or use defaults.",
             "image_data_processed": False
         }
 
