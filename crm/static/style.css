@@ -1,0 +1,530 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0');
+
+:root {
+    --color-accent: #000000; /* Cymbal Black */
+    --color-accent-dark: #1a1a1a;
+    --color-accent-light: rgba(0, 0, 0, 0.08); /* Light hover/focus for secondary */
+    --color-bg: #f8f9fa; /* Google light gray background */
+    --color-container-bg: #ffffff; /* White container */
+    --color-text-primary: #202124; /* Google dark gray text */
+    --color-text-secondary: #5f6368; /* Google medium gray text */
+    --color-text-on-accent: #ffffff;
+    --color-border: #dadce0; /* Google light border */
+    --color-input-border: #dfe1e5;
+    --color-icon: #5f6368;
+    --color-icon-light: #70757a;
+    --color-error: #d93025; /* Google error red */
+    --color-error-dark: #a50e0e;
+    --color-error-bg: #fce8e6;
+    --color-focus-ring: rgba(255, 87, 34, 0.3);
+    --color-sidebar-bg: #ffffff;
+    --color-sidebar-text: #3c4043;
+    --color-sidebar-text-hover: var(--color-accent);
+    --color-sidebar-active-bg: var(--color-accent-light);
+    --color-header-bg: #ffffff;
+    --color-footer-bg: #f1f3f4;
+    --color-footer-text: var(--color-text-secondary);
+    --color-status-active: #1e8e3e;
+    --color-status-active-bg: #e6f4ea;
+
+    --sidebar-width: 260px;
+    --header-height: 65px;
+    --footer-height: 40px;
+
+    /* Transitions */
+    --transition-speed: 0.2s;
+    --transition-func: ease-in-out;
+}
+
+/* Global reset and base styles */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Open Sans', sans-serif;
+    margin: 0;
+    background-color: var(--color-bg);
+    color: var(--color-text-primary);
+    line-height: 1.6;
+    /* Removed flex display from body, handled by app-layout */
+}
+
+/* Main Application Layout */
+.app-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar Styling */
+.sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--color-sidebar-bg);
+    border-right: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    position: fixed; /* Fixed Sidebar */
+    left: 0;
+    top: 0;
+    height: 100vh;
+    z-index: 100;
+}
+
+.sidebar-header {
+    padding: 20px 25px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.sidebar-logo {
+    height: 30px;
+    width: auto;
+}
+
+.sidebar-logo-text {
+    font-size: 28px;
+    font-weight: bold;
+    color: var(--color-accent);
+    text-transform: lowercase;
+    letter-spacing: -0.5px;
+}
+
+.sidebar-header span {
+    font-weight: 500;
+    font-size: 1.1em;
+    color: var(--color-text-primary);
+}
+
+.sidebar-nav {
+    flex-grow: 1;
+    padding: 20px 0;
+    overflow-y: auto; /* Allow scrolling if needed */
+}
+
+.sidebar-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-nav li a {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 25px;
+    color: var(--color-sidebar-text);
+    text-decoration: none;
+    font-size: 0.95em;
+    transition: background-color var(--transition-speed) var(--transition-func),
+                color var(--transition-speed) var(--transition-func);
+    border-left: 4px solid transparent; /* Indicator for active/hover */
+}
+
+.sidebar-nav li a .material-symbols-outlined {
+    font-size: 22px;
+    color: var(--color-icon-light);
+    transition: color var(--transition-speed) var(--transition-func);
+}
+
+.sidebar-nav li a:hover {
+    background-color: var(--color-accent-light);
+    color: var(--color-sidebar-text-hover);
+    border-left-color: var(--color-accent);
+}
+
+.sidebar-nav li a:hover .material-symbols-outlined {
+    color: var(--color-accent);
+}
+
+.sidebar-nav li.active a {
+    background-color: var(--color-accent-light);
+    color: var(--color-accent);
+    font-weight: 500;
+    border-left-color: var(--color-accent);
+}
+
+.sidebar-nav li.active a .material-symbols-outlined {
+    color: var(--color-accent);
+}
+
+.sidebar-footer {
+    padding: 15px 25px;
+    border-top: 1px solid var(--color-border);
+    font-size: 0.8em;
+    color: var(--color-text-secondary);
+    text-align: center;
+}
+
+/* Main Content Area (takes remaining space) */
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    margin-left: var(--sidebar-width); /* Offset by sidebar width */
+    min-height: 100vh;
+}
+
+/* Main Header Styling */
+.main-header {
+    height: var(--header-height);
+    background-color: var(--color-header-bg);
+    border-bottom: 1px solid var(--color-border);
+    padding: 0 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-title h1 {
+    color: var(--color-text-primary);
+    font-weight: 500;
+    font-size: 1.4em;
+    margin: 0;
+}
+
+.header-title .material-symbols-outlined {
+    color: var(--color-accent);
+    font-size: 28px;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+    color: var(--color-text-secondary);
+    cursor: default; /* Indicate it's not clickable (yet) */
+}
+
+.user-profile .material-symbols-outlined {
+    font-size: 28px;
+}
+
+/* Page Content Area */
+.page-content {
+    flex-grow: 1;
+    padding: 30px; /* Padding around content */
+    background-color: var(--color-bg);
+    overflow-y: auto; /* Allow scrolling of main content */
+}
+
+.content-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Responsive grid */
+    gap: 25px;
+}
+
+/* Card Styling (Replaces .container) */
+.card {
+    background-color: var(--color-container-bg);
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column; /* Ensure card layout works */
+}
+
+.card-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: #f9f9f9; /* Light card header */
+}
+
+.card-header h2, .card-header h3 {
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.card-icon {
+    color: var(--color-accent);
+    font-size: 24px;
+}
+
+.card-body {
+    padding: 20px;
+    flex-grow: 1;
+}
+
+.card-body p {
+    margin-bottom: 10px;
+    font-size: 0.95em;
+    color: var(--color-text-secondary);
+}
+.card-body p strong {
+    color: var(--color-text-primary);
+    font-weight: 500;
+}
+
+/* Specific Card Adjustments */
+.approval-card .card-header {
+    background-color: transparent; /* Keep approval header white */
+    border-bottom: none;
+    padding-bottom: 5px;
+}
+.approval-card .info-card {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: var(--color-bg);
+    border-radius: 6px;
+}
+.approval-card .info-card h3 {
+     margin: 0 0 10px 0;
+     font-size: 1em;
+     font-weight: 500;
+     display: flex;
+     align-items: center;
+     gap: 8px;
+     border-bottom: 1px solid var(--color-border);
+     padding-bottom: 8px;
+}
+.approval-card .info-card h3 .material-symbols-outlined {
+    color: var(--color-icon);
+    font-size: 20px;
+}
+
+/* Status Badge */
+.status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    font-size: 0.8em;
+    font-weight: 500;
+    border-radius: 4px;
+    line-height: 1.2;
+}
+
+.status-badge.active {
+    color: var(--color-status-active);
+    background-color: var(--color-status-active-bg);
+}
+/* Add other statuses like .inactive, .pending if needed */
+
+/* Smaller Button Variant */
+.button.small {
+    padding: 6px 12px;
+    font-size: 0.85em;
+    gap: 6px;
+}
+.button.small .material-symbols-outlined {
+    font-size: 16px;
+}
+
+/* AI Helper Buttons */
+.ai-buttons {
+    display: flex;
+    flex-direction: column; /* Stack buttons */
+    gap: 10px;
+    margin-top: 15px;
+}
+.ai-button {
+    justify-content: flex-start; /* Align text left */
+}
+
+/* Icon Only Button */
+.button.icon-only {
+    padding: 8px;
+    min-width: auto;
+    border-radius: 50%; /* Circular */
+    background-color: transparent;
+    border: none;
+    color: var(--color-icon);
+}
+.button.icon-only:hover {
+    background-color: rgba(0,0,0,0.06);
+    color: var(--color-text-primary);
+}
+.button.icon-only .material-symbols-outlined {
+    font-size: 24px;
+}
+
+/* Footer Styling */
+.main-footer {
+    height: var(--footer-height);
+    background-color: var(--color-footer-bg);
+    border-top: 1px solid var(--color-border);
+    padding: 0 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85em;
+    color: var(--color-footer-text);
+    flex-shrink: 0; /* Prevent footer from shrinking */
+}
+
+.main-footer p {
+    margin: 0;
+}
+
+/* Existing styles for input, label, buttons within card need minor check */
+.approval-card .input-group {
+    margin-bottom: 20px; /* Adjust margin within card */
+}
+
+.approval-card .buttons {
+    margin-bottom: 20px; /* Adjust margin within card */
+}
+
+.approval-card label {
+    margin-bottom: 6px;
+}
+
+/* Status Details Display (replaces pre#statusDisplay) */
+.status-details {
+    font-family: 'Open Sans', sans-serif; /* Use standard font */
+    font-size: 0.95em;
+    line-height: 1.7;
+    color: var(--color-text-primary);
+    background-color: var(--color-container-bg);
+    padding: 15px 18px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    max-height: 400px; /* Increase max height slightly */
+    overflow-y: auto;
+}
+
+.detail-item {
+    display: grid;
+    grid-template-columns: 150px 1fr; /* Key column width */
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--color-input-border); /* Lighter separator */
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-key {
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    text-align: right;
+    padding-right: 10px;
+}
+
+.detail-value {
+    word-break: break-word; /* Wrap long values like hostnames */
+}
+
+/* Styling for the specific approval status badge */
+.detail-value .status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    font-size: 0.85em;
+    font-weight: 500;
+    border-radius: 12px; /* Pill shape */
+    text-transform: capitalize;
+}
+
+.status-badge.approved {
+    color: var(--color-status-active);
+    background-color: var(--color-status-active-bg);
+    border: 1px solid var(--color-status-active);
+}
+
+.status-badge.pending { /* Example */
+    color: #f29900; /* Orange */
+    background-color: #feefc3;
+    border: 1px solid #f29900;
+}
+
+.status-badge.denied {
+    color: var(--color-error-dark);
+    background-color: var(--color-error-bg);
+    border: 1px solid var(--color-error);
+}
+
+/* Styling for nested messages section */
+.messages-details {
+    margin-top: 5px;
+    padding: 10px;
+    background-color: var(--color-bg); /* Slightly different background */
+    border: 1px solid var(--color-input-border);
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.message-item {
+    display: grid;
+    grid-template-columns: 80px 1fr; /* Key column */
+    gap: 8px;
+    padding: 4px 0;
+}
+
+.message-key {
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    text-align: right;
+    padding-right: 8px;
+    text-transform: capitalize;
+}
+
+.message-value {
+    color: var(--color-text-primary);
+}
+
+.message-value ul {
+    list-style: disc;
+    padding-left: 20px;
+    margin: 0;
+}
+
+.message-value ul li {
+    margin-bottom: 4px;
+}
+
+/* Style for extra details not in primary list */
+.extra-detail {
+    opacity: 0.8;
+    font-size: 0.9em;
+}
+
+/* Error Message Styling */
+.error {
+    color: var(--color-error-dark);
+    background-color: var(--color-error-bg);
+    border: 1px solid rgba(217, 48, 37, 0.3);
+    padding: 12px 18px;
+    border-radius: 8px;
+    margin-top: 20px;
+    font-weight: 500;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.error::before { /* Add error icon */
+    font-family: 'Material Symbols Outlined';
+    content: 'error';
+    font-size: 20px;
+    color: var(--color-error);
+    margin-right: 4px;
+}
+
+/* Hide elements initially - Ensure this is last */
+#customerInfo,
+#errorMessage {
+    display: none;
+} 

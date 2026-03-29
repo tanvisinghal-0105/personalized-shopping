@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cymbal - Online Shopping</title>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    @tailwind base;
+    @tailwind components;
+    @tailwind utilities;
+
+    @theme {
+      --color-bg: #ffffff;
+      --color-chat-bg: #ffffff;
+      --color-input-bg: #f5f5f5;
+      --color-user-bubble-bg: #000000;
+      --color-gemini-bubble-bg: #eef0f2;
+      --color-bubble-border: transparent;
+      --color-text-primary: #1a1a1a;
+      --color-text-secondary: #666666;
+      --color-accent: #000000;
+      --color-border: #E6E6E6;
+      --color-icon: #1a1a1a;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      @apply bg-[var(--color-bg)] text-[var(--color-text-primary)];
+    }
+
+    /* Cymbal E-commerce page styles */
+    .header-icon {
+        @apply flex flex-col items-center text-[var(--color-text-primary)] hover:text-[var(--color-accent)] transition-colors;
+    }
+    .header-icon .material-symbols-outlined {
+        @apply text-2xl;
+    }
+    .header-icon span {
+        @apply text-xs mt-1;
+    }
+    .category-nav a {
+        @apply text-sm text-[var(--color-text-primary)] font-medium pb-2 border-b-2 border-transparent hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-all;
+    }
+
+    /* --- Chatbot Base Styles --- */
+    .chat-container { @apply flex flex-col h-screen max-w-4xl mx-auto bg-[var(--color-chat-bg)] shadow-md border border-[var(--color-border)]; }
+    .chat-header { @apply p-4 text-lg font-semibold text-[var(--color-accent)] flex-shrink-0 rounded-t-xl flex justify-between items-center border-b border-[var(--color-border)] bg-white; }
+    .chat-output-area { @apply flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-gray-100; }
+    .message-wrapper { @apply flex mb-3; }
+    .message-bubble { @apply px-4 py-3 max-w-[85%] md:max-w-[75%] break-words; word-wrap: break-word; }
+    
+    /* Message bubble types */
+    .user-message { @apply justify-end; }
+    .user-message .message-bubble { @apply bg-[var(--color-user-bubble-bg)] text-white rounded-2xl rounded-br-lg; }
+    .gemini-message { @apply justify-start; }
+    .gemini-message .message-bubble { @apply bg-[var(--color-gemini-bubble-bg)] text-[var(--color-text-primary)] rounded-2xl rounded-bl-lg; }
+    .system-message { @apply justify-center text-xs text-[var(--color-text-secondary)] italic; }
+    .system-message .message-bubble { @apply bg-transparent text-center px-2 py-1; }
+    
+    /* Markdown content inside bubbles */
+    .message-bubble p, .message-bubble ul, .message-bubble ol, .message-bubble pre, .message-bubble blockquote, .message-bubble table { @apply my-1; }
+    .message-bubble a { @apply text-blue-500 hover:underline; } /* Use a distinct link color */
+    .message-bubble code:not(pre code) { @apply bg-gray-200 text-[var(--color-accent)] px-1 py-0.5 rounded text-xs font-mono border border-gray-300; }
+    .message-bubble pre { @apply bg-gray-800 text-gray-100 p-3 rounded-lg text-xs my-2 overflow-x-auto font-mono shadow-inner; }
+    .message-bubble ul { @apply list-disc list-inside pl-2 space-y-1; }
+    .message-bubble ol { @apply list-decimal list-inside pl-2 space-y-1; }
+    .message-bubble blockquote { @apply border-l-4 border-gray-300 pl-3 italic text-gray-600 my-2; }
+
+    /* --- Agent/Tool Message Styles (Restored from old code) --- */
+    .function-call .message-bubble,
+    .function-response .message-bubble {
+        @apply bg-gray-50 text-[var(--color-text-primary)] border border-[var(--color-border)] rounded-lg p-0 text-sm w-full max-w-full overflow-hidden;
+    }
+    .function-call .tool-header,
+    .function-response .tool-header {
+        @apply bg-[var(--color-accent)] text-white p-3 flex justify-between items-center cursor-pointer;
+    }
+    .function-call .tool-toggle,
+    .function-response .tool-toggle {
+        @apply text-white;
+    }
+    .function-call .tool-details,
+    .function-response .tool-details {
+        @apply p-3 bg-white text-xs font-mono overflow-x-auto;
+    }
+    .function-call .function-icon,
+    .function-response .function-icon {
+        @apply text-base mr-2 align-middle text-white;
+    }
+    .function-call .message-bubble pre,
+    .function-response .message-bubble pre {
+        @apply bg-transparent text-inherit p-0 rounded-none mt-0 text-xs overflow-x-auto font-mono shadow-none;
+    }
+    
+    /* Business-Friendly JSON Form Styles */
+    .json-form-label { @apply w-full sm:w-1/3 font-medium text-gray-700 text-xs mb-1 sm:mb-0 flex-shrink-0; }
+    .json-form-value-container { @apply w-full sm:w-2/3 text-xs text-gray-800; }
+    .json-form-toggle-header { @apply flex items-center cursor-pointer text-xs text-blue-600 hover:text-blue-800 mt-1; }
+    .json-form-collapsible-content { @apply border border-gray-200 rounded p-2 mt-1 ml-4 space-y-1 bg-gray-50; }
+    .json-form-object-content-toplevel { @apply space-y-2 mt-1; }
+    .json-form-row { @apply flex flex-col sm:flex-row sm:items-start py-1 border-t border-gray-100; }
+    .json-form-row:first-child { @apply border-t-0; }
+
+    /* --- Input Area & Controls --- */
+    .loading-indicator { @apply items-center justify-center p-4 text-[var(--color-text-secondary)] space-x-2; }
+    .spinner { @apply w-5 h-5 border-t-2 border-r-2 border-[var(--color-accent)] border-solid rounded-full animate-spin; }
+    .input-area-container { @apply p-3 md:p-4 flex-shrink-0 rounded-b-xl bg-white border-t border-[var(--color-border)]; }
+    .input-area { @apply flex items-center space-x-2 bg-gray-100 rounded-full p-1 shadow-sm; }
+    .input-action-button { @apply flex items-center justify-center w-10 h-10 rounded-full text-gray-600 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50 transition-colors disabled:opacity-50 disabled:hover:bg-transparent flex-shrink-0; }
+    
+    .mic-button.recording { @apply bg-[var(--color-accent)] text-white hover:opacity-90; }
+    .camera-button.recording { @apply bg-[var(--color-accent)] text-white hover:opacity-90; }
+    .send-button:not(:disabled) { @apply bg-[var(--color-accent)] text-white hover:opacity-90; }
+
+    .text-input-field { @apply flex-1 bg-transparent border-none resize-none outline-none px-2 py-2 placeholder-[var(--color-text-secondary)] text-[var(--color-text-primary)]; max-height: 160px; overflow-y: auto; }
+    
+    /* Toggle Switch */
+    .toggle-checkbox:checked { transform: translateX(100%); right: 0; left: auto; border-color: var(--color-accent); }
+    .toggle-checkbox:checked + .toggle-label { background-color: var(--color-accent); }
+  </style>
+</head>
+<body class="bg-[var(--color-bg)] text-[var(--color-text-primary)] flex flex-col h-screen">
+
+<!-- Floating Chat Button -->
+<button id="floatingChatBtn" class="fixed bottom-6 right-6 w-16 h-16 bg-[var(--color-accent)] text-white rounded-full shadow-lg hover:opacity-90 transition-opacity flex items-center justify-center z-30">
+  <span class="material-symbols-outlined text-3xl">chat</span>
+</button>
+
+<!-- Sign In Modal -->
+<div id="signInModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]" style="display: flex;">
+  <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
+    <div class="text-center mb-6">
+      <img src="./assets/cymbal_logo.png" alt="Cymbal" class="h-12 mx-auto mb-3">
+      <p class="text-gray-600">Welcome! Please sign in to continue</p>
+    </div>
+    <form id="signInForm" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+        <input type="text" id="firstName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent outline-none" placeholder="Enter your first name">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+        <input type="text" id="lastName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent outline-none" placeholder="Enter your last name">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+        <input type="email" id="email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent outline-none" placeholder="your.email@example.com">
+      </div>
+      <button type="submit" class="w-full bg-[var(--color-accent)] text-white py-3 rounded-lg font-medium hover:opacity-90 transition-opacity">
+        Sign In
+      </button>
+    </form>
+  </div>
+</div>
+
+<header class="bg-white w-full flex-shrink-0 border-b border-[var(--color-border)]">
+    <div class="container mx-auto px-4">
+        <div class="flex items-center justify-between h-20">
+            <div class="flex-shrink-0">
+                <a href="#" class="flex items-center">
+                    <img src="./assets/cymbal_logo.png" alt="Cymbal" class="h-10">
+                </a>
+            </div>
+            <div class="flex-grow mx-8 max-w-2xl">
+                <div class="relative">
+                    <input type="text" placeholder="What are you looking for?" class="w-full px-4 py-2.5 text-sm border-none rounded-full bg-[var(--color-input-bg)] focus:ring-2 focus:ring-[var(--color-accent)]/50 outline-none">
+                    <span class="material-symbols-outlined absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500">search</span>
+                </div>
+            </div>
+            <div class="flex items-center space-x-6">
+                <a href="#" class="header-icon">
+                    <span class="material-symbols-outlined">support_agent</span>
+                    <span>service</span>
+                </a>
+                <div id="userProfileHeader" class="header-icon cursor-default" style="display: none;">
+                    <span class="material-symbols-outlined">account_circle</span>
+                    <span id="userNameDisplay"></span>
+                </div>
+                <button id="signOutBtn" class="header-icon" style="display: none;">
+                    <span class="material-symbols-outlined">logout</span>
+                    <span>Sign Out</span>
+                </button>
+                <a href="#" class="header-icon">
+                    <span class="material-symbols-outlined">favorite</span>
+                    <span>Notepad</span>
+                </a>
+                <a href="#" class="header-icon relative">
+                    <span class="material-symbols-outlined">shopping_cart</span>
+                    <span>Shopping cart</span>
+                    <span class="absolute -top-1 right-2 bg-[var(--color-accent)] text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">2</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</header>
+
+<nav class="bg-white w-full flex-shrink-0 border-b border-[var(--color-border)] shadow-sm">
+    <div class="container mx-auto px-4 flex justify-center items-center h-12 space-x-8">
+        <a href="#" class="category-nav">Inspiration</a>
+        <a href="#" class="category-nav">Multimedia</a>
+        <a href="#" class="category-nav">Women's fashion</a>
+        <a href="#" class="category-nav">Men's fashion</a>
+        <a href="#" class="category-nav">Household</a>
+        <a href="#" class="category-nav">Kitchen</a>
+        <a href="#" class="category-nav">Furniture</a>
+        <a href="#" class="category-nav">Hardware store</a>
+        <a href="#" class="category-nav">Sport</a>
+        <a href="#" class="category-nav">Brands</a>
+        <a href="#" class="text-sm font-bold bg-[var(--color-accent)] text-white px-4 py-1.5 rounded-full hover:opacity-90">%Sale%</a>
+    </div>
+</nav>
+
+<div class="flex-1 overflow-y-auto p-6">
+  <div class="container mx-auto">
+    <section class="mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="border border-[var(--color-border)] rounded-md p-4 flex items-center justify-between">
+                <div>
+                    <div class="relative inline-block bg-[var(--color-accent)] text-white text-xs font-bold py-1 px-2 rounded-md mb-2">
+                        20€
+                        <div class="absolute -top-1 -left-1 w-3 h-3 bg-white transform rotate-45"></div>
+                    </div>
+                    <p class="font-bold">Only for new customers</p>
+                    <p class="text-sm text-[var(--color-text-secondary)]">Voucher for your first order</p>
+                    <p class="text-xs text-gray-400 mt-2">Valid until: Monday, June 30th</p>
+                </div>
+                <a href="#" class="bg-[var(--color-accent)] text-white text-sm font-bold px-4 py-2 rounded-full hover:opacity-90">To activate ›</a>
+            </div>
+            <div class="border border-[var(--color-border)] rounded-md p-4 flex items-center justify-between">
+                <div>
+                    <div class="bg-[var(--color-accent)] text-white text-xs font-bold py-1 px-2 inline-block rounded-md mb-2">20% Extra</div>
+                    <p class="font-bold">On selected furniture</p>
+                    <p class="text-xs text-gray-400 mt-2">Only: 12h 9m 24s</p>
+                </div>
+                 <a href="#" class="bg-[var(--color-accent)] text-white text-sm font-bold px-4 py-2 rounded-full hover:opacity-90">To activate ›</a>
+            </div>
+            <div class="border border-[var(--color-border)] rounded-md p-4 flex items-center justify-between">
+                <div>
+                    <div class="bg-[var(--color-accent)] text-white text-xs font-bold py-1 px-2 inline-block rounded-md mb-2">10% Extra</div>
+                    <p class="font-bold">On selected GAMEMAX PCs</p>
+                    <p class="text-xs text-gray-400 mt-2">Valid until: Sunday, June 29th</p>
+                </div>
+                 <a href="#" class="bg-[var(--color-accent)] text-white text-sm font-bold px-4 py-2 rounded-full hover:opacity-90">To activate ›</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="mb-8 p-8 rounded-md" style="background-color: #000000;">
+        <h2 class="text-4xl font-bold text-white">Cymbal Days</h2>
+        <p class="text-lg text-white mt-1">Only until June 18, 2025</p>
+        <h3 class="text-2xl font-bold text-white mt-4">Home & Decoration</h3>
+    </section>
+
+    <main class="flex-1 min-w-0">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
+          <img src="./assets/adidas_sneaker.png" alt="Adidas Originals Sneaker" class="w-full h-40 object-contain rounded-md mb-3">
+          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">Adidas Originals Sneaker</h3>
+          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">Classic sneaker for everyday wear.</p>
+          <div class="mt-auto flex justify-between items-center pt-2">
+            <p class="font-bold text-lg text-[var(--color-accent)]">€99,-</p>
+            <button class="bg-[var(--color-accent)] text-white p-2 rounded-full hover:opacity-90 transition-opacity flex items-center">
+              <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
+            </button>
+          </div>
+        </div>
+        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
+          <img src="./assets/samsung_tv.png" alt="SAMSUNG QLED 4K TV" class="w-full h-40 object-contain rounded-md mb-3">
+          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">SAMSUNG QLED 4K TV</h3>
+          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">65-inch Smart TV with brilliant colors.</p>
+          <div class="mt-auto flex justify-between items-center pt-2">
+            <p class="font-bold text-lg text-[var(--color-accent)]">€1199,-</p>
+            <button class="bg-[var(--color-accent)] text-white p-2 rounded-full hover:opacity-90 transition-opacity flex items-center">
+              <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
+            </button>
+          </div>
+        </div>
+        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
+          <img src="./assets/levis_jeans.png" alt="LEVI'S 501 Original Jeans" class="w-full h-40 object-contain rounded-md mb-3">
+          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">LEVI'S 501 Original Jeans</h3>
+          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">The iconic straight-leg jeans.</p>
+          <div class="mt-auto flex justify-between items-center pt-2">
+            <p class="font-bold text-lg text-[var(--color-accent)]">€89,-</p>
+            <button class="bg-gray-300 text-gray-500 p-2 rounded-full cursor-not-allowed flex items-center" disabled>
+              <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
+            </button>
+          </div>
+        </div>
+        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
+          <img src="./assets/iphone_16.png" alt="Apple iPhone 16" class="w-full h-40 object-contain rounded-md mb-3">
+          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">Apple iPhone 16</h3>
+          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">The latest iPhone with Pro camera system.</p>
+          <div class="mt-auto flex justify-between items-center pt-2">
+            <p class="font-bold text-lg text-[var(--color-accent)]">€999,-</p>
+            <button class="bg-[var(--color-accent)] text-white p-2 rounded-full hover:opacity-90 transition-opacity flex items-center">
+              <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
+            </button>
+          </div>
+        </div>
+        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
+          <img src="./assets/wmf_coffeemachine.png" alt="WMF Coffee Machine" class="w-full h-40 object-contain rounded-md mb-3">
+          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">WMF Coffee Machine</h3>
+          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">Fully automatic bean-to-cup machine.</p>
+          <div class="mt-auto flex justify-between items-center pt-2">
+            <p class="font-bold text-lg text-[var(--color-accent)]">€749,-</p>
+            <button class="bg-[var(--color-accent)] text-white p-2 rounded-full hover:opacity-90 transition-opacity flex items-center">
+              <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="chatContainer" class="chat-container fixed bottom-6 right-6 w-[550px] min-w-[400px] max-h-[calc(100vh-theme(space.32))] flex flex-col bg-[var(--color-chat-bg)] rounded-xl shadow-xl border-2 z-40" style="border-color: var(--color-accent); display: none;">
+  <div class="chat-header p-4 text-lg font-semibold text-[var(--color-accent)] flex-shrink-0 rounded-t-xl flex justify-between items-center border-b border-[var(--color-border)] bg-white">
+    <span>AI Assistant</span>
+    <button id="minimizeChatBtn" class="ml-auto mr-3 text-gray-500 hover:text-gray-700">
+      <span class="material-symbols-outlined">minimize</span>
+    </button>
+    <div class="flex items-center">
+      <label for="showToolsToggle" class="text-sm mr-2 text-[var(--color-text-secondary)]">Show Agents</label>
+      <div class="relative inline-block w-10 align-middle select-none">
+        <input type="checkbox" id="showToolsToggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-2 appearance-none cursor-pointer transition-transform duration-200 ease-in-out" style="top: 0; left: 0; transform: translateY(0);">
+        <label for="showToolsToggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+      </div>
+    </div>
+  </div>
+  <div id="output" class="chat-output-area flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-gray-100">
+    <div class="message-wrapper system-message">
+         <div class="message-bubble"><span>Conversation started</span></div>
+    </div>
+  </div>
+  <div id="loadingIndicator" class="loading-indicator hidden flex flex-shrink-0 p-3 justify-center">
+    <div class="spinner"></div>
+    <span class="align-middle ml-2">Processing...</span>
+  </div>
+  <div class="input-area-container p-3 md:p-4 flex-shrink-0 rounded-b-xl bg-white border-t border-[var(--color-border)]">
+      <div class="input-area flex items-center space-x-2 bg-gray-100 rounded-full p-1 shadow-sm">
+          <button id="micButton" disabled class="input-action-button mic-button" title="Start/Stop Recording">
+              <span class="material-symbols-outlined">mic</span>
+          </button>
+          <button id="cameraButton" class="input-action-button" title="Toggle Camera">
+            <span class="material-symbols-outlined">photo_camera</span>
+          </button>
+          <textarea id="textInput" placeholder="Ask about products..." class="text-input-field" rows="1"></textarea>
+          <button id="interruptButton" class="input-action-button hidden" title="Interrupt Response">
+            <span class="material-symbols-outlined">stop</span>
+          </button>
+          <button id="sendButton" class="input-action-button send-button" title="Send Message" disabled>
+              <span class="material-symbols-outlined">arrow_upward</span>
+          </button>
+      </div>
+      <video id="videoPreview" style="max-width: 300px; border: 1px solid #ccc; margin-top: 10px;" class="hidden" autoplay playsinline></video>
+      <p class="text-xs text-center text-[var(--color-text-secondary)] pt-2">AI Assistant Demo. Output may not be accurate.</p>
+  </div>
+</div> 
+
+<script src="https://cdn.jsdelivr.net/npm/eventemitter3@5.0.1/dist/eventemitter3.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+<script type="module">
+  import { AudioRecorder } from './src/audio/audio-recorder.js';
+  import { AudioStreamer } from './src/audio/audio-streamer.js';
+  import { MediaHandler } from './src/media/media-handler.js';
+  import { GeminiAPI } from './src/api/gemini-api.js';
+  import { base64ToArrayBuffer } from './src/utils/utils.js';
+
+  // --- Chat Window Management ---
+  const chatContainer = document.getElementById('chatContainer');
+  const floatingChatBtn = document.getElementById('floatingChatBtn');
+  const minimizeChatBtn = document.getElementById('minimizeChatBtn');
+  let chatInitialized = false;
+
+  // Initialize chat connection only when user opens chat
+  function initializeChat() {
+    if (!chatInitialized) {
+      chatInitialized = true;
+      // Initialize API connection
+      api = new GeminiAPI(); // Uses endpoint from gemini-api.js
+
+      // Set up API event handlers (defined below)
+      setupAPIHandlers();
+
+      // Send user intro after connection is ready
+      api.onReady = () => {
+        apiReady = true;
+        micButton.disabled = false;
+        textInput.disabled = false;
+        updateSendButtonState();
+
+        // Send user info to backend if user is signed in
+        if (currentUser) {
+          const userIntroMessage = `My name is ${currentUser.firstName} ${currentUser.lastName}, email: ${currentUser.email}, customer ID: ${currentUser.customerId}.`;
+          api.sendTextMessage(userIntroMessage);
+          logMessage(`Signed in as ${currentUser.firstName} ${currentUser.lastName}`, 'system');
+        }
+      };
+    }
+  }
+
+  // Toggle chat window
+  floatingChatBtn.addEventListener('click', () => {
+    chatContainer.style.display = 'flex';
+    floatingChatBtn.style.display = 'none';
+    initializeChat();
+  });
+
+  minimizeChatBtn.addEventListener('click', () => {
+    chatContainer.style.display = 'none';
+    floatingChatBtn.style.display = 'flex';
+  });
+
+  // --- User Session Management ---
+  let currentUser = null;
+
+  // Update UI to show user profile
+  function updateUserUI() {
+    if (currentUser) {
+      document.getElementById('userNameDisplay').textContent = currentUser.firstName;
+      document.getElementById('userProfileHeader').style.display = 'flex';
+      document.getElementById('signOutBtn').style.display = 'flex';
+    } else {
+      document.getElementById('userProfileHeader').style.display = 'none';
+      document.getElementById('signOutBtn').style.display = 'none';
+    }
+  }
+
+  // Check if user is already signed in
+  const savedUser = localStorage.getItem('cymbalUser');
+  if (savedUser) {
+    currentUser = JSON.parse(savedUser);
+    document.getElementById('signInModal').style.display = 'none';
+    updateUserUI();
+  }
+
+  // Handle sign-in form submission
+  document.getElementById('signInForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    currentUser = {
+      firstName: document.getElementById('firstName').value.trim(),
+      lastName: document.getElementById('lastName').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      customerId: `CY-${Math.floor(Math.random() * 9000) + 1000}-${Math.floor(Math.random() * 9000) + 1000}`,
+      signInTime: new Date().toISOString()
+    };
+    localStorage.setItem('cymbalUser', JSON.stringify(currentUser));
+    document.getElementById('signInModal').style.display = 'none';
+    updateUserUI();
+    console.log('User signed in:', currentUser);
+    // Reload page to create new session with user info
+    window.location.reload();
+  });
+
+  // Handle sign-out
+  document.getElementById('signOutBtn').addEventListener('click', () => {
+    localStorage.removeItem('cymbalUser');
+    currentUser = null;
+    window.location.reload();
+  });
+
+  // --- Component References ---
+  const output = document.getElementById('output');
+  const micButton = document.getElementById('micButton');
+  const textInput = document.getElementById('textInput');
+  const sendButton = document.getElementById('sendButton');
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const showToolsToggle = document.getElementById('showToolsToggle');
+  const cameraButton = document.getElementById('cameraButton');
+  const videoPreview = document.getElementById('videoPreview');
+  const interruptButton = document.getElementById('interruptButton'); 
+  const micIcon = micButton.querySelector('.material-symbols-outlined');
+
+  // --- Class Instances ---
+  const audioRecorder = new AudioRecorder();
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+  const audioStreamer = new AudioStreamer(audioContext);
+  const mediaHandler = new MediaHandler();
+  let api = null; // Will be initialized when chat opens
+  
+  // --- State Variables ---
+  let isRecording = false;
+  let currentTurn = 0;
+  let lastAudioTurn = -1;
+  let currentGeminiMessageElement = null;
+  let hasLoggedUserAction = false;
+  let apiReady = false;
+  let showToolsOnly = false; // Default to showing conversation
+  let isCameraActive = false;
+
+  // --- Initialization ---
+  mediaHandler.initialize(videoPreview);
+  showToolsToggle.checked = showToolsOnly;
+  adjustTextareaHeight();
+  updateSendButtonState();
+  updateMessageVisibility();
+
+  // --- Helper Functions ---
+  function showLoading(show) {
+      loadingIndicator.classList.toggle('hidden', !show);
+      loadingIndicator.classList.toggle('flex', show);
+      const isLoading = !loadingIndicator.classList.contains('hidden');
+      textInput.disabled = isLoading;
+      updateSendButtonState(); // Update all buttons based on loading state
+  }
+
+  function addSpeakingIndicator(element) {
+      if (!element || element.querySelector('.speaking-indicator')) return;
+      const bubble = element.querySelector('.message-bubble p');
+      if (!bubble) return;
+      const indicator = document.createElement('span');
+      indicator.className = 'speaking-indicator';
+      indicator.innerHTML = `<span class="bar"></span><span class="bar"></span><span class="bar"></span>`;
+      bubble.prepend(indicator);
+  }
+
+  async function handleCameraButtonClick() {
+    if (!apiReady || isRecording) return;
+    if (isCameraActive) {
+        mediaHandler.stopAll();
+        videoPreview.classList.add('hidden');
+        isCameraActive = false;
+        cameraButton.classList.remove('recording');
+    } else {
+        const success = await mediaHandler.startWebcam();
+        if (success) {
+            videoPreview.classList.remove('hidden');
+            isCameraActive = true;
+            cameraButton.classList.add('recording');
+            mediaHandler.startFrameCapture((base64ImageData) => {
+                if (apiReady && isCameraActive) {
+                    api.sendImage(base64ImageData);
+                }
+            });
+        } else {
+            logMessage("Failed to start camera. Please check permissions.", 'system');
+        }
+    }
+    updateSendButtonState();
+  }
+
+  function removeSpeakingIndicator(element) {
+      const indicator = element?.querySelector('.speaking-indicator');
+      if (indicator) indicator.remove();
+  }
+
+  function scrollToBottom() {
+      setTimeout(() => { output.scrollTo({ top: output.scrollHeight, behavior: 'smooth' }); }, 50);
+  }
+
+  function adjustTextareaHeight() {
+      textInput.style.height = 'auto';
+      const scrollHeight = textInput.scrollHeight;
+      const maxHeight = 160;
+      textInput.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
+  }
+
+   function updateSendButtonState() {
+      const isLoading = !loadingIndicator.classList.contains('hidden');
+      const hasText = textInput.value.trim() !== '';
+      sendButton.disabled = !apiReady || isLoading || isRecording || !hasText;
+      micButton.disabled = !apiReady || isLoading;
+      cameraButton.disabled = !apiReady || isLoading || isRecording;
+  }
+
+  function updateMessageVisibility() {
+      const messages = output.querySelectorAll('.message-wrapper');
+      messages.forEach(msg => {
+          const isToolMessage = msg.classList.contains('function-call') || msg.classList.contains('function-response');
+          if (showToolsOnly) {
+              msg.style.display = isToolMessage ? 'flex' : 'none';
+          } else {
+              msg.style.display = isToolMessage ? 'none' : 'flex';
+          }
+      });
+      scrollToBottom();
+  }
+
+  // --- API Event Handlers ---
+  function setupAPIHandlers() {
+    if (!api) return;
+
+    api.onAudioData = async (audioData) => {
+      try {
+          if (!api.isSpeaking || lastAudioTurn !== currentTurn) {
+              api.isSpeaking = true;
+              lastAudioTurn = currentTurn;
+              interruptButton.classList.remove('hidden');
+              if (currentGeminiMessageElement) addSpeakingIndicator(currentGeminiMessageElement);
+          }
+          const arrayBuffer = base64ToArrayBuffer(audioData);
+          await audioStreamer.addPCM16(new Uint8Array(arrayBuffer));
+          audioStreamer.resume();
+      } catch (error) {
+          logMessage(`Audio Playback Error: ${error.message}`, 'system');
+      }
+  };
+
+  api.onTextContent = (text) => {
+    if (text.trim()) {
+      if (api.isSpeaking) showLoading(false);
+      logMessage(text, 'gemini');
+    }
+  };
+
+  api.onTurnComplete = () => {
+    showLoading(false);
+    api.isSpeaking = false;
+    audioStreamer.complete();
+    interruptButton.classList.add('hidden');
+    if (currentGeminiMessageElement) removeSpeakingIndicator(currentGeminiMessageElement);
+    currentGeminiMessageElement = null;
+    hasLoggedUserAction = false;
+    textInput.disabled = false;
+    micButton.disabled = !apiReady;
+    updateSendButtonState();
+  };
+
+  api.onInterrupted = (data) => {
+    showLoading(false);
+    logMessage('Response stopped.', 'system');
+    api.isSpeaking = false;
+    audioStreamer.stop();
+    interruptButton.classList.add('hidden');
+    if (currentGeminiMessageElement) removeSpeakingIndicator(currentGeminiMessageElement);
+    currentGeminiMessageElement = null;
+    hasLoggedUserAction = false;
+    if (isRecording) resetRecordingState();
+    textInput.disabled = false;
+    micButton.disabled = !apiReady;
+    updateSendButtonState();
+  };
+
+  api.onFunctionCall = (data) => {
+      showLoading(false);
+      logFunctionCall(data.name, data.args);
+  };
+  
+  api.onFunctionResponse = (data) => {
+      logFunctionResponse(data);
+  };
+
+  api.onError = (error) => {
+    logMessage(error.message || 'Connection error occurred', 'system');
+  };
+}
+
+  // --- Audio Recording ---
+  async function startRecording() {
+    if (!apiReady || isRecording) return;
+    try {
+      if (api.isSpeaking) {
+        audioStreamer.stop();
+        api.isSpeaking = false;
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      await audioContext.resume();
+      await audioRecorder.start();
+      if (!hasLoggedUserAction) {
+          currentTurn++;
+          logMessage('Listening...', 'user', false, false, true);
+          hasLoggedUserAction = true;
+      }
+      audioRecorder.on('data', (base64Data) => api.sendAudioChunk(base64Data));
+      isRecording = true;
+      micButton.classList.add('recording');
+      micIcon.textContent = 'stop';
+      micButton.title = "Stop Recording";
+      textInput.placeholder = "Listening...";
+      textInput.disabled = true;
+      sendButton.disabled = true;
+    } catch (error) {
+      logMessage('Error starting recording: ' + error.message, 'system');
+      resetRecordingState();
+    }
+  }
+
+  function stopRecording() {
+    if (!isRecording) return;
+    audioRecorder.stop();
+    const wasTemporary = !!output.querySelector('.user-message.temporary');
+    resetRecordingState();
+    if (wasTemporary) {
+        const listeningMessage = output.querySelector('.user-message.temporary');
+        if (listeningMessage) {
+            const bubbleContent = listeningMessage.querySelector('.message-bubble div');
+            if (bubbleContent) bubbleContent.innerHTML = '<p>Audio Sent</p>';
+            listeningMessage.classList.remove('temporary');
+        }
+    } else if (hasLoggedUserAction) {
+        logMessage('Audio Interaction', 'user');
+    }
+    api.sendEndMessage();
+  }
+
+  function resetRecordingState() {
+      isRecording = false;
+      audioRecorder.stop();
+      micButton.classList.remove('recording');
+      micIcon.textContent = 'mic';
+      micButton.title = "Start Recording";
+      textInput.placeholder = "Ask about products...";
+      const isLoading = !loadingIndicator.classList.contains('hidden');
+      textInput.disabled = isLoading || !apiReady;
+      updateSendButtonState();
+      audioRecorder.off('data');
+  }
+
+  // --- Message Logging ---
+  function logMessage(content, sender = 'system', isSpeaking = false, isMarkdown = false, isTemporary = false) {
+      const messageWrapper = document.createElement('div');
+      messageWrapper.classList.add('message-wrapper', `${sender}-message`);
+      if (isTemporary) messageWrapper.classList.add('temporary');
+      
+      const bubble = document.createElement('div');
+      bubble.classList.add('message-bubble');
+      
+      const contentContainer = document.createElement('div');
+      if (isMarkdown) {
+          marked.setOptions({ breaks: true, gfm: true, mangle: false, headerIds: false });
+          contentContainer.innerHTML = DOMPurify.sanitize(marked.parse(content), { USE_PROFILES: { html: true }, ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'a', 'code', 'pre', 'blockquote', 'hr', 'span', 'div', 'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td'], ALLOWED_ATTR: ['href', 'title', 'alt', 'src', 'class'] });
+      } else {
+          const para = document.createElement('p');
+          para.textContent = content;
+          contentContainer.appendChild(para);
+      }
+      bubble.appendChild(contentContainer);
+      messageWrapper.appendChild(bubble);
+      
+      if (sender === 'user' && !isTemporary) {
+          const tempMsg = output.querySelector('.user-message.temporary:last-child');
+          if (tempMsg) tempMsg.replaceWith(messageWrapper);
+          else output.appendChild(messageWrapper);
+      } else {
+           output.appendChild(messageWrapper);
+      }
+      
+      if (sender === 'gemini') {
+          currentGeminiMessageElement = messageWrapper;
+          if (isSpeaking || api.isSpeaking) {
+              addSpeakingIndicator(messageWrapper);
+          }
+      }
+      
+      updateMessageVisibility();
+  }
+  
+  // --- Agent/Tool Logging Functions (Restored) ---
+  function logFunctionCall(name, args) {
+      const messageWrapper = document.createElement('div');
+      messageWrapper.classList.add('message-wrapper', 'function-call', 'collapsible-tool');
+      const bubble = document.createElement('div');
+      bubble.classList.add('message-bubble');
+
+      const headerDiv = document.createElement('div');
+      headerDiv.classList.add('tool-header');
+      headerDiv.innerHTML = `
+          <span>
+              <span class="material-symbols-outlined function-icon">build_circle</span>
+              <strong>Agent Operator - Tool Call: ${name}</strong>
+          </span>
+          <span class="material-symbols-outlined tool-toggle">expand_more</span>`;
+
+      const detailsDiv = document.createElement('div');
+      detailsDiv.classList.add('tool-details', 'hidden');
+
+      try {
+          renderJsonNode(args, detailsDiv, 0);
+      } catch (e) {
+          detailsDiv.textContent = "Error displaying arguments";
+          console.error("Error rendering function call args:", e);
+      }
+
+      bubble.appendChild(headerDiv);
+      bubble.appendChild(detailsDiv);
+      messageWrapper.appendChild(bubble);
+      output.appendChild(messageWrapper);
+      updateMessageVisibility();
+  }
+
+  function logFunctionResponse(data) {
+      const messageWrapper = document.createElement('div');
+      messageWrapper.classList.add('message-wrapper', 'function-response', 'collapsible-tool');
+      const bubble = document.createElement('div');
+      bubble.classList.add('message-bubble');
+
+      const headerDiv = document.createElement('div');
+      headerDiv.classList.add('tool-header');
+      headerDiv.innerHTML = `
+          <span>
+              <span class="material-symbols-outlined function-icon">data_object</span>
+              <strong>Agent Operator - Tool Response</strong>
+          </span>
+          <span class="material-symbols-outlined tool-toggle">expand_more</span>`;
+          
+      const detailsDiv = document.createElement('div');
+      detailsDiv.classList.add('tool-details', 'hidden');
+      
+      try {
+          renderJsonNode(data, detailsDiv, 0);
+      } catch(e) {
+          detailsDiv.textContent = "Error displaying result";
+          console.error("Error rendering function response data:", e);
+      }
+
+      bubble.appendChild(headerDiv);
+      bubble.appendChild(detailsDiv);
+      messageWrapper.appendChild(bubble);
+      output.appendChild(messageWrapper);
+      updateMessageVisibility();
+  }
+  
+  // --- JSON Rendering Helpers (Restored) ---
+  function renderJsonNode(node, container, level = 0, keyName = null) {
+      container.innerHTML = ''; // Clear previous content
+
+      if (Array.isArray(node)) {
+          const arrayWrapper = document.createElement('div');
+          if (node.length === 0) {
+              arrayWrapper.textContent = ' (empty list)';
+              arrayWrapper.classList.add('text-gray-500', 'italic', 'text-xs');
+              container.appendChild(arrayWrapper);
+              return;
+          }
+          
+          const header = document.createElement('div');
+          header.classList.add('json-form-toggle-header');
+          const iconContent = level === 0 ? 'expand_less' : 'expand_more';
+          header.innerHTML = `<span class="material-symbols-outlined text-sm mr-1">${iconContent}</span> List Details (${node.length} items)`;
+          arrayWrapper.appendChild(header);
+
+          const contentContainer = document.createElement('div');
+          contentContainer.classList.add('json-form-collapsible-content');
+          if (level > 0) { contentContainer.classList.add('hidden'); }
+
+          node.forEach((item) => {
+              const itemContainer = document.createElement('div');
+              itemContainer.classList.add('json-form-array-item', 'border-t', 'border-gray-200', 'pt-2', 'mt-2');
+              renderJsonNode(item, itemContainer, level + 1);
+              contentContainer.appendChild(itemContainer);
+          });
+          arrayWrapper.appendChild(contentContainer);
+          container.appendChild(arrayWrapper);
+      } else if (typeof node === 'object' && node !== null) {
+          const keys = Object.keys(node);
+          if (keys.length === 0) {
+              container.textContent = ' (empty)';
+              container.classList.add('text-gray-500', 'italic', 'text-xs');
+              return;
+          }
+          
+          const contentContainer = document.createElement('div');
+          contentContainer.classList.add('json-form-object-content-toplevel');
+          keys.forEach((key) => {
+              renderObjectRow(key, node[key], contentContainer, level + 1);
+          });
+          container.appendChild(contentContainer);
+      } else {
+          const valueSpan = document.createElement('span');
+          valueSpan.classList.add('json-form-value');
+          if (typeof node === 'string') {
+              valueSpan.textContent = node;
+          } else if (typeof node === 'boolean') {
+              valueSpan.innerHTML = node
+                  ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Yes</span>'
+                  : '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">No</span>';
+          } else if (node === null) {
+              valueSpan.textContent = '-';
+              valueSpan.classList.add('text-gray-500');
+          } else {
+              valueSpan.textContent = String(node);
+          }
+          container.appendChild(valueSpan);
+      }
+  }
+
+  function renderObjectRow(key, value, parentContainer, level) {
+      const rowDiv = document.createElement('div');
+      rowDiv.classList.add('json-form-row');
+
+      const label = document.createElement('label');
+      label.textContent = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      label.classList.add('json-form-label');
+
+      const valueContainer = document.createElement('div');
+      valueContainer.classList.add('json-form-value-container');
+      renderJsonNode(value, valueContainer, level, key);
+
+      rowDiv.appendChild(label);
+      rowDiv.appendChild(valueContainer);
+      parentContainer.appendChild(rowDiv);
+  }
+
+  // --- Text Message Handling ---
+  function sendTextMessage() {
+    const text = textInput.value.trim();
+    if (!text || isRecording || !apiReady || textInput.disabled) return;
+    const currentContent = textInput.value;
+    textInput.value = '';
+    adjustTextareaHeight();
+    
+    if (!hasLoggedUserAction) {
+         currentTurn++;
+         hasLoggedUserAction = true;
+     }
+    logMessage(currentContent, 'user');
+    showLoading(true);
+    api.sendTextMessage(currentContent);
+  }
+
+  // --- Event Listeners ---
+  micButton.onclick = () => {
+    if (isRecording) stopRecording();
+    else startRecording();
+  };
+
+  sendButton.onclick = sendTextMessage;
+  
+  interruptButton.onclick = () => {
+    if (api.isSpeaking) api.interrupt();
+  };
+
+  textInput.addEventListener('input', () => {
+      adjustTextareaHeight();
+      updateSendButtonState();
+  });
+
+  textInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      sendButton.click();
+    }
+  });
+
+  cameraButton.onclick = handleCameraButtonClick;
+
+  showToolsToggle.addEventListener('change', () => {
+      showToolsOnly = showToolsToggle.checked;
+      updateMessageVisibility();
+  });
+
+  // Event listener for expanding/collapsing tool messages (delegated)
+  output.addEventListener('click', (event) => {
+      const toolHeader = event.target.closest('.tool-header');
+      if (toolHeader) {
+          const details = toolHeader.nextElementSibling;
+          const toggleIcon = toolHeader.querySelector('.tool-toggle');
+          if (details && toggleIcon) {
+              const isHidden = details.classList.toggle('hidden');
+              toggleIcon.textContent = isHidden ? 'expand_more' : 'expand_less';
+          }
+          return;
+      }
+      
+      const jsonToggleHeader = event.target.closest('.json-form-toggle-header');
+      if (jsonToggleHeader) {
+          const content = jsonToggleHeader.nextElementSibling;
+          const toggleIcon = jsonToggleHeader.querySelector('.material-symbols-outlined');
+          if (content && toggleIcon) {
+              const isHidden = content.classList.toggle('hidden');
+              toggleIcon.textContent = isHidden ? 'expand_more' : 'expand_less';
+          }
+      }
+  });
+
+</script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cymbal CRM - Approvals</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link rel="stylesheet" href="./static/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo-text">cymbal</div>
+                <span>CRM Portal</span>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="#"><span class="material-symbols-outlined">dashboard</span>Dashboard</a></li>
+                    <li><a href="#"><span class="material-symbols-outlined">group</span>Customers</a></li>
+                    <li class="active"><a href="#"><span class="material-symbols-outlined">approval</span>Approvals</a></li>
+                    <li><a href="#"><span class="material-symbols-outlined">inventory_2</span>Products</a></li>
+                    <li><a href="#"><span class="material-symbols-outlined">monitoring</span>Reports</a></li>
+                    <li><a href="#"><span class="material-symbols-outlined">settings</span>Settings</a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <p>&copy; 2025 Cymbal</p>
+            </div>
+        </aside>
+
+        <div class="main-content">
+            <header class="main-header">
+                <div class="header-title">
+                    <span class="material-symbols-outlined">approval</span>
+                    <h1>Customer Approval</h1>
+                </div>
+                <div class="header-actions">
+                    <button class="button icon-only" title="Notifications">
+                        <span class="material-symbols-outlined">notifications</span>
+                    </button>
+                    <div class="user-profile" title="User: CymbalManager">
+                        <span class="material-symbols-outlined">account_circle</span>
+                        <span>CymbalManager</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="page-content">
+                <div class="content-grid">
+                    <section class="card approval-card">
+                        <div class="card-header">
+                           <span class="material-symbols-outlined card-icon">assignment_ind</span>
+                           <h2>Approval Workflow</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="input-group">
+                                <label for="customerId">Customer ID:</label>
+                                <div class="input-with-icon">
+                                    <span class="material-symbols-outlined input-icon">badge</span>
+                                    <input type="text" id="customerId" name="customerId" placeholder="Enter Customer ID (e.g., CY-1234-1234)" value="CY-1234-1234">
+                                </div>
+                            </div>
+                            <div class="buttons">
+                                <button id="getStatusBtn" class="button secondary">
+                                    <span class="material-symbols-outlined">search</span>
+                                    Get Status
+                                </button>
+                                <button id="approveBtn" class="button primary">
+                                    <span class="material-symbols-outlined">check_circle</span>
+                                    Approve
+                                </button>
+                            </div>
+                            <div id="customerInfo" class="info-card" style="display: none;">
+                                <h3>
+                                    <span class="material-symbols-outlined">person</span>
+                                    Customer Information
+                                </h3>
+                                <div id="statusDisplay" class="status-details"></div>
+                            </div>
+                            <div id="errorMessage" class="error" style="display: none;"></div>
+                        </div>
+                    </section>
+
+                    <section class="card manager-info-card">
+                         <div class="card-header">
+                           <span class="material-symbols-outlined card-icon">supervisor_account</span>
+                           <h2>Manager Details</h2>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Responsible Manager:</strong> CymbalManager</p>
+                            <p><strong>Department:</strong> Customer Relations</p>
+                            <p><strong>Status:</strong> <span class="status-badge active">Available</span></p>
+                            <button class="button secondary small">
+                                <span class="material-symbols-outlined">contact_mail</span>
+                                Contact Manager
+                            </button>
+                        </div>
+                    </section>
+
+                     <section class="card ai-helper-card">
+                         <div class="card-header">
+                           <span class="material-symbols-outlined card-icon">smart_toy</span>
+                           <h2>AI Assistant</h2>
+                        </div>
+                        <div class="card-body">
+                            <p>Need help with this approval?</p>
+                            <div class="ai-buttons">
+                                <button class="button secondary small ai-button">
+                                    <span class="material-symbols-outlined">summarize</span>
+                                    Summarize Case
+                                </button>
+                                <button class="button secondary small ai-button">
+                                    <span class="material-symbols-outlined">rule</span>
+                                    Check Policy
+                                </button>
+                                <button class="button secondary small ai-button">
+                                    <span class="material-symbols-outlined">history_edu</span>
+                                    Draft Response
+                                </button>
+                            <div class="buttons" style="margin-top: 10px;">
+                                <button id="resetCartBtn" class="button secondary small">
+                                    <span class="material-symbols-outlined">shopping_cart_checkout</span>
+                                    Reset Cart (CY-1234-1234)
+                                </button>
+                            </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </main>
+
+            <footer class="main-footer">
+                <p>System Status: <span class="status-badge active">Online</span> | Logged in as: CymbalManager | &copy; 2025 Cymbal CRM</p>
+            </footer>
+        </div>
+    </div>
+
+    <script src="./static/script.js"></script>
+</body>
+</html> 

@@ -1,0 +1,47 @@
+# #websockets==14.1
+# #google-auth==2.37.0
+# #certifi==2024.12.14
+# #requests==2.32.3
+# #google-genai==0.5.0
+# #aiohttp==3.11.11
+# #python-dotenv==1.0.1
+# #google-api-python-client==2.122.0
+# #google-auth-oauthlib==1.2.0
+# google-cloud-secret-manager==2.19.0
+# db-dtypes
+# google-cloud-alloydb
+# google-cloud-alloydb-connector
+# immutabledict
+# pg8000
+# sqlglot
+# immutabledict
+# google-cloud-firestore
+# google-adk
+# google-genai>=0.5.0
+# google-adk>=0.1.0
+# websockets>=12.0
+# google-cloud-secret-manager
+# google-cloud-firestore
+# python-dotenv
+# requests
+
+# Main application dependencies
+google-genai>=0.5.0
+google-adk
+websockets>=12.0
+
+# Google Cloud dependencies
+google-cloud-secret-manager
+google-cloud-firestore
+google-cloud-alloydb
+google-cloud-alloydb-connector
+
+# Database and utility dependencies
+db-dtypes
+pg8000
+sqlglot
+immutabledict
+
+# Other dependencies
+python-dotenv
+requests
