@@ -2,7 +2,7 @@ timeout: 600s
 steps:
 # Build the container image
 - name: 'gcr.io/cloud-builders/docker'
-  args: [ 'build', '--no-cache', '-t', 'gcr.io/$PROJECT_ID/cymbal-crm', '.' ]
+  args: [ 'build', '--no-cache', '-t', 'gcr.io/$PROJECT_ID/cymbal-crm', './crm' ]
 
 # Push the container image to Container Registry
 - name: 'gcr.io/cloud-builders/docker'
