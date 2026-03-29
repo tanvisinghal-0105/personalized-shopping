@@ -69,7 +69,7 @@ def sync_ask_for_approval(type: str, value: float, reason: str, product_id: str 
     payload = {
         "menuId": 36,
         "menuLang": "en",
-        "customer_id": "GR-1234-1234",
+        "customer_id": "CY-1234-1234",
         "discount_type": type,
         "discount_value": value,
         "product_id": product_id,
@@ -87,7 +87,7 @@ def sync_ask_for_approval(type: str, value: float, reason: str, product_id: str 
 
     if db is not None:
         try:
-            db.collection('customers').document("GR-1234-1234").set(payload)
+            db.collection('customers').document("CY-1234-1234").set(payload)
         except Exception as e:
             logger.warning(f"Failed to save to Firestore: {e}")
 
@@ -97,7 +97,7 @@ def sync_ask_for_approval(type: str, value: float, reason: str, product_id: str 
     for i in range(300):
         if db is not None:
             try:
-                doc = db.collection('customers').document("GR-1234-1234").get()
+                doc = db.collection('customers').document("CY-1234-1234").get()
                 if doc.exists:
                     if doc.to_dict()['approval_status'] == "approved":
                         return "Manager approved the discount"

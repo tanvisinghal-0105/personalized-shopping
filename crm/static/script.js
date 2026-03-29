@@ -251,8 +251,49 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Function to reset approval status
+    async function resetApprovalStatus() {
+        const customerId = customerIdInput.value.trim();
+        if (!customerId) {
+            console.warn('Customer ID input is empty.');
+            displayError('Please enter a Customer ID.');
+            return;
+        }
+        const resetApprovalApiUrl = `/api/v1/reset_approval/${customerId}`;
+        console.log(`Sending POST request to reset approval status for customer ID: ${customerId} at ${resetApprovalApiUrl}`);
+
+        clearMessages();
+        customerInfoDiv.style.display = 'block';
+        statusDisplay.textContent = 'Resetting approval status...';
+
+        try {
+            const response = await fetch(resetApprovalApiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            console.log('Received response:', response);
+            const data = await response.json();
+
+            if (!response.ok) {
+                console.error(`API Error: Status ${response.status}, Message: ${data.detail || data.error || 'Unknown error'}`);
+                throw new Error(data.detail || data.error || `HTTP error! status: ${response.status}`);
+            }
+
+            console.log('Successfully reset approval status:', data);
+            displayStatus(`Approval status successfully reset to pending for customer ${customerId}.`);
+        } catch (error) {
+            console.error('Error resetting approval status:', error);
+            customerInfoDiv.style.display = 'none';
+            displayError(`Failed to reset approval status: ${error.message}`);
+        }
+    }
+
     getStatusBtn.addEventListener('click', getApprovalStatus);
     approveBtn.addEventListener('click', approveCustomer);
     resetCartBtn.addEventListener('click', resetCustomerCart);
+    const resetApprovalBtn = document.getElementById('resetApprovalBtn');
+    resetApprovalBtn.addEventListener('click', resetApprovalStatus);
     console.log('Event listeners added.');
 }); 

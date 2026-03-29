@@ -87,3 +87,23 @@ async def reset_cart(customer_id: str):
     db.collection('carts').document(customer_id).set(CUSTOMER_CART_INFO)
     logger.info(f"Mock cart info set up for customer ID: {customer_id}")
     return {"status": "success", "customer_id": customer_id, "cart_reset": True}
+
+
+# Add a route to reset approval status back to pending
+@app.post("/api/v1/reset_approval/{customer_id}")
+async def reset_approval_status(customer_id: str):
+    logger.info(f"Received POST request to reset approval status for customer ID: {customer_id}")
+    document = db.collection('customers').document(customer_id).get()
+    if document.exists:
+        try:
+            document.reference.update({
+                "approval_status": "pending"
+            })
+            logger.info(f"Successfully reset approval status to pending for customer ID: {customer_id}")
+            return {"status": "success", "customer_id": customer_id, "approval_status": "pending"}
+        except Exception as e:
+            logger.error(f"Error resetting approval status for customer ID {customer_id}: {e}")
+            raise fastapi.HTTPException(status_code=500, detail="Internal server error during approval status reset")
+    else:
+        logger.warning(f"Customer ID not found during reset approval request: {customer_id}")
+        raise fastapi.HTTPException(status_code=404, detail="Customer not found")

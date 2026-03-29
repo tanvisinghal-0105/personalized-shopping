@@ -8,7 +8,7 @@ db = firestore.Client()
 # Sample customer approval data
 SAMPLE_CUSTOMERS = [
     {
-        "customer_id": "GR-1234-1234",
+        "customer_id": "CY-1234-1234",
         "menuId": 36,
         "menuLang": "en",
         "discount_type": "price_match",
@@ -93,7 +93,7 @@ def initialize_sample_data():
             logger.info(f"Created customer document: {customer_id}")
 
         # Create sample cart
-        db.collection('carts').document("GR-1234-1234").set(SAMPLE_CART)
+        db.collection('carts').document("CY-1234-1234").set(SAMPLE_CART)
         logger.info("Created sample cart document")
 
         logger.info("Sample data initialization complete!")
