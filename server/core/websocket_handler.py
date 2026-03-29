@@ -354,8 +354,27 @@ async def handle_client(websocket: Any) -> None:
     logger.info(f"New client connected. Session ID: {session_id}")
 
     try:
-        # Get agent config ONCE to avoid creating agent twice
-        agent_config = get_agent_config()
+        # Extract customer info from query parameters
+        from urllib.parse import urlparse, parse_qs
+        parsed_url = urlparse(websocket.request.path)
+        query_params = parse_qs(parsed_url.query) if parsed_url.query else {}
+
+        # Get customer info from query parameters (each value is a list, take first element)
+        customer_id = query_params.get('customer_id', [None])[0]
+        first_name = query_params.get('first_name', [None])[0]
+        last_name = query_params.get('last_name', [None])[0]
+        email = query_params.get('email', [None])[0]
+
+        if customer_id:
+            logger.info(f"Customer info received: {first_name} {last_name} ({customer_id}) - {email}")
+
+        # Get agent config with customer personalization
+        agent_config = get_agent_config(
+            customer_id=customer_id,
+            first_name=first_name,
+            last_name=last_name,
+            email=email
+        )
         initial_session_state = agent_config.get("context", {})
 
         # Add dynamic context like current time

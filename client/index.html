@@ -404,8 +404,8 @@
   function initializeChat() {
     if (!chatInitialized) {
       chatInitialized = true;
-      // Initialize API connection
-      api = new GeminiAPI(); // Uses endpoint from gemini-api.js
+      // Initialize API connection with customer info
+      api = new GeminiAPI(null, currentUser); // Pass customer info for personalization
 
       // Set up API event handlers (defined below)
       setupAPIHandlers();
@@ -555,7 +555,7 @@
   }
 
   async function handleCameraButtonClick() {
-    if (!apiReady || isRecording) return;
+    if (!apiReady) return;  // Allow camera to work even when recording audio
     if (isCameraActive) {
         mediaHandler.stopAll();
         videoPreview.classList.add('hidden');
@@ -600,7 +600,7 @@
       const hasText = textInput.value.trim() !== '';
       sendButton.disabled = !apiReady || isLoading || isRecording || !hasText;
       micButton.disabled = !apiReady || isLoading;
-      cameraButton.disabled = !apiReady || isLoading || isRecording;
+      cameraButton.disabled = !apiReady || isLoading;  // Allow camera during audio recording
   }
 
   function updateMessageVisibility() {

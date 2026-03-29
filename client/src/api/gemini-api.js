@@ -1,12 +1,24 @@
 export class GeminiAPI {
-    constructor(endpoint = null) {
+    constructor(endpoint = null, customerInfo = null) {
         // If no endpoint is provided, try to construct it from the current URL
         if (!endpoint) {
             // Use the backend URL directly
             //endpoint = 'wss://live-agent-backend-lyja7bi4gq-uc.a.run.app'; // deployed backend
             endpoint = 'ws://localhost:8081'; // local development
         }
-        
+
+        // Append customer info as query parameters if provided
+        if (customerInfo && customerInfo.customerId) {
+            const params = new URLSearchParams({
+                customer_id: customerInfo.customerId,
+                first_name: customerInfo.firstName || '',
+                last_name: customerInfo.lastName || '',
+                email: customerInfo.email || ''
+            });
+            endpoint = `${endpoint}?${params.toString()}`;
+            console.log('Customer info added to WebSocket URL:', customerInfo);
+        }
+
         this.endpoint = endpoint;
         this.ws = null;
         this.isSpeaking = false;

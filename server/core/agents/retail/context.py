@@ -250,3 +250,48 @@ def _format_product_catalog():
 
 # Populate the available_products field with formatted catalog
 RetailContext.CUSTOMER_PROFILE["available_products"] = _format_product_catalog()
+
+def create_customer_profile(customer_id=None, first_name=None, last_name=None, email=None):
+    """
+    Create a dynamic customer profile based on provided customer information.
+    If no information is provided, returns the default profile.
+
+    Args:
+        customer_id: Customer ID (e.g., "CY-1234-5678")
+        first_name: Customer's first name
+        last_name: Customer's last name
+        email: Customer's email address
+
+    Returns:
+        dict: Customer profile with personalized information
+    """
+    # Start with a copy of the default profile
+    import copy
+    profile = copy.deepcopy(RetailContext.CUSTOMER_PROFILE)
+
+    # Update with provided customer information
+    if customer_id:
+        profile["customer_profile"]["customer_id"] = customer_id
+    if first_name:
+        profile["customer_profile"]["customer_first_name"] = first_name
+    if last_name:
+        profile["customer_profile"]["customer_last_name"] = last_name
+    if email:
+        profile["customer_profile"]["email"] = email
+
+    # For new customers (not the default), clear order history and adjust other fields
+    if customer_id and customer_id != "CY-1234-1234":
+        # New customer - clear historical data
+        profile["customer_profile"]["order_history"] = []
+        profile["customer_profile"]["loyalty_points"] = 0
+        profile["customer_profile"]["loyalty_program"]["points_balance"] = 0
+        profile["customer_profile"]["registered_devices"] = []
+        profile["customer_profile"]["scheduled_appointments"] = {}
+        profile["customer_profile"]["current_cart"]["items"] = []
+        profile["customer_profile"]["current_cart"]["subtotal"] = 0
+        # Update customer start date to today
+        profile["customer_profile"]["customer_start_date"] = datetime.now().strftime("%Y-%m-%d")
+        profile["customer_profile"]["loyalty_program"]["member_since"] = datetime.now().strftime("%Y-%m-%d")
+        profile["customer_profile"]["years_as_customer"] = 0
+
+    return profile
