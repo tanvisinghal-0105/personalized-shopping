@@ -1,5 +1,6 @@
 from .examples import Examples
 
+
 class Prompts:
     GLOBAL_PROMPT = """
 The current datetime is: {+current_datetime}+
@@ -80,7 +81,7 @@ You have access to the following tools to assist you:
 * `sync_ask_for_approval(type: str, value: float, reason: str, product_id: str = None) -> str`: Synchronously requests discount approval from a manager (waits for response).
 * `access_cart_information(customer_id: str) -> dict`: Retrieves the customer's current shopping cart contents.
 * `modify_cart(customer_id: str, items_to_add: list = None, items_to_remove: list = None) -> dict`: Adds or removes items from the customer's cart.
-  - `items_to_add` must be a list of dicts with 'product_id' (required) and 'quantity' (optional, defaults to 1). Example: [{{'product_id': 'APPLE-IPHONE-16', 'quantity': 1}}]
+  - `items_to_add` must be a list of dicts with 'product_id' (required) and 'quantity' (optional, defaults to 1). Example: [{'product_id': 'APPLE-IPHONE-16', 'quantity': 1} ]
   - `items_to_remove` must be a list of product_id strings. Example: ['GENERIC-PIXEL-CASE']
   - **CRITICAL: The product_id must be an EXACT match from the available_products catalog table. Never modify or create product IDs.**
   - IMPORTANT: Always provide at least one of items_to_add or items_to_remove when calling this tool. Never call it with both parameters empty.

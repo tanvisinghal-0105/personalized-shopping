@@ -9,6 +9,7 @@ from google.adk.agents.callback_context import CallbackContext
 from google.adk.events import Event, EventActions
 from .logger import logger
 
+
 class SessionUtils:
     """A set of utility methods that help manipulate Session context."""
 
@@ -42,23 +43,26 @@ class SessionUtils:
         Builds a types.Content object. (Same as before)
         """
         if isinstance(content, str):
-            return types.Content(role="model", parts=[types.Part(text=content)])
+            return types.Content(
+                role="model", parts=[
+                    types.Part(
+                        text=content)])
         else:
             raise ValueError(f"Unsupported content type: {type(content)}")
-        
+
         # TODO: Add other content types
-        
+
     @staticmethod
     def get_state(
         context: CallbackContext | ToolContext | InvocationContext
-        ) -> Dict[str, Any]:
+    ) -> Dict[str, Any]:
         """Get the current state based on provided context."""
         if isinstance(context, CallbackContext):
             return context._invocation_context.session.state
 
         elif isinstance(context, ToolContext):
             return context._invocation_context.session.state
-        
+
         elif isinstance(context, InvocationContext):
             return context.session.state
 
@@ -67,8 +71,8 @@ class SessionUtils:
 
     @staticmethod
     def update_state(
-        context: CallbackContext | ToolContext | InvocationContext,
-        data: Dict[str, Any]) -> None:
+            context: CallbackContext | ToolContext | InvocationContext,
+            data: Dict[str, Any]) -> None:
         """Update all k/v pairs in data back into session state."""
         if isinstance(context, InvocationContext):
             for k, v in data.items():
@@ -94,10 +98,9 @@ class SessionUtils:
         else:
             final_list = existing_list + [
                 item for item in new_list if item not in existing_list
-                ]
-        
-        return final_list
+            ]
 
+        return final_list
 
     def model_response(
             self, text: str = None, function_call: types.FunctionCall = None,
@@ -106,9 +109,14 @@ class SessionUtils:
 
         ROLE = "model"
         if text:
-            return types.Content(role=ROLE, parts=[types.Part.from_text(text=text)])
+            return types.Content(
+                role=ROLE, parts=[
+                    types.Part.from_text(
+                        text=text)])
         elif function_call:
-            return types.Content(role=ROLE, parts=[types.Part.from_function_call(function_call)])
+            return types.Content(
+                role=ROLE, parts=[
+                    types.Part.from_function_call(function_call)])
         elif function_response:
             return types.Content(role=ROLE, parts=[function_response])
         else:
@@ -122,7 +130,8 @@ class SessionUtils:
             event_options: Dict[str, Any] = None) -> Event:
         """Method to simplify Event response object."""
 
-        event_options_obj = EventActions(**event_options) if event_options else None
+        event_options_obj = EventActions(
+            **event_options) if event_options else None
 
         if isinstance(context, InvocationContext):
             invocation_id = context.invocation_id
@@ -150,5 +159,4 @@ class SessionUtils:
                 author=author,
                 content=self.model_response(
                     text=text, function_call=function_call)
-                )
-
+            )

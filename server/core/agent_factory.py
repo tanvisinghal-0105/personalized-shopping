@@ -5,7 +5,11 @@ from core.agents.retail.context import RetailContext, create_customer_profile
 from .logger import logger
 
 
-def get_agent_config(customer_id=None, first_name=None, last_name=None, email=None):
+def get_agent_config(
+        customer_id=None,
+        first_name=None,
+        last_name=None,
+        email=None):
     """
     Get agent configuration with optional customer personalization.
 
@@ -29,7 +33,8 @@ def get_agent_config(customer_id=None, first_name=None, last_name=None, email=No
 
         # Create personalized customer profile if customer info is provided
         if customer_id or first_name or last_name or email:
-            logger.info(f"Creating personalized profile for customer: {first_name} {last_name} ({customer_id})")
+            logger.info(
+                f"Creating personalized profile for customer: {first_name} {last_name} ({customer_id})")
             customer_profile = create_customer_profile(
                 customer_id=customer_id,
                 first_name=first_name,
@@ -42,7 +47,8 @@ def get_agent_config(customer_id=None, first_name=None, last_name=None, email=No
 
         agent_config["context"] = customer_profile
         # Pass context to agent so prompts are formatted with actual values
-        agent_config["root_agent"] = create_retail_agent(context=customer_profile)
+        agent_config["root_agent"] = create_retail_agent(
+            context=customer_profile)
 
     else:
         raise ValueError(f"Unknown DEMO_TYPE: `{DEMO_TYPE}`")

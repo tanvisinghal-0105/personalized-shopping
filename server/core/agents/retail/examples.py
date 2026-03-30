@@ -297,4 +297,3 @@ Also, I see you have a Sonos Beam soundbar would pair perfectly with this TV if 
 
     # Keep MAIN_EXAMPLES pointing to the comprehensive one
     MAIN_EXAMPLES = FULL_SCRIPT_EXAMPLE
-

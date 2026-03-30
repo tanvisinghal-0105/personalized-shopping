@@ -8,6 +8,7 @@ from google.adk.runners import Runner
 from google.adk.agents import LiveRequestQueue
 from .logger import logger
 
+
 class SessionState:
     """
     Represents the state of a user/agent session, encapsulating the agent, services, and context.
@@ -37,6 +38,7 @@ class SessionState:
         current_audio_stream (Optional[Any]): The current audio stream object (if any).
         received_model_response (bool): Flag indicating if a model response has been received in the current turn.
     """
+
     def __init__(
             self,
             agent: Agent,
@@ -45,7 +47,7 @@ class SessionState:
             session_service: str = "in_memory",
             artifact_service: str = "in_memory",
             context: Dict[str, Any] = None,
-            ):
+    ):
         self.agent = agent
         self.app_name = app_name
         self.user_id = user_id
@@ -63,10 +65,11 @@ class SessionState:
 
         self.is_receiving_response: bool = False
         self.interrupted: bool = False
-        #self.current_tool_execution: Optional[asyncio.Task] = None
+        # self.current_tool_execution: Optional[asyncio.Task] = None
         self.current_audio_stream: Optional[Any] = None
-        #genai_session: Optional[Any] = None
-        self.received_model_response: bool = False  # Track if we've received a model response in current turn
+        # genai_session: Optional[Any] = None
+        # Track if we've received a model response in current turn
+        self.received_model_response: bool = False
 
     def _get_session_service(self):
         """
@@ -82,7 +85,9 @@ class SessionState:
             if self.session_service_type == "in_memory":
                 self.session_service = InMemorySessionService()
             else:
-                raise ValueError(f"Unknown session_service: {self.session_service_type}")
+                raise ValueError(
+                    f"Unknown session_service: {
+                        self.session_service_type}")
         return self.session_service
 
     def _get_artifact_service(self):
@@ -99,7 +104,9 @@ class SessionState:
             if self.artifact_service_type == "in_memory":
                 self.artifact_service = InMemoryArtifactService()
             else:
-                raise ValueError(f"Unknown artifact_service: {self.artifact_service_type}")
+                raise ValueError(
+                    f"Unknown artifact_service: {
+                        self.artifact_service_type}")
         return self.artifact_service
 
     def _set_num_agents_for_session(self, agent: Agent):
@@ -115,7 +122,9 @@ class SessionState:
     def log_event_output(self, event: Event):
 
         try:
-            res = event.content.model_dump(exclude_none=True).get("parts", None)
+            res = event.content.model_dump(
+                exclude_none=True).get(
+                "parts", None)
         except Exception as e:
             logger.debug(f"e:{e}\nevent:{event}")
             return None
@@ -137,7 +146,7 @@ class SessionState:
                 logger.info(f"TOOL RESULT: {part['function_response']}")
 
         return res
-            
+
     def setup(self):
         """
         Sets up the session, runner, and services.
@@ -170,5 +179,5 @@ class SessionState:
             agent=self.agent,
             artifact_service=self.artifact_service,
             session_service=self.session_service,
-            #response_modalities=CONFIG["generation_config"]["response_modalities"]
+            # response_modalities=CONFIG["generation_config"]["response_modalities"]
         )

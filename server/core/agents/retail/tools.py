@@ -12,11 +12,11 @@ from config.config import RECOMMENDATION_MODEL
 # Initialize Firestore client with error handling
 db = None
 CUSTOMER_CART_INFO = {
-    'cart_id': 'CART-112233', # Use example ID for consistency
+    'cart_id': 'CART-112233',  # Use example ID for consistency
     'items': {
         'GENERIC-PIXEL-CASE': {'sku': '1122334', 'name': 'Generic Google Pixel Case', 'quantity': 1, 'price': 19}},
     'subtotal': 19,
-    'last_updated': '2025-04-23 11:05:00' # Use example timestamp
+    'last_updated': '2025-04-23 11:05:00'  # Use example timestamp
 }
 
 try:
@@ -26,9 +26,11 @@ try:
 
     # Carts will be created dynamically per customer when needed
     # No need for hardcoded cart initialization
-    logger.info("Firestore ready - carts will be created per customer dynamically")
+    logger.info(
+        "Firestore ready - carts will be created per customer dynamically")
 except Exception as e:
-    logger.warning(f"Firestore initialization failed: {e}. Running without Firestore support.")
+    logger.warning(
+        f"Firestore initialization failed: {e}. Running without Firestore support.")
     db = None
 
 
@@ -43,27 +45,45 @@ PRODUCT_CATALOG = {
     for product in RetailContext.PRODUCT_CATALOG
 }
 
+
 def send_call_companion_link(phone_number: str) -> str:
     """Sends a link to the user's phone number to connect the call with the companion app."""
     logger.info(f"Sending call companion link to {phone_number}...")
     return {"status": "success", "message": f"Link sent to {phone_number}"}
 
-def approve_discount(type: str, value: float, reason: str, product_id: str = "") -> dict:
+
+def approve_discount(
+        type: str,
+        value: float,
+        reason: str,
+        product_id: str = "") -> dict:
     """Approves a flat rate or percentage discount for a product or service, based on predefined rules."""
-    logger.info(f"Attempting to approve discount: type={type}, value={value}, reason={reason}, product_id={product_id}")
+    logger.info(
+        f"Attempting to approve discount: type={type}, value={value}, reason={reason}, product_id={product_id}")
     logger.info("INSIDE TOOL CALL")
     # Example: Apply price match approval from example.py logic
     if product_id == 'GOOGLE-PIXEL9PRO-CASE' and type == 'price_match' and value == 59.99:
-         return {"status": "approved", "message": f"Price match to {value} EUR approved for {product_id}."}
+        return {
+            "status": "approved",
+            "message": f"Price match to {value} EUR approved for {product_id}."}
     # Example: Apply bundle discount from example.py
     # if product_id == 'PLUSGARANTIE-PIXEL' and type == 'percentage' and value == 10:
     #      return {"status": "approved", "message": f"Discount of {value}{'%' if type == 'percentage' else 'EUR'} approved for {product_id}."}
     # Fallback generic approval
-    return {"status": "approved", "message": f"Discount of {value}{'%' if type == 'percentage' else 'EUR'} approved."}
+    return {
+        "status": "approved",
+        "message": f"Discount of {value}{
+            '%' if type == 'percentage' else 'EUR'} approved."}
 
-def sync_ask_for_approval(type: str, value: float, reason: str, product_id: str = "") -> str:
+
+def sync_ask_for_approval(
+        type: str,
+        value: float,
+        reason: str,
+        product_id: str = "") -> str:
     """Asks a manager for approval synchronously (waits for a response)."""
-    logger.info(f"Requesting sync manager approval for discount: type={type}, value={value}, reason={reason}, product_id={product_id}")
+    logger.info(
+        f"Requesting sync manager approval for discount: type={type}, value={value}, reason={reason}, product_id={product_id}")
     url = "https://escalation-handler-243114688021.us-central1.run.app/request"
     payload = {
         "menuId": 36,
@@ -79,10 +99,8 @@ def sync_ask_for_approval(type: str, value: float, reason: str, product_id: str 
             "allow": "My manager says ok",
             "deny": "My manager says no",
             "timeout": "Sorry I did not hear back from my manager",
-            "error": "Sorry but I've had some trouble getting hold of my manager"
-            },
-        "escalationHost": "chat-escalation-243114688021.us-central1.run.app"
-        }
+            "error": "Sorry but I've had some trouble getting hold of my manager"},
+        "escalationHost": "chat-escalation-243114688021.us-central1.run.app"}
 
     if db is not None:
         try:
@@ -107,11 +125,10 @@ def sync_ask_for_approval(type: str, value: float, reason: str, product_id: str 
             # Without Firestore, simulate approval for demo purposes
             time.sleep(2)
             return "Manager approved the discount (simulated)"
-        
+
         time.sleep(1)
 
     logger.info("Manager approval not received after 5 minutes")
-
 
     logger.info("Sending request to manager...")
     headers = {'Content-Type': 'application/json'}
@@ -123,11 +140,15 @@ def sync_ask_for_approval(type: str, value: float, reason: str, product_id: str 
         logger.info("Manager approved the discount")
         return response.text  # Return the response text if the status code is 200
     else:
-        logger.warning("Simulating sync denial or timeout for unspecified request.")
+        logger.warning(
+            "Simulating sync denial or timeout for unspecified request.")
         # Simulate a denied or timeout scenario for other cases
         return '{"status":"denied", "message":"Manager approval denied or timed out for this request."}'
 
-def identify_phone_from_camera_feed(image_data: Optional[str] = None, customer_id: Optional[str] = None) -> dict:
+
+def identify_phone_from_camera_feed(
+        image_data: Optional[str] = None,
+        customer_id: Optional[str] = None) -> dict:
     """
     Identifies a phone model from a camera feed using Gemini Vision API.
 
@@ -138,15 +159,19 @@ def identify_phone_from_camera_feed(image_data: Optional[str] = None, customer_i
     Returns:
         A dictionary containing the identified phone model and a message.
     """
-    logger.info(f"Attempting to identify phone from camera feed using Gemini Vision. Customer ID: {customer_id}")
+    logger.info(
+        f"Attempting to identify phone from camera feed using Gemini Vision. Customer ID: {customer_id}")
 
     if image_data:
-        logger.info(f"Image data received (length: {len(image_data)} characters). Processing with Gemini Vision...")
+        logger.info(
+            f"Image data received (length: {
+                len(image_data)} characters). Processing with Gemini Vision...")
 
         # Extract base64 data if it's in data URI format
         if image_data.startswith('data:'):
             # Format: "data:image/jpeg;base64,<base64data>"
-            image_base64 = image_data.split(',')[1] if ',' in image_data else image_data
+            image_base64 = image_data.split(
+                ',')[1] if ',' in image_data else image_data
         else:
             image_base64 = image_data
 
@@ -206,7 +231,8 @@ Response (model name only):"""
             response = client.models.generate_content(
                 model=vision_model,
                 contents=[
-                    types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+                    types.Part.from_bytes(
+                        data=image_bytes, mime_type="image/jpeg"),
                     prompt
                 ],
                 config=types.GenerateContentConfig(
@@ -219,7 +245,8 @@ Response (model name only):"""
             identified_model = response.text.strip()
 
             # Clean up the response
-            identified_model = identified_model.replace('"', '').replace("'", '')
+            identified_model = identified_model.replace(
+                '"', '').replace("'", '')
 
             logger.info(f"Gemini Vision identified: {identified_model}")
 
@@ -238,10 +265,13 @@ Response (model name only):"""
             }
 
         except Exception as e:
-            logger.error(f"Error using Gemini Vision for phone identification: {e}")
+            logger.error(
+                f"Error using Gemini Vision for phone identification: {e}")
             # Fallback to default
             identified_model = "Unknown Device (identification error)"
-            message = f"I had trouble analyzing the image. Error: {str(e)[:100]}"
+            message = f"I had trouble analyzing the image. Error: {
+                str(e)[
+                    :100]}"
             return {
                 "status": "error",
                 "identified_phone_model": identified_model,
@@ -249,7 +279,8 @@ Response (model name only):"""
                 "image_data_processed": False
             }
     else:
-        logger.warning("No image data was provided to the identify_phone_from_camera_feed tool.")
+        logger.warning(
+            "No image data was provided to the identify_phone_from_camera_feed tool.")
 
         return {
             "status": "error",
@@ -257,6 +288,7 @@ Response (model name only):"""
             "message": "This tool requires image data to identify a phone. However, you have access to the live camera feed in your context - you can see the camera images directly and should analyze them without calling this tool. Look at the visual content you're receiving and identify the phone based on what you actually see (brand logos, camera design, shape, etc.). Do not make assumptions or use defaults.",
             "image_data_processed": False
         }
+
 
 def access_cart_information(customer_id: str) -> dict:
     """Retrieves the contents of the user's shopping cart.
@@ -276,7 +308,8 @@ def access_cart_information(customer_id: str) -> dict:
             if mock_cart.exists:
                 mock_cart = mock_cart.to_dict()
                 # Convert items from dict to array if needed
-                if mock_cart and 'items' in mock_cart and isinstance(mock_cart['items'], dict):
+                if mock_cart and 'items' in mock_cart and isinstance(
+                        mock_cart['items'], dict):
                     mock_cart['items'] = [
                         {
                             'product_id': product_id,
@@ -288,7 +321,8 @@ def access_cart_information(customer_id: str) -> dict:
                     ]
             else:
                 # Cart doesn't exist yet, initialize empty cart
-                logger.info(f"No cart found for customer {customer_id}, initializing empty cart")
+                logger.info(
+                    f"No cart found for customer {customer_id}, initializing empty cart")
                 mock_cart = {
                     "cart_id": f"CART-{customer_id[-6:]}",
                     "items": [],
@@ -296,7 +330,8 @@ def access_cart_information(customer_id: str) -> dict:
                     "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
         except Exception as e:
-            logger.warning(f"Failed to access Firestore: {e}. Using empty cart.")
+            logger.warning(
+                f"Failed to access Firestore: {e}. Using empty cart.")
             mock_cart = {
                 "cart_id": f"CART-{customer_id[-6:]}",
                 "items": [],
@@ -316,7 +351,11 @@ def access_cart_information(customer_id: str) -> dict:
     return mock_cart
 
 
-def modify_cart(customer_id: str, items_to_add: Optional[List[Dict[str, Any]]] = None, items_to_remove: Optional[List[str]] = None, has_manager_approval: bool = False) -> dict:
+def modify_cart(customer_id: str,
+                items_to_add: Optional[List[Dict[str,
+                                                 Any]]] = None,
+                items_to_remove: Optional[List[str]] = None,
+                has_manager_approval: bool = False) -> dict:
     """Modifies the user's shopping cart by adding and/or removing items."""
     logger.info(f"Modifying cart for customer ID: {customer_id}")
     items_added_flag = False
@@ -330,11 +369,14 @@ def modify_cart(customer_id: str, items_to_add: Optional[List[Dict[str, Any]]] =
             if mock_cart.exists:
                 current_mock_backend_cart = mock_cart.to_dict()
                 # Ensure items is a dict for manipulation
-                if 'items' not in current_mock_backend_cart or not isinstance(current_mock_backend_cart['items'], dict):
+                if 'items' not in current_mock_backend_cart or not isinstance(
+                        current_mock_backend_cart['items'], dict):
                     current_mock_backend_cart['items'] = {}
             else:
-                # Cart doesn't exist yet, initialize empty cart for this customer
-                logger.info(f"No cart found for customer {customer_id}, initializing empty cart")
+                # Cart doesn't exist yet, initialize empty cart for this
+                # customer
+                logger.info(
+                    f"No cart found for customer {customer_id}, initializing empty cart")
                 current_mock_backend_cart = {
                     'cart_id': f"CART-{customer_id[-6:]}",
                     'items': {},
@@ -342,7 +384,8 @@ def modify_cart(customer_id: str, items_to_add: Optional[List[Dict[str, Any]]] =
                     'last_updated': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
         except Exception as e:
-            logger.warning(f"Failed to access Firestore: {e}. Using empty cart.")
+            logger.warning(
+                f"Failed to access Firestore: {e}. Using empty cart.")
             current_mock_backend_cart = {
                 'cart_id': f"CART-{customer_id[-6:]}",
                 'items': {},
@@ -359,7 +402,6 @@ def modify_cart(customer_id: str, items_to_add: Optional[List[Dict[str, Any]]] =
             'last_updated': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
 
-
     if items_to_add:
         logger.info(f"Adding items: {items_to_add}")
         # Validate all product IDs BEFORE adding any items
@@ -369,7 +411,8 @@ def modify_cart(customer_id: str, items_to_add: Optional[List[Dict[str, Any]]] =
             # Check for None or empty product_id
             if not prod_id or prod_id not in PRODUCT_CATALOG:
                 invalid_products.append(prod_id if prod_id else "None")
-                logger.warning(f"INVALID PRODUCT ID: {prod_id} not found in catalog")
+                logger.warning(
+                    f"INVALID PRODUCT ID: {prod_id} not found in catalog")
 
         # If any invalid products, return error immediately
         if invalid_products:
@@ -381,13 +424,16 @@ def modify_cart(customer_id: str, items_to_add: Optional[List[Dict[str, Any]]] =
                     continue
                 # Look for similar product IDs (e.g., same brand/category)
                 invalid_lower = invalid_id.lower()
-                for valid_id in list(PRODUCT_CATALOG.keys())[:10]:  # Sample first 10
-                    if any(word in valid_id.lower() for word in invalid_lower.split('-')[:2]):
+                for valid_id in list(
+                        PRODUCT_CATALOG.keys())[:10]:  # Sample first 10
+                    if any(word in valid_id.lower()
+                           for word in invalid_lower.split('-')[:2]):
                         suggestions.append(valid_id)
                         if len(suggestions) >= 3:
                             break
 
-            error_msg = f"ERROR: Invalid product ID(s): {', '.join(invalid_products)}. "
+            error_msg = f"ERROR: Invalid product ID(s): {
+                ', '.join(invalid_products)}. "
             error_msg += "These products do not exist in the catalog. "
             error_msg += "You MUST use EXACT product IDs from the available_products catalog table. "
             error_msg += "NEVER create or modify product IDs. "
@@ -419,7 +465,6 @@ def modify_cart(customer_id: str, items_to_add: Optional[List[Dict[str, Any]]] =
                 }
             items_added_flag = True
 
-
     if items_to_remove:
         logger.info(f"Removing items: {items_to_remove}")
         # Mock removing items (expects list of product_ids)
@@ -430,47 +475,48 @@ def modify_cart(customer_id: str, items_to_add: Optional[List[Dict[str, Any]]] =
                 del current_mock_backend_cart['items'][prod_id]
                 items_removed_flag = True
             else:
-                 logger.warning(f"Product ID {prod_id} not found in mock cart for removal.")
-
+                logger.warning(
+                    f"Product ID {prod_id} not found in mock cart for removal.")
 
     # MOCK API RESPONSE - Construct based on the simulated backend cart
     if items_added_flag or items_removed_flag or has_manager_approval:
         # Recalculate subtotal for the mock cart
-        new_subtotal = sum(item['price'] * item['quantity'] for item in current_mock_backend_cart['items'].values())
-        # Apply price match adjustment specifically for OtterBox if present (as done in example checkout)
+        new_subtotal = sum(item['price'] * item['quantity']
+                           for item in current_mock_backend_cart['items'].values())
+        # Apply price match adjustment specifically for OtterBox if present (as
+        # done in example checkout)
         if 'GOOGLE-PIXEL9PRO-CASE' in current_mock_backend_cart['items'] and has_manager_approval:
-             original_price = PRODUCT_CATALOG['GOOGLE-PIXEL9PRO-CASE']['price']
-             matched_price = 45 # From example
-             price_diff = original_price - matched_price
-             new_subtotal -= price_diff * current_mock_backend_cart['items']['GOOGLE-PIXEL9PRO-CASE']['quantity']
-             # Reflect matched price in item data for clarity
-             current_mock_backend_cart['items']['GOOGLE-PIXEL9PRO-CASE']['price'] = matched_price
-
+            original_price = PRODUCT_CATALOG['GOOGLE-PIXEL9PRO-CASE']['price']
+            matched_price = 45  # From example
+            price_diff = original_price - matched_price
+            new_subtotal -= price_diff * \
+                current_mock_backend_cart['items']['GOOGLE-PIXEL9PRO-CASE']['quantity']
+            # Reflect matched price in item data for clarity
+            current_mock_backend_cart['items']['GOOGLE-PIXEL9PRO-CASE']['price'] = matched_price
 
         # Convert items dict to array for client compatibility
-        updated_cart_list = [
-            {
-                'product_id': product_id,
-                'name': data['name'],
-                'price': data['price'],
-                'sku': data['sku'],
-                'quantity': data['quantity']
-            } for product_id, data in current_mock_backend_cart['items'].items()
-        ]
+        updated_cart_list = [{'product_id': product_id,
+                              'name': data['name'],
+                              'price': data['price'],
+                              'sku': data['sku'],
+                              'quantity': data['quantity']} for product_id,
+                             data in current_mock_backend_cart['items'].items()]
 
         # Construct the final updated cart structure
         final_updated_cart = {
             'cart_id': current_mock_backend_cart['cart_id'],
             'items': updated_cart_list,
             'subtotal': round(new_subtotal, 2),
-            'last_updated': datetime.now().strftime("%Y-%m-%d %H:%M:%S") # Update timestamp
+            'last_updated': datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Update timestamp
         }
 
         # Update the mock backend cart state using dynamic customer_id
         if db is not None:
             try:
-                db.collection('carts').document(customer_id).set(final_updated_cart)
-                logger.info(f"Cart updated in Firestore for customer {customer_id}")
+                db.collection('carts').document(
+                    customer_id).set(final_updated_cart)
+                logger.info(
+                    f"Cart updated in Firestore for customer {customer_id}")
             except Exception as e:
                 logger.warning(f"Failed to update cart in Firestore: {e}")
 
@@ -479,10 +525,11 @@ def modify_cart(customer_id: str, items_to_add: Optional[List[Dict[str, Any]]] =
             "message": "Cart updated successfully.",
             "items_added": items_added_flag,
             "items_removed": items_removed_flag,
-            "updated_cart": final_updated_cart # Return the new state of the cart
+            "updated_cart": final_updated_cart  # Return the new state of the cart
         }
     else:
-        # If no changes, fetch the current state using access_cart_information's logic
+        # If no changes, fetch the current state using
+        # access_cart_information's logic
         current_cart_state = access_cart_information(customer_id)
         return {
             "status": "no_change",
@@ -493,15 +540,20 @@ def modify_cart(customer_id: str, items_to_add: Optional[List[Dict[str, Any]]] =
         }
 
 
-def get_product_recommendations(interest: str = "", customer_id: str = "", current_product_id: str = "") -> dict:
+def get_product_recommendations(
+        interest: str = "",
+        customer_id: str = "",
+        current_product_id: str = "") -> dict:
     """Provides product recommendations based on interests, purchase history, or related items using Gemini AI."""
-    logger.info(f"Getting product recommendations for interest: {interest}, customer: {customer_id}, related_to: {current_product_id}")
+    logger.info(
+        f"Getting product recommendations for interest: {interest}, customer: {customer_id}, related_to: {current_product_id}")
 
     if not interest:
         # Return random products if no interest specified
         fallback_recommendations = []
         for product in RetailContext.PRODUCT_CATALOG:
-            if product['product_id'] != current_product_id and product.get('in_stock', True):
+            if product['product_id'] != current_product_id and product.get(
+                    'in_stock', True):
                 fallback_recommendations.append({
                     "product_id": product['product_id'],
                     "name": product['name'],
@@ -521,7 +573,11 @@ def get_product_recommendations(interest: str = "", customer_id: str = "", curre
         catalog_text = "Available products:\n"
         for product in RetailContext.PRODUCT_CATALOG:
             if product['product_id'] != current_product_id:
-                catalog_text += f"- {product['product_id']}: {product['name']} ({product['category']}) - €{product['price']:.2f}\n"
+                catalog_text += f"- {
+                    product['product_id']}: {
+                    product['name']} ({
+                    product['category']}) - €{
+                    product['price']:.2f}\n"
 
         prompt = f"""You are a product recommendation expert. Based on the customer's interest, recommend the 3 most relevant products from the catalog.
 
@@ -569,7 +625,9 @@ Choose products that best match the customer's interest. For example:
                     })
                     break
 
-        logger.info(f"Gemini recommended {len(recommendations)} products for '{interest}'")
+        logger.info(
+            f"Gemini recommended {
+                len(recommendations)} products for '{interest}'")
 
         if recommendations:
             return {"recommendations": recommendations[:3]}
@@ -581,7 +639,8 @@ Choose products that best match the customer's interest. For example:
     # Fallback: return random popular products if Gemini fails
     fallback_recommendations = []
     for product in RetailContext.PRODUCT_CATALOG:
-        if product['product_id'] != current_product_id and product.get('in_stock', True):
+        if product['product_id'] != current_product_id and product.get(
+                'in_stock', True):
             fallback_recommendations.append({
                 "product_id": product['product_id'],
                 "name": product['name'],
@@ -592,9 +651,13 @@ Choose products that best match the customer's interest. For example:
     return {"recommendations": fallback_recommendations[:3]}
 
 
-def check_product_availability(product_id: str, store_id: str = "GR-ONLINE", quantity: int = 1) -> dict:
+def check_product_availability(
+        product_id: str,
+        store_id: str = "GR-ONLINE",
+        quantity: int = 1) -> dict:
     """Checks the availability of a product at a specified store or for online order."""
-    logger.info(f"Checking availability for product ID: {product_id}, quantity: {quantity} at store/channel: {store_id}")
+    logger.info(
+        f"Checking availability for product ID: {product_id}, quantity: {quantity} at store/channel: {store_id}")
     # MOCK API RESPONSE - Include products from example.py
     available = False
     stock_quantity = 0
@@ -609,22 +672,23 @@ def check_product_availability(product_id: str, store_id: str = "GR-ONLINE", qua
         available = True
         stock_quantity = random.randint(10, 40)
         location = "GR-ONLINE"
-    elif product_id == "PLUSGARANTIE-PIXEL": # Service/Digital product
+    elif product_id == "PLUSGARANTIE-PIXEL":  # Service/Digital product
         available = True
-        stock_quantity = 999 # Essentially unlimited
+        stock_quantity = 999  # Essentially unlimited
         location = "GR-ONLINE / In Store"
     elif product_id == "GOOGLE-30W-POWERADAPTER":
         available = True
         stock_quantity = random.randint(15, 60)
-        location = "GR-ONLINE / GR-BERLIN" # Available both
+        location = "GR-ONLINE / GR-BERLIN"  # Available both
     elif product_id == "PIXEL-6-128GB-BLK":
-        available = random.choice([True, True, False]) # Simulate varying stock
+        # Simulate varying stock
+        available = random.choice([True, True, False])
         stock_quantity = random.randint(0, 10) if available else 0
         location = "GR-ONLINE / GR-BERLIN"
     elif product_id == "GENERIC-PIXEL-CASE":
-         available = True
-         stock_quantity = random.randint(20, 100)
-         location = "GR-ONLINE / GR-BERLIN"
+        available = True
+        stock_quantity = random.randint(20, 100)
+        location = "GR-ONLINE / GR-BERLIN"
     # Keep existing logic for other products
     elif product_id == "APPLE-IPAD-AIR-M1-64GB":
         if store_id == "GR-BERLIN" or store_id == "GR-ONLINE":
@@ -634,23 +698,38 @@ def check_product_availability(product_id: str, store_id: str = "GR-ONLINE", qua
             available = False
             stock_quantity = 0
     elif product_id == "LOGI-MX-MASTER3S":
-         available = True
-         stock_quantity = random.randint(10, 50)
-         location = "GR-ONLINE"
-    else: # Default for unlisted products
+        available = True
+        stock_quantity = random.randint(10, 50)
+        location = "GR-ONLINE"
+    else:  # Default for unlisted products
         available = random.choice([True, False])
         stock_quantity = random.randint(0, 15) if available else 0
         location = store_id if store_id else "GR-ONLINE"
 
     final_availability = available and stock_quantity >= quantity
-    return {"product_id": product_id, "requested_quantity": quantity, "available": final_availability, "available_quantity": stock_quantity, "location": location}
+    return {
+        "product_id": product_id,
+        "requested_quantity": quantity,
+        "available": final_availability,
+        "available_quantity": stock_quantity,
+        "location": location}
 
 
-def schedule_service_appointment(customer_id: str, service_type: str, date: str, time_slot: str, store_id: str = "GR-BERLIN", product_id: Optional[str] = None, issue_description: Optional[str] = None) -> dict:
+def schedule_service_appointment(
+        customer_id: str,
+        service_type: str,
+        date: str,
+        time_slot: str,
+        store_id: str = "GR-BERLIN",
+        product_id: Optional[str] = None,
+        issue_description: Optional[str] = None) -> dict:
     """Schedules a service appointment (e.g., repair drop-off, consultation)."""
-    logger.info(f"Scheduling {service_type} for customer {customer_id} at {store_id} on {date} at {time_slot}.")
-    if product_id: logger.info(f"Related Product: {product_id}")
-    if issue_description: logger.info(f"Details: {issue_description}")
+    logger.info(
+        f"Scheduling {service_type} for customer {customer_id} at {store_id} on {date} at {time_slot}.")
+    if product_id:
+        logger.info(f"Related Product: {product_id}")
+    if issue_description:
+        logger.info(f"Details: {issue_description}")
 
     # MOCK API RESPONSE - Replace with actual scheduling system API call
     appointment_id = f"APP-{random.randint(10000, 99999)}"
@@ -659,7 +738,8 @@ def schedule_service_appointment(customer_id: str, service_type: str, date: str,
         start_time = time_slot.split('-')[0].strip()
         confirmation_datetime_str = f"{date} {start_time}:00"
     except (AttributeError, IndexError):
-        confirmation_datetime_str = f"{date} {time_slot}" # Fallback if format is unexpected
+        # Fallback if format is unexpected
+        confirmation_datetime_str = f"{date} {time_slot}"
 
     return {
         "status": "success",
@@ -671,34 +751,61 @@ def schedule_service_appointment(customer_id: str, service_type: str, date: str,
         "store_id": store_id
     }
 
-def get_available_service_times(date: str, service_type: str, store_id: str = "GR-BERLIN", duration_minutes: int = 60) -> list:
+
+def get_available_service_times(
+        date: str,
+        service_type: str,
+        store_id: str = "GR-BERLIN",
+        duration_minutes: int = 60) -> list:
     """Retrieves available time slots for a specific service type and date."""
-    # Note: duration_minutes parameter added to match prompt, but not used in mock logic yet.
-    logger.info(f"Retrieving available {service_type} times for {date} at {store_id} (duration: {duration_minutes} mins)")
+    # Note: duration_minutes parameter added to match prompt, but not used in
+    # mock logic yet.
+    logger.info(
+        f"Retrieving available {service_type} times for {date} at {store_id} (duration: {duration_minutes} mins)")
     # MOCK API RESPONSE - Replace with actual scheduling system API call
     if date >= datetime.now().strftime("%Y-%m-%d"):
         return ["09:00-10:00", "10:00-11:00", "14:00-15:00", "16:00-17:00"]
     else:
-        return [] 
+        return []
 
-def send_product_information(customer_id: str, product_id: str, info_type: str = "manual", delivery_method: str = "email") -> dict:
+
+def send_product_information(
+        customer_id: str,
+        product_id: str,
+        info_type: str = "manual",
+        delivery_method: str = "email") -> dict:
     """Sends product information (e.g., manual, warranty details, order summary) to the customer."""
-    logger.info(f"Sending {info_type} for product {product_id} to customer: {customer_id} via {delivery_method}")
+    logger.info(
+        f"Sending {info_type} for product {product_id} to customer: {customer_id} via {delivery_method}")
     # MOCK API RESPONSE - Replace with actual document/email sending logic
     if info_type == "order summary and pickup details":
-         message = f"Order summary and pickup details for order related to {product_id} sent via {delivery_method}."
+        message = f"Order summary and pickup details for order related to {product_id} sent via {delivery_method}."
     else:
-         message = f"Product information ({info_type}) for {product_id} sent via {delivery_method}."
+        message = f"Product information ({info_type}) for {product_id} sent via {delivery_method}."
 
     return {"status": "success", "message": message}
 
-def generate_qr_code(customer_id: str, discount_value: float, discount_type: str = "percentage", expiration_days: int = 30, usage_limit: int = 1, description: str = "Loyalty Discount") -> dict:
+
+def generate_qr_code(
+        customer_id: str,
+        discount_value: float,
+        discount_type: str = "percentage",
+        expiration_days: int = 30,
+        usage_limit: int = 1,
+        description: str = "Loyalty Discount") -> dict:
     """Generates a QR code for a discount or offer."""
-    logger.info(f"Generating QR code for customer: {customer_id} - {discount_value}{'%' if discount_type == 'percentage' else 'EUR'} discount. Desc: {description}")
+    logger.info(
+        f"Generating QR code for customer: {customer_id} - {discount_value}{
+            '%' if discount_type == 'percentage' else 'EUR'} discount. Desc: {description}")
     # MOCK API RESPONSE - Match example.py output format
-    expiration_date = (datetime.now() + timedelta(days=expiration_days)).strftime("%Y-%m-%d")
+    expiration_date = (
+        datetime.now() +
+        timedelta(
+            days=expiration_days)).strftime("%Y-%m-%d")
     # Construct payload similar to example
-    qr_code_payload = f"MOCK_QR_CODE_FOR_CUSTOMER:{customer_id};DISCOUNT:{discount_value};TYPE:{discount_type};EXP:{expiration_date};DESC:{description.replace(' ','_')};LIMIT:{usage_limit}"
+    qr_code_payload = f"MOCK_QR_CODE_FOR_CUSTOMER:{customer_id};DISCOUNT:{discount_value};TYPE:{discount_type};EXP:{expiration_date};DESC:{
+        description.replace(
+            ' ', '_')};LIMIT:{usage_limit}"
 
     return {
         "status": "success",
@@ -709,49 +816,65 @@ def generate_qr_code(customer_id: str, discount_value: float, discount_type: str
     }
 
 
-def process_exchange_request(customer_id: str, original_order_id: str, original_product_id: str, reason: str, desired_product_id: Optional[str] = None) -> dict:
+def process_exchange_request(
+        customer_id: str,
+        original_order_id: str,
+        original_product_id: str,
+        reason: str,
+        desired_product_id: Optional[str] = None) -> dict:
     """Processes an exchange request for a product."""
     # Made desired_product_id Optional to match prompt
-    logger.info(f"Processing exchange for customer {customer_id}, order {original_order_id}, product {original_product_id}. Reason: {reason}. New Product: {desired_product_id}")
-    # Mock exchange processing - Replace with actual order management/RMA system API call
+    logger.info(
+        f"Processing exchange for customer {customer_id}, order {original_order_id}, product {original_product_id}. Reason: {reason}. New Product: {desired_product_id}")
+    # Mock exchange processing - Replace with actual order management/RMA
+    # system API call
     exchange_id = f"EXCH-{random.randint(1000, 9999)}"
-    policy_met = random.choice([True, False, True]) # More likely to meet policy for mock
+    # More likely to meet policy for mock
+    policy_met = random.choice([True, False, True])
 
     if policy_met:
         price_difference = 0
         if desired_product_id:
-             # Simulate getting prices - replace with actual lookup
-             original_price = random.uniform(50, 1000)
-             new_price = random.uniform(50, 1000)
-             price_difference = new_price - original_price
+            # Simulate getting prices - replace with actual lookup
+            original_price = random.uniform(50, 1000)
+            new_price = random.uniform(50, 1000)
+            price_difference = new_price - original_price
 
         message = f"Exchange approved (ID: {exchange_id}). Please return the original item '{original_product_id}'. "
         if desired_product_id:
             if price_difference > 0.01:
-                 message += f"An additional payment of {price_difference:.2f} EUR is required for '{desired_product_id}'."
+                message += f"An additional payment of {
+                    price_difference:.2f} EUR is required for '{desired_product_id}'."
             elif price_difference < -0.01:
-                 message += f"A refund of {-price_difference:.2f} EUR will be issued upon return of the original item."
+                message += f"A refund of {
+                    -price_difference:.2f} EUR will be issued upon return of the original item."
             else:
-                 message += f"There is no price difference for '{desired_product_id}'."
+                message += f"There is no price difference for '{desired_product_id}'."
         else:
-             message += "A refund or store credit will be processed upon return."
+            message += "A refund or store credit will be processed upon return."
 
         return {
             "status": "approved",
             "exchange_id": exchange_id,
             "message": message,
             "return_instructions": "Please bring the original product with packaging and receipt to your nearest store or use the provided shipping label (if applicable).",
-            "price_difference": round(price_difference, 2)
-        }
+            "price_difference": round(
+                price_difference,
+                2)}
     else:
         return {
             "status": "rejected",
             "exchange_id": None,
             "message": "Exchange request could not be approved based on the return policy (e.g., outside return window, condition issues, non-exchangeable item).",
-            "price_difference": None
-        }
+            "price_difference": None}
 
-def get_trade_in_value(product_category: str, brand: str, model: str, condition: str, storage: Optional[str] = None) -> dict:
+
+def get_trade_in_value(
+        product_category: str,
+        brand: str,
+        model: str,
+        condition: str,
+        storage: Optional[str] = None) -> dict:
     """
     Provides an estimated trade-in value for a used device.
 
@@ -765,7 +888,8 @@ def get_trade_in_value(product_category: str, brand: str, model: str, condition:
     Returns:
         A dictionary with the estimated trade-in value and related information.
     """
-    logger.info(f"Calculating trade-in value for: Category='{product_category}', Brand='{brand}', Model='{model}', Condition='{condition}', Storage='{storage}'")
+    logger.info(
+        f"Calculating trade-in value for: Category='{product_category}', Brand='{brand}', Model='{model}', Condition='{condition}', Storage='{storage}'")
 
     # --- MOCK TRADE-IN VALUE LOGIC ---
     # In a real application, this would query a database or a third-party API.
@@ -798,7 +922,7 @@ def get_trade_in_value(product_category: str, brand: str, model: str, condition:
                 base_value += 40
         elif "pixel 7" in model.lower():
             base_value = 80
-        elif "pixel tablet" in model.lower(): # Example for tablet
+        elif "pixel tablet" in model.lower():  # Example for tablet
             base_value = 150
     elif brand.lower() == "samsung":
         if "galaxy s21" in model.lower():
@@ -812,8 +936,7 @@ def get_trade_in_value(product_category: str, brand: str, model: str, condition:
             "message": "Could not determine a base trade-in value for the specified device. It might not be eligible or recognized.",
             "estimated_value_min": 0,
             "estimated_value_max": 0,
-            "currency": currency
-        }
+            "currency": currency}
 
     # Adjust value based on condition
     condition_multiplier = 1.0
@@ -823,30 +946,35 @@ def get_trade_in_value(product_category: str, brand: str, model: str, condition:
         condition_multiplier = 0.8
     elif condition.lower() == "fair":
         condition_multiplier = 0.6
-    elif condition.lower() == "damaged": # e.g., cracked screen but functional
+    elif condition.lower() == "damaged":  # e.g., cracked screen but functional
         condition_multiplier = 0.3
-    else: # unknown condition
+    else:  # unknown condition
         condition_multiplier = 0.5
 
     estimated_value = base_value * condition_multiplier
 
     # Provide a range
-    estimated_value_min = max(0, estimated_value * 0.85) # e.g., 85% of estimate
+    estimated_value_min = max(
+        0,
+        estimated_value *
+        0.85)  # e.g., 85% of estimate
     estimated_value_max = estimated_value * 1.10       # e.g., 110% of estimate
 
     # Round to sensible values
-    estimated_value_min = round(estimated_value_min / 5) * 5 # Round to nearest 5 EUR
+    estimated_value_min = round(
+        estimated_value_min / 5) * 5  # Round to nearest 5 EUR
     estimated_value_max = round(estimated_value_max / 5) * 5
 
     if estimated_value_max > 0:
         status = "success"
-        message = f"Trade-in value estimated between {estimated_value_min:.2f} and {estimated_value_max:.2f} {currency}. Final value depends on inspection."
+        message = f"Trade-in value estimated between {
+            estimated_value_min:.2f} and {
+            estimated_value_max:.2f} {currency}. Final value depends on inspection."
     else:
-        status = "success" # Still a success in terms of processing, but value is zero
+        status = "success"  # Still a success in terms of processing, but value is zero
         message = "The device is eligible for trade-in, but the estimated value is currently 0 EUR based on the provided details."
         estimated_value_min = 0
         estimated_value_max = 0
-
 
     return {
         "status": status,
@@ -867,7 +995,7 @@ def get_trade_in_value(product_category: str, brand: str, model: str, condition:
 def lookup_warranty_details(product_id: str) -> dict:
     """
     Looks up warranty details for a given product ID.
-    
+
     Args:
         product_id: The ID of the product to look up warranty details for (e.g. Pixel 9 Pro, Pixel 9, etc.).
 
@@ -875,7 +1003,7 @@ def lookup_warranty_details(product_id: str) -> dict:
         A dictionary with the estimated trade-in value and related information.
     """
 
-    if "pixel" in product_id.lower() and not "plusgarantie" in product_id.lower():
+    if "pixel" in product_id.lower() and "plusgarantie" not in product_id.lower():
         logger.info(f"Lookup warranty details for Pixel device: {product_id}")
         return {
             "status": "success",
@@ -892,7 +1020,8 @@ def lookup_warranty_details(product_id: str) -> dict:
         }
 
     elif "plusgarantie" in product_id.lower() and "pixel" in product_id.lower():
-        logger.info(f"Lookup warranty details for PlusGarantie Pixel device: {product_id}")
+        logger.info(
+            f"Lookup warranty details for PlusGarantie Pixel device: {product_id}")
         return {
             "status": "success",
             "warranty_details": {
@@ -902,7 +1031,8 @@ def lookup_warranty_details(product_id: str) -> dict:
             }
         }
     else:
-        logger.info(f"Lookup warranty details for default device: {product_id}")
+        logger.info(
+            f"Lookup warranty details for default device: {product_id}")
         return {
             "status": "success",
             "warranty_details": {
