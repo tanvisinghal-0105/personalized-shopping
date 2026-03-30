@@ -13,13 +13,14 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv(find_dotenv())
 
-PROJECT_ID = os.environ.get('PROJECT_ID', 'next-2025-ces')
-LOCATION = os.environ.get('VERTEX_LOCATION', 'us-central1')
-DEMO_TYPE = os.environ.get('DEMO_TYPE', 'retail')
+PROJECT_ID = os.environ.get("PROJECT_ID", "next-2025-ces")
+LOCATION = os.environ.get("VERTEX_LOCATION", "us-central1")
+DEMO_TYPE = os.environ.get("DEMO_TYPE", "retail")
 
 
 class ConfigurationError(Exception):
     """Custom exception for configuration errors."""
+
     pass
 
 
@@ -43,14 +44,14 @@ def get_secret(secret_id: str) -> str:
 def check_api_key_available() -> bool:
     """Check if AI Studio API key is available from Secret Manager or environment."""
     try:
-        api_key = get_secret('GOOGLE_API_KEY')
+        api_key = get_secret("GOOGLE_API_KEY")
         if api_key:
             logger.info("AI Studio API key found in Secret Manager")
             return True
     except Exception as e:
         logger.debug(f"API key not found in Secret Manager: {e}")
 
-    api_key = os.getenv('GOOGLE_API_KEY')
+    api_key = os.getenv("GOOGLE_API_KEY")
     if api_key:
         logger.info("AI Studio API key found in environment")
         return True
@@ -59,15 +60,17 @@ def check_api_key_available() -> bool:
     return False
 
 
-USE_VERTEX_OVERRIDE = os.getenv('GOOGLE_GENAI_USE_VERTEXAI')
+USE_VERTEX_OVERRIDE = os.getenv("GOOGLE_GENAI_USE_VERTEXAI")
 if USE_VERTEX_OVERRIDE is not None:
     USE_VERTEX = int(USE_VERTEX_OVERRIDE)
     logger.info(
-        f"Using explicit GOOGLE_GENAI_USE_VERTEXAI setting: {USE_VERTEX}")
+        f"Using explicit GOOGLE_GENAI_USE_VERTEXAI setting: {USE_VERTEX}"
+    )
 else:
     USE_VERTEX = 0 if check_api_key_available() else 1
     logger.info(
-        f"Auto-detected backend based on API key availability - Vertex AI: {USE_VERTEX}")
+        f"Auto-detected backend based on API key availability - Vertex AI: {USE_VERTEX}"
+    )
 
 
 class ApiConfig:
@@ -80,14 +83,16 @@ class ApiConfig:
         """Initialize API credentials."""
         if not USE_VERTEX:
             try:
-                self.api_key = get_secret('GOOGLE_API_KEY')
+                self.api_key = get_secret("GOOGLE_API_KEY")
             except Exception as e:
                 logger.warning(
-                    f"Failed to get API key from Secret Manager: {e}")
-                self.api_key = os.getenv('GOOGLE_API_KEY')
+                    f"Failed to get API key from Secret Manager: {e}"
+                )
+                self.api_key = os.getenv("GOOGLE_API_KEY")
                 if not self.api_key:
                     raise ConfigurationError(
-                        "No API key available from Secret Manager or environment")
+                        "No API key available from Secret Manager or environment"
+                    )
 
 
 # Initialize API configuration
@@ -95,97 +100,103 @@ api_config = ApiConfig()
 
 # Model configuration
 if USE_VERTEX == 1:
-    MODEL = os.getenv('MODEL_VERTEX_API', 'gemini-live-2.5-flash-native-audio')
-    AGENT_MODEL = os.getenv('AGENT_MODEL_VERTEX_API', MODEL)
+    MODEL = os.getenv("MODEL_VERTEX_API", "gemini-live-2.5-flash-native-audio")
+    AGENT_MODEL = os.getenv("AGENT_MODEL_VERTEX_API", MODEL)
     RECOMMENDATION_MODEL = os.getenv(
-        'RECOMMENDATION_MODEL',
-        'gemini-3.1-pro-preview')
-    VOICE = os.getenv('VOICE_VERTEX_API', 'Aoede')
+        "RECOMMENDATION_MODEL", "gemini-3.1-pro-preview"
+    )
+    VOICE = os.getenv("VOICE_VERTEX_API", "Aoede")
     print(
-        f"Use Vertex API with live model: {MODEL}, agent model: {AGENT_MODEL}, and voice {VOICE}")
+        f"Use Vertex API with live model: {MODEL}, agent model: {AGENT_MODEL}, and voice {VOICE}"
+    )
     print(f"Recommendation model: {RECOMMENDATION_MODEL}")
 else:
-    MODEL = os.getenv('MODEL_DEV_API', 'gemini-3.1-flash-live-preview')
-    AGENT_MODEL = os.getenv('AGENT_MODEL_DEV_API', MODEL)
+    MODEL = os.getenv("MODEL_DEV_API", "gemini-3.1-flash-live-preview")
+    AGENT_MODEL = os.getenv("AGENT_MODEL_DEV_API", MODEL)
     RECOMMENDATION_MODEL = os.getenv(
-        'RECOMMENDATION_MODEL',
-        'gemini-3.1-pro-preview')
-    VOICE = os.getenv('VOICE_DEV_API', 'Puck')
+        "RECOMMENDATION_MODEL", "gemini-3.1-pro-preview"
+    )
+    VOICE = os.getenv("VOICE_DEV_API", "Puck")
     print(
-        f"Use Dev API (AI Studio) with live model: {MODEL}, agent model: {AGENT_MODEL}, and voice {VOICE}")
+        f"Use Dev API (AI Studio) with live model: {MODEL}, agent model: {AGENT_MODEL}, and voice {VOICE}"
+    )
     print(f"Recommendation model: {RECOMMENDATION_MODEL}")
 
 # ADK Feature Flags
-USE_INTERACTIONS_API = os.getenv(
-    'USE_INTERACTIONS_API',
-    'false').lower() == 'true'
-ENABLE_CONTEXT_CACHING = os.getenv(
-    'ENABLE_CONTEXT_CACHING',
-    'true').lower() == 'true'
+USE_INTERACTIONS_API = (
+    os.getenv("USE_INTERACTIONS_API", "false").lower() == "true"
+)
+ENABLE_CONTEXT_CACHING = (
+    os.getenv("ENABLE_CONTEXT_CACHING", "true").lower() == "true"
+)
 logger.info(
-    f"ADK Features - Interactions API: {USE_INTERACTIONS_API}, Context Caching: {ENABLE_CONTEXT_CACHING}")
+    f"ADK Features - Interactions API: {USE_INTERACTIONS_API}, Context Caching: {ENABLE_CONTEXT_CACHING}"
+)
 
 # Voice Activity Detection (VAD) Configuration
-VAD_ENABLED = os.getenv('VAD_ENABLED', 'true').lower() == 'true'
+VAD_ENABLED = os.getenv("VAD_ENABLED", "true").lower() == "true"
 VAD_START_SENSITIVITY = os.getenv(
-    'VAD_START_SENSITIVITY',
-    'LOW')  # LOW or HIGH
-VAD_END_SENSITIVITY = os.getenv('VAD_END_SENSITIVITY', 'LOW')  # LOW or HIGH
-VAD_PREFIX_PADDING_MS = int(os.getenv('VAD_PREFIX_PADDING_MS', '20'))
-VAD_SILENCE_DURATION_MS = int(os.getenv('VAD_SILENCE_DURATION_MS', '100'))
-ALLOW_INTERRUPTION = os.getenv('ALLOW_INTERRUPTION', 'true').lower() == 'true'
+    "VAD_START_SENSITIVITY", "LOW"
+)  # LOW or HIGH
+VAD_END_SENSITIVITY = os.getenv("VAD_END_SENSITIVITY", "LOW")  # LOW or HIGH
+VAD_PREFIX_PADDING_MS = int(os.getenv("VAD_PREFIX_PADDING_MS", "20"))
+VAD_SILENCE_DURATION_MS = int(os.getenv("VAD_SILENCE_DURATION_MS", "100"))
+ALLOW_INTERRUPTION = os.getenv("ALLOW_INTERRUPTION", "true").lower() == "true"
 
 logger.info(
-    f"VAD Configuration - Enabled: {VAD_ENABLED}, Start Sensitivity: {VAD_START_SENSITIVITY}, End Sensitivity: {VAD_END_SENSITIVITY}")
+    f"VAD Configuration - Enabled: {VAD_ENABLED}, Start Sensitivity: {VAD_START_SENSITIVITY}, End Sensitivity: {VAD_END_SENSITIVITY}"
+)
 logger.info(
-    f"VAD Timing - Prefix Padding: {VAD_PREFIX_PADDING_MS}ms, Silence Duration: {VAD_SILENCE_DURATION_MS}ms, Allow Interruption: {ALLOW_INTERRUPTION}")
+    f"VAD Timing - Prefix Padding: {VAD_PREFIX_PADDING_MS}ms, Silence Duration: {VAD_SILENCE_DURATION_MS}ms, Allow Interruption: {ALLOW_INTERRUPTION}"
+)
 
 # Load system instructions
 try:
-    with open('config/system-instructions.txt', 'r') as f:
+    with open("config/system-instructions.txt", "r") as f:
         SYSTEM_INSTRUCTIONS = f.read()
 except Exception as e:
     logger.error(f"Failed to load system instructions: {e}")
     SYSTEM_INSTRUCTIONS = ""
 
 logger.info(f"System instructions: {SYSTEM_INSTRUCTIONS}")
-available_languages = {"de-DE": "German (Germany)",
-                       "en-AU": "English (Australia)",
-                       "en-GB": "English (United Kingdom)",
-                       "en-IN": "English (India)",
-                       "es-US": "Spanish (United States)",
-                       "fr-FR": "French (France)",
-                       "hi-IN": "Hindi (India)",
-                       "pt-BR": "Portuguese (Brazil)",
-                       "ar-XA": "Arabic (Generic)",
-                       "es-ES": "Spanish (Spain)",
-                       "fr-CA": "French (Canada)",
-                       "id-ID": "Indonesian (Indonesia)",
-                       "it-IT": "Italian (Italy)",
-                       "ja-JP": "Japanese (Japan)",
-                       "tr-TR": "Turkish (Turkey)",
-                       "vi-VN": "Vietnamese (Vietnam)",
-                       "bn-IN": "Bengali (India)",
-                       "gu-IN": "Gujarati (India)",
-                       "kn-IN": "Kannada (India)",
-                       "ml-IN": "Malayalam (India)",
-                       "mr-IN": "Marathi (India)",
-                       "ta-IN": "Tamil (India)",
-                       "te-IN": "Telugu (India)",
-                       "nl-NL": "Dutch (Netherlands)",
-                       "ko-KR": "Korean (South Korea)",
-                       "cmn-CN": "Mandarin Chinese (China)",
-                       "pl-PL": "Polish (Poland)",
-                       "ru-RU": "Russian (Russia)",
-                       "th-TH": "Thai (Thailand)"
-                       }
+available_languages = {
+    "de-DE": "German (Germany)",
+    "en-AU": "English (Australia)",
+    "en-GB": "English (United Kingdom)",
+    "en-IN": "English (India)",
+    "es-US": "Spanish (United States)",
+    "fr-FR": "French (France)",
+    "hi-IN": "Hindi (India)",
+    "pt-BR": "Portuguese (Brazil)",
+    "ar-XA": "Arabic (Generic)",
+    "es-ES": "Spanish (Spain)",
+    "fr-CA": "French (Canada)",
+    "id-ID": "Indonesian (Indonesia)",
+    "it-IT": "Italian (Italy)",
+    "ja-JP": "Japanese (Japan)",
+    "tr-TR": "Turkish (Turkey)",
+    "vi-VN": "Vietnamese (Vietnam)",
+    "bn-IN": "Bengali (India)",
+    "gu-IN": "Gujarati (India)",
+    "kn-IN": "Kannada (India)",
+    "ml-IN": "Malayalam (India)",
+    "mr-IN": "Marathi (India)",
+    "ta-IN": "Tamil (India)",
+    "te-IN": "Telugu (India)",
+    "nl-NL": "Dutch (Netherlands)",
+    "ko-KR": "Korean (South Korea)",
+    "cmn-CN": "Mandarin Chinese (China)",
+    "pl-PL": "Polish (Poland)",
+    "ru-RU": "Russian (Russia)",
+    "th-TH": "Thai (Thailand)",
+}
 
-LANGUAGE_CODE = os.getenv('LANGUAGE', 'en-GB')
+LANGUAGE_CODE = os.getenv("LANGUAGE", "en-GB")
 
 try:
     LANGUAGE = available_languages[LANGUAGE_CODE]
 except KeyError:
-    LANGUAGE_CODE = 'en-GB'
+    LANGUAGE_CODE = "en-GB"
     LANGUAGE = available_languages[LANGUAGE_CODE]
 
 # Gemini Configuration
@@ -195,10 +206,10 @@ CONFIG = {
         "speech_config": VOICE,
         "language": LANGUAGE,
         "language_code": LANGUAGE_CODE,
-        'input_audio_transcription': {},
-        'output_audio_transcription': {}
+        "input_audio_transcription": {},
+        "output_audio_transcription": {},
     },
-    "system_instruction": SYSTEM_INSTRUCTIONS
+    "system_instruction": SYSTEM_INSTRUCTIONS,
 }
 
 logger.info(f"Configuration: {CONFIG}")

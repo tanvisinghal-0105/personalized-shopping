@@ -44,9 +44,8 @@ class SessionUtils:
         """
         if isinstance(content, str):
             return types.Content(
-                role="model", parts=[
-                    types.Part(
-                        text=content)])
+                role="model", parts=[types.Part(text=content)]
+            )
         else:
             raise ValueError(f"Unsupported content type: {type(content)}")
 
@@ -54,7 +53,7 @@ class SessionUtils:
 
     @staticmethod
     def get_state(
-        context: CallbackContext | ToolContext | InvocationContext
+        context: CallbackContext | ToolContext | InvocationContext,
     ) -> Dict[str, Any]:
         """Get the current state based on provided context."""
         if isinstance(context, CallbackContext):
@@ -71,8 +70,9 @@ class SessionUtils:
 
     @staticmethod
     def update_state(
-            context: CallbackContext | ToolContext | InvocationContext,
-            data: Dict[str, Any]) -> None:
+        context: CallbackContext | ToolContext | InvocationContext,
+        data: Dict[str, Any],
+    ) -> None:
         """Update all k/v pairs in data back into session state."""
         if isinstance(context, InvocationContext):
             for k, v in data.items():
@@ -103,35 +103,39 @@ class SessionUtils:
         return final_list
 
     def model_response(
-            self, text: str = None, function_call: types.FunctionCall = None,
-            function_response: types.FunctionResponse = None):
+        self,
+        text: str = None,
+        function_call: types.FunctionCall = None,
+        function_response: types.FunctionResponse = None,
+    ):
         """Method to simplify creating agent response object."""
 
         ROLE = "model"
         if text:
             return types.Content(
-                role=ROLE, parts=[
-                    types.Part.from_text(
-                        text=text)])
+                role=ROLE, parts=[types.Part.from_text(text=text)]
+            )
         elif function_call:
             return types.Content(
-                role=ROLE, parts=[
-                    types.Part.from_function_call(function_call)])
+                role=ROLE, parts=[types.Part.from_function_call(function_call)]
+            )
         elif function_response:
             return types.Content(role=ROLE, parts=[function_response])
         else:
             raise ValueError("Either text or function_call must be provided")
 
     def build_event(
-            self,
-            context: InvocationContext | CallbackContext | ToolContext,
-            text: str = None,
-            function_call: types.FunctionCall = None,
-            event_options: Dict[str, Any] = None) -> Event:
+        self,
+        context: InvocationContext | CallbackContext | ToolContext,
+        text: str = None,
+        function_call: types.FunctionCall = None,
+        event_options: Dict[str, Any] = None,
+    ) -> Event:
         """Method to simplify Event response object."""
 
-        event_options_obj = EventActions(
-            **event_options) if event_options else None
+        event_options_obj = (
+            EventActions(**event_options) if event_options else None
+        )
 
         if isinstance(context, InvocationContext):
             invocation_id = context.invocation_id
@@ -150,13 +154,15 @@ class SessionUtils:
                 invocation_id=invocation_id,
                 author=author,
                 content=self.model_response(
-                    text=text, function_call=function_call),
-                options=event_options_obj
+                    text=text, function_call=function_call
+                ),
+                options=event_options_obj,
             )
         else:
             return Event(
                 invocation_id=invocation_id,
                 author=author,
                 content=self.model_response(
-                    text=text, function_call=function_call)
+                    text=text, function_call=function_call
+                ),
             )

@@ -1,8 +1,9 @@
-
 from typing import Any, Dict, Optional
 from google.adk.agents import Agent
 from google.adk.events import Event
-from google.adk.artifacts.in_memory_artifact_service import InMemoryArtifactService
+from google.adk.artifacts.in_memory_artifact_service import (
+    InMemoryArtifactService,
+)
 from google.adk.sessions import InMemorySessionService
 from google.adk.runners import Runner
 from google.adk.agents import LiveRequestQueue
@@ -40,13 +41,13 @@ class SessionState:
     """
 
     def __init__(
-            self,
-            agent: Agent,
-            app_name: str = "agent app",
-            user_id: str = "userX",
-            session_service: str = "in_memory",
-            artifact_service: str = "in_memory",
-            context: Dict[str, Any] = None,
+        self,
+        agent: Agent,
+        app_name: str = "agent app",
+        user_id: str = "userX",
+        session_service: str = "in_memory",
+        artifact_service: str = "in_memory",
+        context: Dict[str, Any] = None,
     ):
         self.agent = agent
         self.app_name = app_name
@@ -85,8 +86,7 @@ class SessionState:
             if self.session_service_type == "in_memory":
                 self.session_service = InMemorySessionService()
             else:
-                raise ValueError(
-                    f"Unknown session_service: {
+                raise ValueError(f"Unknown session_service: {
                         self.session_service_type}")
         return self.session_service
 
@@ -104,8 +104,7 @@ class SessionState:
             if self.artifact_service_type == "in_memory":
                 self.artifact_service = InMemoryArtifactService()
             else:
-                raise ValueError(
-                    f"Unknown artifact_service: {
+                raise ValueError(f"Unknown artifact_service: {
                         self.artifact_service_type}")
         return self.artifact_service
 
@@ -122,9 +121,9 @@ class SessionState:
     def log_event_output(self, event: Event):
 
         try:
-            res = event.content.model_dump(
-                exclude_none=True).get(
-                "parts", None)
+            res = event.content.model_dump(exclude_none=True).get(
+                "parts", None
+            )
         except Exception as e:
             logger.debug(f"e:{e}\nevent:{event}")
             return None
@@ -167,12 +166,14 @@ class SessionState:
                 self.session = session_service.create_session(
                     app_name=self.app_name,
                     user_id=self.user_id,
-                    state=self.context)
+                    state=self.context,
+                )
             else:
                 print("INFO: Creating new session with no context")
                 self.session = session_service.create_session(
                     app_name=self.app_name,
-                    user_id=self.user_id,)
+                    user_id=self.user_id,
+                )
 
         return Runner(
             app_name=self.app_name,

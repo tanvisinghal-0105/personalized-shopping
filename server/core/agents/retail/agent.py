@@ -24,14 +24,13 @@ from .tools import (
     process_exchange_request,
     get_trade_in_value,
     lookup_warranty_details,
-    identify_phone_from_camera_feed
+    identify_phone_from_camera_feed,
 )
 
 
-def logic_check(tool: BaseTool,
-                args: Dict[str,
-                           Any],
-                tool_context: ToolContext) -> Optional[Dict]:
+def logic_check(
+    tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext
+) -> Optional[Dict]:
     """
     Check for the next tool call and then act accordingly.
     The function signature has been updated to match the new ADK.
@@ -44,12 +43,17 @@ def logic_check(tool: BaseTool,
             reason = args.get("reason", "").lower()
             if "10%" in reason or "preferred care" in reason:
                 tool_context.state["temp:discount_approved"] = True
-                tool_context.state["user:pixel_9_pro_charger_info"] = "The Pixel 9 Pro does not include a charger. Suggest the 30W adapter as a solution."
-                return {"result": "You can approve this discount; no manager needed. In addition, make sure to inform the user that the pixel 9 pro does not include a charger. Suggest the 30W adapter as a solution."}
+                tool_context.state["user:pixel_9_pro_charger_info"] = (
+                    "The Pixel 9 Pro does not include a charger. Suggest the 30W adapter as a solution."
+                )
+                return {
+                    "result": "You can approve this discount; no manager needed. In addition, make sure to inform the user that the pixel 9 pro does not include a charger. Suggest the 30W adapter as a solution."
+                }
             else:
                 tool_context.state["temp:discount_approved"] = True
                 return {
-                    "result": "You can approve this discount; no manager needed."}
+                    "result": "You can approve this discount; no manager needed."
+                }
 
     if tool.name == "modify_cart":
         items_added = args.get("items_added")
@@ -65,13 +69,13 @@ def logic_check(tool: BaseTool,
 
 
 def create_retail_agent(
-        model: Any = AGENT_MODEL,
-        name: str = "cymbal_retail_agent",
-        global_instructions: str = Prompts.GLOBAL_PROMPT,
-        instruction: str = Prompts.RETAIL_ASSIST_MAIN,
-        tools: List[BaseTool] = [],
-        sub_agents: List[Agent] = [],
-        context: Dict[str, Any] = None
+    model: Any = AGENT_MODEL,
+    name: str = "cymbal_retail_agent",
+    global_instructions: str = Prompts.GLOBAL_PROMPT,
+    instruction: str = Prompts.RETAIL_ASSIST_MAIN,
+    tools: List[BaseTool] = [],
+    sub_agents: List[Agent] = [],
+    context: Dict[str, Any] = None,
 ) -> Agent:
     """Factory method to create a configured cymbalCustomerServiceRetailAgent."""
 
@@ -80,7 +84,8 @@ def create_retail_agent(
     if context:
         logger.info(f"Context provided with keys: {list(context.keys())}")
         logger.info(
-            f"Product catalog has {len(context.get('product_catalog_raw', []))} products")
+            f"Product catalog has {len(context.get('product_catalog_raw', []))} products"
+        )
 
     default_tools = [
         send_call_companion_link,
@@ -103,14 +108,15 @@ def create_retail_agent(
 
     final_tools = SessionUtils.dedupe_lists(default_tools, tools)
     final_sub_agents = SessionUtils.dedupe_lists(
-        default_sub_agents, sub_agents)
+        default_sub_agents, sub_agents
+    )
 
     # Enhanced generation config with latest features
     gen_config = genai_types.GenerateContentConfig(
         temperature=0.2,
         top_p=0.9,
         top_k=40,
-        max_output_tokens=2048  # Increased for better responses
+        max_output_tokens=2048,  # Increased for better responses
     )
 
     # Note: Context caching is configured at the App level, not Agent level
@@ -138,8 +144,7 @@ def create_retail_agent(
     agent.after_model_callback = None
 
     # Log agent creation for debugging/info purposes
-    logger.info(
-        f"Agent \'{agent.name}\' created with {len(agent.tools)} tools.")
+    logger.info(f"Agent '{agent.name}' created with {len(agent.tools)} tools.")
 
     return agent
 
@@ -148,5 +153,6 @@ class AgentModule:
     def __init__(self):
 
         self.root_agent = create_retail_agent()
+
 
 # Agent instance is created in agent_factory.py, not here
