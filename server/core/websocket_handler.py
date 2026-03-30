@@ -10,7 +10,6 @@ from typing import Any, Optional, Dict
 
 from google.genai import types
 from google.adk.agents.run_config import RunConfig
-from google.adk.agents import Agent
 from google.adk.runners import InMemoryRunner
 from google.adk.agents import LiveRequestQueue
 from google.genai.types import (

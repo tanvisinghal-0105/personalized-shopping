@@ -1,6 +1,6 @@
 from datetime import datetime
 import random
-from config.config import LANGUAGE, LANGUAGE_CODE
+from config.config import LANGUAGE
 
 DEFAULT_LANGUAGE = LANGUAGE or "English (United Kingdom)"
 
@@ -201,20 +201,14 @@ class RetailContext:
                 "card_number": f"2951 {random.randint(1000,9999)} {random.randint(1000,9999)} {random.randint(1000,9999)}",
                 "member_since": "2021-08-15",
                 "points_balance": 2150,
-                "level": "Standard", #
+                "level": "Standard",
                 "digital_receipts_enabled": True,
                 "exclusive_offers_available": 2,
                 "communication_preferences": {
-                "email": True,
-                "sms": True,
-                "push_notifications": False
-            }},
-            "preferred_store": "Cymbal Berlin",
-            "communication_preferences": {
-                "email_newsletter": True,
-                "sms_offers": False,
-                "push_notifications_app": True,
-                "postal_mail": False
+                    "email": True,
+                    "sms": True,
+                    "push_notifications": False
+                }
             },
             "interests": ["Smart Home", "Audio", "Mobile Computing", "Photography"],
             "registered_devices": [

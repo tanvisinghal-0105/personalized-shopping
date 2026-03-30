@@ -2,7 +2,6 @@ from typing import Any, List, Dict, Optional
 from google.adk.agents import Agent
 from google.adk.tools import BaseTool
 from google.adk.tools.tool_context import ToolContext
-from google.adk.agents.callback_context import CallbackContext
 from google.genai import types as genai_types
 
 from config.config import AGENT_MODEL

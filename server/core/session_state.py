@@ -6,7 +6,6 @@ from google.adk.artifacts.in_memory_artifact_service import InMemoryArtifactServ
 from google.adk.sessions import InMemorySessionService
 from google.adk.runners import Runner
 from google.adk.agents import LiveRequestQueue
-from config.config import CONFIG
 from .logger import logger
 
 class SessionState:
@@ -151,7 +150,7 @@ class SessionState:
         """
         self._set_num_agents_for_session(self.agent)
         session_service = self._get_session_service()
-        artifact_service = self._get_artifact_service()
+        self._get_artifact_service()
 
         if not self.session:
             if self.context:

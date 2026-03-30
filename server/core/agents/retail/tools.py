@@ -1,7 +1,6 @@
 import random
 import time
 from typing import Optional, List, Dict, Any
-import uuid
 import requests
 from ...logger import logger
 from datetime import datetime, timedelta
@@ -225,7 +224,7 @@ Response (model name only):"""
             logger.info(f"Gemini Vision identified: {identified_model}")
 
             if "unknown" in identified_model.lower():
-                message = f"I can see a device in the camera feed, but I'm having trouble identifying the specific model. Could you hold it closer or at a better angle?"
+                message = "I can see a device in the camera feed, but I'm having trouble identifying the specific model. Could you hold it closer or at a better angle?"
                 status = "partial"
             else:
                 message = f"Based on the camera feed, this looks like a {identified_model}."
@@ -659,7 +658,7 @@ def schedule_service_appointment(customer_id: str, service_type: str, date: str,
     try:
         start_time = time_slot.split('-')[0].strip()
         confirmation_datetime_str = f"{date} {start_time}:00"
-    except:
+    except (AttributeError, IndexError):
         confirmation_datetime_str = f"{date} {time_slot}" # Fallback if format is unexpected
 
     return {

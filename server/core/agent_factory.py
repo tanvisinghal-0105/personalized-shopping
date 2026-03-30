@@ -21,7 +21,7 @@ def get_agent_config(customer_id=None, first_name=None, last_name=None, email=No
     agent_config = {"app_name": None, "root_agent": None, "context": None}
 
     logger.info("===== get_agent_config() called =====")
-    print(f"===== get_agent_config() called =====")
+    print("===== get_agent_config() called =====")
     print(f"DEMO_TYPE: {DEMO_TYPE}")
 
     if DEMO_TYPE == "retail":

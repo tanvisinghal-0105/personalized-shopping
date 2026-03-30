@@ -34,7 +34,7 @@ def get_secret(secret_id: str) -> str:
     try:
         response = client.access_secret_version(request={"name": name})
         return response.payload.data.decode("UTF-8")
-    except Exception as e:
+    except Exception:
         raise
 
 def check_api_key_available() -> bool:
@@ -160,7 +160,7 @@ LANGUAGE_CODE = os.getenv('LANGUAGE', 'en-GB')
 
 try:
     LANGUAGE = available_languages[LANGUAGE_CODE]
-except:
+except KeyError:
     LANGUAGE_CODE = 'en-GB'
     LANGUAGE = available_languages[LANGUAGE_CODE]
 
