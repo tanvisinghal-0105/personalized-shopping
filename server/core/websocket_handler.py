@@ -204,10 +204,27 @@ async def handle_agent_responses(websocket: Any, live_events: Any, session_id: s
             logger.info(event)
 
             # Check for voice input transcriptions to detect intent
+            # ONLY process when transcription is finished to avoid duplicate detections
             if hasattr(event, 'input_transcription') and event.input_transcription:
                 transcribed_text = event.input_transcription.text
-                if transcribed_text:
-                    logger.info(f"[VOICE INTENT] User said: '{transcribed_text}'")
+                is_finished = getattr(event.input_transcription, 'finished', False)
+
+                if transcribed_text and is_finished:
+                    logger.info(f"[VOICE INTENT] User said (finished): '{transcribed_text}'")
+
+                    # IMPORTANT: Check if there's already an active home decor consultation
+                    # If yes, allow natural conversation flow without forcing tool calls
+                    from core.agents.retail.session_state import get_state_manager
+                    session_context = SESSION_CONTEXTS.get(session_id, {})
+                    customer_id = session_context.get("customer_id", "CY-DEFAULT")
+                    state_manager = get_state_manager()
+                    existing_session = state_manager.get_customer_session(customer_id)
+
+                    if existing_session and not existing_session.get("moodboard_generated", False):
+                        logger.info(f"[VOICE INTENT] Active home decor session exists (session_id: {existing_session['session_id']})")
+                        logger.info("[VOICE INTENT] Allowing natural conversation flow - NOT forcing tool call")
+                        # Don't process voice intent detection, let the message flow naturally
+                        continue
 
                     # Check for home decor intent in voice input
                     forced_call = intent_detector.should_force_tool_call(transcribed_text)
@@ -584,16 +601,9 @@ async def handle_client(websocket: Any) -> None:
         await websocket.send(json.dumps({"ready": True}))
         logger.info(f"New session started: {session_id}")
 
-        # Send personalized greeting if available (from backstage intelligence)
-        personalized_greeting = agent_config.get("personalized_greeting")
-        if personalized_greeting:
-            logger.info(f"[BACKSTAGE] Sending personalized greeting to client")
-            await websocket.send(
-                json.dumps({
-                    "type": "text",
-                    "data": personalized_greeting
-                })
-            )
+        # Note: Personalized greeting is handled by the agent's persona system
+        # The agent will generate an appropriate greeting with audio automatically
+        # No need to send a separate text greeting here
 
         await handle_messages(websocket, live_events, live_request_queue, session_id)
 

@@ -1366,8 +1366,24 @@ def start_home_decor_consultation(
     # Check if customer has an existing active session
     existing_session = state_manager.get_customer_session(customer_id)
     if existing_session and not existing_session.get("moodboard_generated", False):
-        logger.info(f"[HOME DECOR] Found existing session {existing_session['session_id']}, continuing...")
+        logger.info(f"[HOME DECOR] Found existing session {existing_session['session_id']}, using it and extracting current state...")
         session_id = existing_session["session_id"]
+
+        # Extract existing session data to continue properly
+        collected = existing_session.get("collected_data", {})
+
+        # Instead of starting over, continue where we left off with the existing state
+        # This prevents the circular questioning issue
+        return continue_home_decor_consultation(
+            customer_id=customer_id,
+            session_id=session_id,
+            room_type=collected.get("room_type"),
+            room_purpose=collected.get("room_purpose"),
+            age_context=collected.get("age_context"),
+            constraints=collected.get("constraints"),
+            style_preferences=collected.get("style_preferences"),
+            color_preferences=collected.get("color_preferences"),
+        )
     else:
         # Create new session
         session_id = f"DECOR-CONSULT-{random.randint(10000, 99999)}"
@@ -1823,27 +1839,43 @@ def get_customer_order_history(
 
 
 def analyze_room_with_history(
-    image_data: str,
     customer_id: str,
     session_id: str,
     age_context: Optional[str] = None,
     room_type: Optional[str] = None,
+    image_data: Optional[str] = None,
 ) -> dict:
     """
     Analyzes room photos and cross-references with customer order history.
     This is Phase 3 of the home decor journey: photo analysis + order history.
 
+    IMPORTANT: This tool works with the multimodal agent's context. When the customer shares photos
+    via the camera or upload interface, those images are automatically added to your visual context.
+    You DO NOT need to pass image_data as a parameter.
+
     Args:
-        image_data: Base64 encoded image data of the room.
         customer_id: The ID of the customer.
         session_id: The consultation session ID.
         age_context: Optional age context (e.g., "school-age").
         room_type: Optional room type hint.
+        image_data: DEPRECATED - Images come from multimodal context, not as parameters.
 
     Returns:
         A dictionary with room analysis, order history matches, and next steps.
+
+    Usage:
+        - When you see room images in your context, call this tool WITHOUT image_data parameter
+        - Example: analyze_room_with_history(customer_id="CY-1234", session_id="DECOR-123", age_context="school-age")
     """
     logger.info(f"[PHASE 3] Analyzing room with history for customer {customer_id}, session {session_id}")
+
+    if not image_data:
+        logger.info("[PHASE 3] No image_data parameter provided - this is expected for multimodal context")
+        return {
+            "status": "awaiting_image",
+            "message": "I'm ready to analyze your room and match it with your purchase history. Please share photos of the space.",
+            "instructions": "This tool works with your multimodal visual context. Wait for the customer to share room photos via WebSocket, then call this tool to analyze them and cross-reference with order history.",
+        }
 
     # First, analyze the room photo
     room_analysis_result = analyze_room_for_decor(
@@ -1909,30 +1941,40 @@ def analyze_room_with_history(
 def analyze_room_photos_batch(
     customer_id: str,
     session_id: str,
-    image_data_list: List[str],
     age_context: Optional[str] = None,
     room_type: Optional[str] = None,
+    image_data_list: Optional[List[str]] = None,
 ) -> dict:
     """
     Analyzes multiple room photos at once and cross-references with order history.
     This handles batch photo uploads from the UI.
 
+    IMPORTANT: This tool works with the multimodal agent's context. When the customer shares
+    multiple photos via the camera or upload interface, those images are automatically added
+    to your visual context. You DO NOT need to pass image_data_list as a parameter.
+
     Args:
         customer_id: The ID of the customer.
         session_id: The consultation session ID.
-        image_data_list: List of base64 encoded image data.
         age_context: Optional age context.
         room_type: Optional room type hint.
+        image_data_list: DEPRECATED - Images come from multimodal context, not as parameters.
 
     Returns:
         Combined analysis from all photos.
+
+    Usage:
+        - When you see multiple room images in your context, call this tool WITHOUT image_data_list parameter
+        - Example: analyze_room_photos_batch(customer_id="CY-1234", session_id="DECOR-123", room_type="bedroom")
     """
-    logger.info(f"[BATCH PHOTOS] Analyzing {len(image_data_list)} photos for customer {customer_id}, session {session_id}")
+    logger.info(f"[BATCH PHOTOS] Called for customer {customer_id}, session {session_id}")
 
     if not image_data_list or len(image_data_list) == 0:
+        logger.info("[BATCH PHOTOS] No image_data_list parameter provided - this is expected for multimodal context")
         return {
-            "status": "error",
-            "message": "No photos provided for analysis."
+            "status": "awaiting_images",
+            "message": "I'm ready to analyze multiple photos of your room. Please share 2-3 photos from different angles.",
+            "instructions": "This tool works with your multimodal visual context. Wait for the customer to share multiple room photos via WebSocket, then call this tool to perform batch analysis.",
         }
 
     # Analyze the first photo in detail (main view)
@@ -1978,30 +2020,41 @@ def analyze_room_photos_batch(
 
 
 def analyze_room_for_decor(
-    image_data: Optional[str] = None,
     customer_id: Optional[str] = None,
     room_type_hint: Optional[str] = None,
+    image_data: Optional[str] = None,
 ) -> dict:
     """
     Analyzes a room photo using Gemini Vision API to provide home decor recommendations.
 
+    IMPORTANT: This tool works with the multimodal agent's context. When the customer shares photos
+    via the camera or upload interface, those images are automatically added to your visual context.
+    You DO NOT need to pass image_data as a parameter - the tool will use images from your current
+    multimodal context.
+
     Args:
-        image_data: Optional base64 encoded image data of the room (data URI format or raw base64).
         customer_id: Optional customer ID for context.
         room_type_hint: Optional hint about the room type (e.g., "living room", "bedroom").
+        image_data: DEPRECATED - Images come from multimodal context, not as parameters.
 
     Returns:
         A dictionary containing room analysis and decor recommendations.
+
+    Usage:
+        - When you see room images in your context, call this tool WITHOUT image_data parameter
+        - The tool will automatically analyze the most recent image from your visual context
+        - Example: analyze_room_for_decor(customer_id="CY-1234", room_type_hint="bedroom")
     """
     logger.info(
-        f"Analyzing room photo for customer {customer_id}. Room hint: {room_type_hint}"
+        f"[ROOM ANALYSIS] Called for customer {customer_id}. Room hint: {room_type_hint}"
     )
 
     if not image_data:
-        logger.warning("No image data provided to analyze_room_for_decor tool.")
+        logger.info("[ROOM ANALYSIS] No image_data parameter provided - this is expected for multimodal context")
         return {
-            "status": "error",
-            "message": "This tool requires an image of the room to analyze. Please provide a photo of your space.",
+            "status": "awaiting_image",
+            "message": "I'm ready to analyze room photos. Please share a photo of your space using the camera or upload feature, and I'll provide detailed recommendations.",
+            "instructions": "This tool works with your multimodal visual context. When the customer shares photos via WebSocket (camera or upload), those images appear in your context automatically. You should wait for images to appear in your visual context, then call this tool to analyze them.",
             "analysis": None,
             "recommendations": [],
         }
@@ -2014,8 +2067,9 @@ def analyze_room_for_decor(
     else:
         image_base64 = image_data
 
-    # Check for minimal image data
-    if len(image_base64) < 1000:
+    # Check for minimal image data - use a very low threshold (100 chars)
+    # This allows most legitimate photos through while blocking truly empty data
+    if len(image_base64) < 100:
         return {
             "status": "failure",
             "message": "The image quality is too low for accurate analysis. Please provide a clearer photo.",

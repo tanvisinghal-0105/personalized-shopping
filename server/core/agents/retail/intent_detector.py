@@ -47,6 +47,7 @@ class IntentDetector:
     def detect_home_decor_intent(cls, message: str) -> bool:
         """
         Detect if message contains home decor intent.
+        Now more conservative - requires explicit action verbs or clear intent.
 
         Args:
             message: User message text
@@ -57,13 +58,37 @@ class IntentDetector:
         if not message:
             return False
 
-        match = cls.HOME_DECOR_PATTERN.search(message)
-        if match:
-            logger.info(
-                f"[INTENT DETECTOR] Home decor intent detected. Matched keyword: '{match.group()}'"
-            )
-            return True
+        message_lower = message.lower()
 
+        # Exclude greetings and introductions
+        greeting_patterns = [
+            r"\bmy name is\b",
+            r"\bi'm\s+\w+",
+            r"\bhello\b",
+            r"\bhi\b",
+            r"\bcustomer\s+id\b",
+            r"\bemail\b.*@",
+        ]
+
+        for pattern in greeting_patterns:
+            if re.search(pattern, message_lower):
+                logger.info("[INTENT DETECTOR] Message appears to be greeting/intro - no home decor intent")
+                return False
+
+        # Require action words with home decor keywords
+        action_patterns = [
+            r"\b(want|need|looking|help|can you|could you|would like|planning)\b.*\b(decorate|redesign|design|style|transform|redecorate)",
+            r"\b(decorate|redesign|design|style|transform|redecorate)\b.*\b(room|bedroom|living room|office|kitchen|space)",
+        ]
+
+        for pattern in action_patterns:
+            if re.search(pattern, message_lower):
+                logger.info(
+                    f"[INTENT DETECTOR] Home decor intent detected with action: '{pattern}'"
+                )
+                return True
+
+        logger.info("[INTENT DETECTOR] No clear home decor intent detected")
         return False
 
     @classmethod

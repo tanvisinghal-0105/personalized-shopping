@@ -49,6 +49,18 @@ def intent_interceptor(
     logger.info(f"[INTENT INTERCEPTOR] Analyzing message: '{user_message}'")
     logger.info(f"[INTENT INTERCEPTOR] Tool context state keys: {list(tool_context.state.keys())}")
 
+    # IMPORTANT: Check if there's already an active home decor consultation
+    # If yes, let the agent handle the conversation naturally without forcing tool calls
+    from .session_state import get_state_manager
+    customer_id = tool_context.state.get("customer_id", "CY-DEFAULT")
+    state_manager = get_state_manager()
+    existing_session = state_manager.get_customer_session(customer_id)
+
+    if existing_session and not existing_session.get("moodboard_generated", False):
+        logger.info(f"[INTENT INTERCEPTOR] Active home decor session exists (session_id: {existing_session['session_id']})")
+        logger.info("[INTENT INTERCEPTOR] Allowing agent to handle message naturally - NOT forcing tool call")
+        return None
+
     intent_detector = get_intent_detector()
 
     # Check if we should force a tool call
@@ -68,8 +80,6 @@ def intent_interceptor(
             f"[INTENT INTERCEPTOR] Parameters: {parameters}"
         )
 
-        # Get customer_id from context
-        customer_id = tool_context.state.get("customer_id", "CY-DEFAULT")
         logger.info(f"[INTENT INTERCEPTOR] Customer ID: {customer_id}")
 
         # Modify the user message to explicitly instruct the model to call the tool

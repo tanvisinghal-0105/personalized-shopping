@@ -127,10 +127,15 @@ def get_agent_config(
 
         # Pass context to agent so prompts are formatted with actual values
         # Use custom instructions if persona was selected
-        agent_config["root_agent"] = create_retail_agent(
-            context=customer_profile,
-            instruction=custom_instructions if custom_instructions else None
-        )
+        if custom_instructions:
+            agent_config["root_agent"] = create_retail_agent(
+                context=customer_profile,
+                instruction=custom_instructions
+            )
+        else:
+            agent_config["root_agent"] = create_retail_agent(
+                context=customer_profile
+            )
 
     else:
         raise ValueError(f"Unknown DEMO_TYPE: `{DEMO_TYPE}`")
