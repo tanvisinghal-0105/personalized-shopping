@@ -30,9 +30,12 @@ from config.config import (
     VAD_SILENCE_DURATION_MS,
     ALLOW_INTERRUPTION,
 )
+from core.agents.retail.intent_detector import get_intent_detector
 
 # Global session storage now holds the request queue for each session.
 ACTIVE_SESSIONS: Dict[str, LiveRequestQueue] = {}
+# Global session context storage for customer info
+SESSION_CONTEXTS: Dict[str, Dict[str, Any]] = {}
 
 
 async def send_error_message(websocket: Any, error_data: dict) -> None:
@@ -176,20 +179,94 @@ async def cleanup_session(session_id: str) -> None:
             logger.info(f"LiveRequestQueue for session {session_id} closed.")
 
         remove_session(session_id)
+
+        # Clean up session context
+        if session_id in SESSION_CONTEXTS:
+            del SESSION_CONTEXTS[session_id]
+            logger.info(f"Session context for {session_id} removed")
+
         logger.info(f"Session {session_id} cleaned up and ended")
     except Exception as cleanup_error:
         logger.error(f"Error during session cleanup: {cleanup_error}")
 
 
-async def handle_agent_responses(websocket: Any, live_events: Any) -> None:
+async def handle_agent_responses(websocket: Any, live_events: Any, session_id: str, live_request_queue: LiveRequestQueue) -> None:
     """
     Handles responses from the agent, forwarding data to the client/frontend via websocket.
     Enhanced with improved interruption handling using Gemini SDK features.
+    Includes voice intent detection for home decor consultations.
     """
     try:
         full_text = ""
+        intent_detector = get_intent_detector()
+
         async for event in live_events:
             logger.info(event)
+
+            # Check for voice input transcriptions to detect intent
+            if hasattr(event, 'input_transcription') and event.input_transcription:
+                transcribed_text = event.input_transcription.text
+                if transcribed_text:
+                    logger.info(f"[VOICE INTENT] User said: '{transcribed_text}'")
+
+                    # Check for home decor intent in voice input
+                    forced_call = intent_detector.should_force_tool_call(transcribed_text)
+
+                    if forced_call:
+                        tool_name = forced_call["tool_name"]
+                        parameters = forced_call["parameters"]
+
+                        logger.info(f"[VOICE INTENT] ===== HOME DECOR INTENT DETECTED IN VOICE =====")
+                        logger.info(f"[VOICE INTENT] Forcing tool call: {tool_name}")
+                        logger.info(f"[VOICE INTENT] Parameters: {parameters}")
+
+                        # Get customer_id from session context
+                        session_context = SESSION_CONTEXTS.get(session_id, {})
+                        customer_id = session_context.get("customer_id", "CY-DEFAULT")
+                        logger.info(f"[VOICE INTENT] Customer ID: {customer_id}")
+
+                        # Build the forced call instruction
+                        if tool_name == "create_style_moodboard":
+                            # Direct moodboard creation with extracted parameters
+                            style_prefs = parameters.get("style_preferences", [])
+                            room_type = parameters.get("room_type", "")
+                            color_prefs = parameters.get("color_preferences", None)
+
+                            forced_message = f"""URGENT: The customer just asked about home decoration via voice.
+
+Original voice request: "{transcribed_text}"
+
+Detected room: {room_type}
+Detected styles: {style_prefs}
+Detected colors: {color_prefs if color_prefs else 'None'}
+
+YOU MUST IMMEDIATELY call create_style_moodboard with these parameters:
+- customer_id: "{customer_id}"
+- style_preferences: {style_prefs}
+- room_type: "{room_type}"
+- color_preferences: {color_prefs if color_prefs else None}
+
+DO NOT respond with text. DO NOT ask questions. JUST CALL THE TOOL NOW."""
+                        else:
+                            # Start consultation
+                            forced_message = f"""URGENT: The customer just asked about home decoration via voice.
+
+Original voice request: "{transcribed_text}"
+
+YOU MUST IMMEDIATELY call start_home_decor_consultation with these parameters:
+- customer_id: "{customer_id}"
+- initial_request: "{transcribed_text}"
+
+DO NOT respond with text. DO NOT ask questions. JUST CALL THE TOOL NOW."""
+
+                        logger.info(f"[VOICE INTENT] Injecting forced tool call message")
+                        live_request_queue.send_content(
+                            Content(
+                                role="user",
+                                parts=[Part.from_text(text=forced_message)],
+                            )
+                        )
+                        continue
 
             # --- PRIORITY 1: Check for interruption FIRST (before processing any other data) ---
             # This ensures immediate handling of user interruptions via VAD
@@ -379,7 +456,7 @@ async def handle_client_messages(
 
 
 async def handle_messages(
-    websocket: Any, live_events: Any, live_request_queue: LiveRequestQueue
+    websocket: Any, live_events: Any, live_request_queue: LiveRequestQueue, session_id: str
 ) -> None:
     """Handles bidirectional message flow between client and Agent."""
     client_task = None
@@ -391,7 +468,7 @@ async def handle_messages(
                 handle_client_messages(websocket, live_request_queue)
             )
             agent_task = tg.create_task(
-                handle_agent_responses(websocket, live_events)
+                handle_agent_responses(websocket, live_events, session_id, live_request_queue)
             )
     except Exception as eg:
         handled = False
@@ -496,6 +573,14 @@ async def handle_client(websocket: Any) -> None:
                 "Failed to create a live request queue for the session."
             )
 
+        # Store session context for voice intent detection
+        SESSION_CONTEXTS[session_id] = {
+            "customer_id": customer_id or "CY-DEFAULT",
+            "first_name": first_name,
+            "last_name": last_name,
+            "email": email,
+        }
+
         await websocket.send(json.dumps({"ready": True}))
         logger.info(f"New session started: {session_id}")
 
@@ -510,7 +595,7 @@ async def handle_client(websocket: Any) -> None:
                 })
             )
 
-        await handle_messages(websocket, live_events, live_request_queue)
+        await handle_messages(websocket, live_events, live_request_queue, session_id)
 
     except asyncio.TimeoutError:
         logger.info(f"Session {session_id} timed out due to inactivity.")

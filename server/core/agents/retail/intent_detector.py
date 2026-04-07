@@ -17,6 +17,8 @@ class IntentDetector:
         r"\bdecorating\b",
         r"\bdecoration\b",
         r"\bredecorate\b",
+        r"\bredesign\b",
+        r"\bredesigning\b",
         r"\bstyle\b",
         r"\bstyling\b",
         r"\bdesign\b",
@@ -32,6 +34,8 @@ class IntentDetector:
         r"\bbathroom\b",
         r"\bspace\b",
         r"\bmoodboard\b",
+        r"\btransform\b",
+        r"\btransformation\b",
     ]
 
     # Combine into single pattern

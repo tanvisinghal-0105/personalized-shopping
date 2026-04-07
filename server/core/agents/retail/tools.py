@@ -1613,6 +1613,32 @@ def continue_home_decor_consultation(
             "examples": ["The bookshelf stays, everything else goes", "Keep the desk and chair", "Start fresh, replace everything", "Just the storage unit stays"]
         }
 
+    # Phase 3: Request room photos (for redesigns after constraints)
+    if collected.get("room_purpose") == "redesign" and collected.get("constraints") and not collected.get("room_photos_analyzed"):
+        state_manager.update_session(session_id, stage="stage_1d_photo_request")
+        logger.info(f"[HOME DECOR] Requesting room photos from customer")
+        return {
+            "status": "awaiting_photos",
+            "session_id": session_id,
+            "stage": "stage_1d_photo_request",
+            "missing_info": "room_photos",
+            "question": "Could you take a few photos of the room?",
+            "message": "Perfect! To create the best recommendations, I'd love to see the space. Could you take 2-3 photos showing different angles of the room?",
+            "instructions": "Ask the customer to take photos showing: 1) entrance view with bed and window, 2) opposite wall with existing furniture. Use these to analyze the current room state and cross-reference with order history.",
+            "ui_data": {
+                "display_type": "photo_upload",
+                "title": "Let's see your space!",
+                "subtitle": "Take 2-3 photos of the room from different angles",
+                "photo_guidelines": [
+                    "Show the entrance view with the bed and window",
+                    "Capture the opposite wall with existing furniture",
+                    "Include any furniture you mentioned keeping"
+                ],
+                "interaction_mode": "camera_upload",
+                "phase": "phase_3_photo_analysis"
+            }
+        }
+
     if not collected["style_preferences"]:
         state_manager.update_session(session_id, stage="stage_2_style_discovery")
         logger.info(f"[HOME DECOR] Awaiting style preferences from customer")
@@ -1706,6 +1732,177 @@ def continue_home_decor_consultation(
     return {
         "status": "error",
         "message": "Unable to determine next step in consultation."
+    }
+
+
+def get_customer_order_history(
+    customer_id: str,
+    product_category: Optional[str] = None,
+) -> dict:
+    """
+    Retrieves customer's order history, optionally filtered by category.
+
+    Args:
+        customer_id: The ID of the customer.
+        product_category: Optional category filter (e.g., "Furniture", "Home Decor").
+
+    Returns:
+        A dictionary with order history and identified products.
+    """
+    logger.info(f"[ORDER HISTORY] Retrieving orders for customer {customer_id}, category filter: {product_category}")
+
+    # MOCK ORDER HISTORY - In production, this would query order database
+    # For demo, simulate past furniture orders
+    mock_orders = []
+
+    # Example: Customer bought furniture 4 years ago
+    if customer_id:
+        # Simulate order from 4 years ago with children's furniture
+        mock_orders.append({
+            "order_id": f"ORD-{random.randint(10000, 99999)}",
+            "order_date": (datetime.now() - timedelta(days=4*365)).strftime("%Y-%m-%d"),
+            "products": [
+                {
+                    "product_id": "BED-TODDLER-HOUSE",
+                    "name": "Birch House Bed - Toddler",
+                    "category": "Furniture",
+                    "subcategory": "Children's Beds",
+                    "price": 299.00,
+                    "quantity": 1,
+                    "age_appropriate": ["toddler"],
+                    "years_ago": 4
+                },
+                {
+                    "product_id": "BOOKSHELF-CUBE-MODULAR",
+                    "name": "Modular Cube Bookshelf System 3x3",
+                    "category": "Furniture",
+                    "subcategory": "Bookcases",
+                    "price": 199.00,
+                    "quantity": 1,
+                    "years_ago": 4
+                }
+            ],
+            "total": 498.00
+        })
+
+    # Filter by category if specified
+    filtered_orders = []
+    for order in mock_orders:
+        if product_category:
+            filtered_products = [p for p in order["products"] if p.get("category") == product_category]
+            if filtered_products:
+                filtered_order = order.copy()
+                filtered_order["products"] = filtered_products
+                filtered_orders.append(filtered_order)
+        else:
+            filtered_orders.append(order)
+
+    # Identify products from catalog that match order history
+    identified_products = []
+    for order in filtered_orders:
+        for product in order["products"]:
+            identified_products.append({
+                "product_id": product["product_id"],
+                "name": product["name"],
+                "category": product["category"],
+                "purchase_date": order["order_date"],
+                "years_since_purchase": product.get("years_ago", 0),
+                "age_appropriate": product.get("age_appropriate", [])
+            })
+
+    logger.info(f"[ORDER HISTORY] Found {len(filtered_orders)} orders with {len(identified_products)} products")
+
+    return {
+        "status": "success",
+        "customer_id": customer_id,
+        "order_count": len(filtered_orders),
+        "orders": filtered_orders,
+        "identified_products": identified_products,
+        "message": f"Found {len(identified_products)} products from past orders" + (f" in category: {product_category}" if product_category else "")
+    }
+
+
+def analyze_room_with_history(
+    image_data: str,
+    customer_id: str,
+    session_id: str,
+    age_context: Optional[str] = None,
+    room_type: Optional[str] = None,
+) -> dict:
+    """
+    Analyzes room photos and cross-references with customer order history.
+    This is Phase 3 of the home decor journey: photo analysis + order history.
+
+    Args:
+        image_data: Base64 encoded image data of the room.
+        customer_id: The ID of the customer.
+        session_id: The consultation session ID.
+        age_context: Optional age context (e.g., "school-age").
+        room_type: Optional room type hint.
+
+    Returns:
+        A dictionary with room analysis, order history matches, and next steps.
+    """
+    logger.info(f"[PHASE 3] Analyzing room with history for customer {customer_id}, session {session_id}")
+
+    # First, analyze the room photo
+    room_analysis_result = analyze_room_for_decor(
+        image_data=image_data,
+        customer_id=customer_id,
+        room_type_hint=room_type
+    )
+
+    if room_analysis_result.get("status") != "success":
+        return room_analysis_result
+
+    # Get customer's furniture order history
+    order_history = get_customer_order_history(
+        customer_id=customer_id,
+        product_category="Furniture"
+    )
+
+    # Cross-reference identified furniture with order history
+    room_analysis = room_analysis_result.get("analysis", {})
+    existing_furniture = room_analysis.get("existing_furniture", [])
+    identified_products = order_history.get("identified_products", [])
+
+    # Match visible furniture with past purchases
+    matched_furniture = []
+    for product in identified_products:
+        product_name_lower = product["name"].lower()
+        # Simple matching: check if product type appears in existing furniture
+        for furniture in existing_furniture:
+            if any(keyword in product_name_lower for keyword in furniture.lower().split()):
+                matched_furniture.append({
+                    **product,
+                    "identified_in_photo": True,
+                    "still_appropriate": age_context not in product.get("age_appropriate", []) if age_context else False
+                })
+                break
+
+    # Check if furniture has outgrown its purpose
+    outgrown_furniture = [f for f in matched_furniture if not f.get("still_appropriate", True)]
+
+    # Update session state to mark photos as analyzed
+    state_manager = get_state_manager()
+    state_manager.update_session(
+        session_id=session_id,
+        room_photos_analyzed=True,
+        photo_analysis=room_analysis,
+        order_history=identified_products
+    )
+
+    logger.info(f"[PHASE 3] Matched {len(matched_furniture)} furniture items from order history")
+    logger.info(f"[PHASE 3] {len(outgrown_furniture)} items no longer age-appropriate")
+
+    return {
+        "status": "success",
+        "message": f"I can see your {room_analysis.get('room_type', 'room')}! I've identified furniture from your past orders.",
+        "room_analysis": room_analysis,
+        "order_history_matches": matched_furniture,
+        "outgrown_furniture": outgrown_furniture,
+        "next_step": "interact_with_child",
+        "instructions": f"The room analysis is complete. I've identified the {', '.join([f['name'] for f in matched_furniture])} from {matched_furniture[0]['years_since_purchase']} years ago. Now, address the child directly: Ask '{age_context if age_context else 'them'}' what they like doing most in their room. Be warm and encouraging - speak directly to the child, not the parent."
     }
 
 

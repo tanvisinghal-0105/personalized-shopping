@@ -28,6 +28,9 @@ class HomeDecorSessionState:
                     "room_purpose": None,  # "decoration" or "redesign"
                     "age_context": None,  # Age of room occupant
                     "constraints": None,  # Items to keep/remove
+                    "room_photos_analyzed": False,  # Phase 3: Photo analysis complete
+                    "photo_analysis": None,  # Room analysis results
+                    "order_history": None,  # Customer order history
                     "style_preferences": None,
                     "color_preferences": None,
                 },
@@ -65,6 +68,9 @@ class HomeDecorSessionState:
         room_purpose: Optional[str] = None,
         age_context: Optional[str] = None,
         constraints: Optional[Dict[str, List[str]]] = None,
+        room_photos_analyzed: Optional[bool] = None,
+        photo_analysis: Optional[Dict[str, Any]] = None,
+        order_history: Optional[List[Dict[str, Any]]] = None,
         style_preferences: Optional[List[str]] = None,
         color_preferences: Optional[List[str]] = None,
         stage: Optional[str] = None,
@@ -87,6 +93,15 @@ class HomeDecorSessionState:
 
             if constraints is not None:
                 session["collected_data"]["constraints"] = constraints
+
+            if room_photos_analyzed is not None:
+                session["collected_data"]["room_photos_analyzed"] = room_photos_analyzed
+
+            if photo_analysis is not None:
+                session["collected_data"]["photo_analysis"] = photo_analysis
+
+            if order_history is not None:
+                session["collected_data"]["order_history"] = order_history
 
             if style_preferences is not None:
                 session["collected_data"]["style_preferences"] = style_preferences
