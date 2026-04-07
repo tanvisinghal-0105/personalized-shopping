@@ -552,7 +552,28 @@ def modify_cart(
                 "price"
             ] = matched_price
 
-        # Convert items dict to array for client compatibility
+        # Update the mock backend cart state using dynamic customer_id (save as dict)
+        cart_to_save = {
+            "cart_id": current_mock_backend_cart["cart_id"],
+            "items": current_mock_backend_cart["items"],  # Keep as dict in Firestore
+            "subtotal": round(new_subtotal, 2),
+            "last_updated": datetime.now().strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),  # Update timestamp
+        }
+
+        if db is not None:
+            try:
+                db.collection("carts").document(customer_id).set(
+                    cart_to_save
+                )
+                logger.info(
+                    f"Cart updated in Firestore for customer {customer_id}"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to update cart in Firestore: {e}")
+
+        # Convert items dict to array for client compatibility (for response only)
         updated_cart_list = [
             {
                 "product_id": product_id,
@@ -564,27 +585,15 @@ def modify_cart(
             for product_id, data in current_mock_backend_cart["items"].items()
         ]
 
-        # Construct the final updated cart structure
+        # Construct the final updated cart structure for response
         final_updated_cart = {
             "cart_id": current_mock_backend_cart["cart_id"],
             "items": updated_cart_list,
             "subtotal": round(new_subtotal, 2),
             "last_updated": datetime.now().strftime(
                 "%Y-%m-%d %H:%M:%S"
-            ),  # Update timestamp
+            ),
         }
-
-        # Update the mock backend cart state using dynamic customer_id
-        if db is not None:
-            try:
-                db.collection("carts").document(customer_id).set(
-                    final_updated_cart
-                )
-                logger.info(
-                    f"Cart updated in Firestore for customer {customer_id}"
-                )
-            except Exception as e:
-                logger.warning(f"Failed to update cart in Firestore: {e}")
 
         return {
             "status": "success",
@@ -1515,16 +1524,31 @@ def continue_home_decor_consultation(
         state_manager.update_session(session_id, stage="stage_2_style_discovery")
         logger.info(f"[HOME DECOR] Awaiting style preferences from customer")
 
-        # Build UI data for Phase 1 style selection
+        # Build UI data for Phase 1 style selection with room-specific images
+        # Convert room_type to match our image naming convention
+        # Map room names to image filenames
+        room_image_map = {
+            "living room": "living_room",
+            "bedroom": "bedroom",
+            "office": "home_office",
+            "home office": "home_office",
+            "dining room": "dining_room",
+            "kitchen": "kitchen",
+            "bathroom": "bathroom",
+            "entryway": "living_room"  # Fallback to living_room for entryway
+        }
+
+        room_key = room_image_map.get(collected["room_type"].lower(), "living_room")
+
         style_options_ui = [
-            {"id": "modern", "label": "Modern", "description": "Clean lines, minimal ornamentation", "image_hint": "modern-interior"},
-            {"id": "minimalist", "label": "Minimalist", "description": "Less is more, simple & functional", "image_hint": "minimalist-room"},
-            {"id": "bohemian", "label": "Bohemian", "description": "Eclectic mix, rich colors & patterns", "image_hint": "boho-decor"},
-            {"id": "coastal", "label": "Coastal", "description": "Light & airy, nautical themes", "image_hint": "coastal-room"},
-            {"id": "industrial", "label": "Industrial", "description": "Exposed materials, urban loft", "image_hint": "industrial-loft"},
-            {"id": "scandinavian", "label": "Scandinavian", "description": "Natural materials, hygge coziness", "image_hint": "scandi-interior"},
-            {"id": "traditional", "label": "Traditional", "description": "Classic elegance, timeless pieces", "image_hint": "traditional-room"},
-            {"id": "rustic", "label": "Rustic", "description": "Natural materials, country charm", "image_hint": "rustic-decor"}
+            {"id": "modern", "label": "Modern", "description": "Clean lines, minimal ornamentation", "image_url": f"./assets/{room_key}_modern.jpg"},
+            {"id": "minimalist", "label": "Minimalist", "description": "Less is more, simple & functional", "image_url": f"./assets/{room_key}_minimalist.jpg"},
+            {"id": "bohemian", "label": "Bohemian", "description": "Eclectic mix, rich colors & patterns", "image_url": f"./assets/{room_key}_bohemian.jpg"},
+            {"id": "coastal", "label": "Coastal", "description": "Light & airy, nautical themes", "image_url": f"./assets/{room_key}_coastal.jpg"},
+            {"id": "industrial", "label": "Industrial", "description": "Exposed materials, urban loft", "image_url": f"./assets/{room_key}_industrial.jpg"},
+            {"id": "scandinavian", "label": "Scandinavian", "description": "Natural materials, hygge coziness", "image_url": f"./assets/{room_key}_scandinavian.jpg"},
+            {"id": "traditional", "label": "Traditional", "description": "Classic elegance, timeless pieces", "image_url": f"./assets/{room_key}_traditional.jpg"},
+            {"id": "rustic", "label": "Rustic", "description": "Natural materials, country charm", "image_url": f"./assets/{room_key}_rustic.jpg"}
         ]
 
         return {

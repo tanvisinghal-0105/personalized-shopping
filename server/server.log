@@ -1,20 +1,5 @@
-2026-04-07 11:25:34,456 - core.logger - INFO - Connecting to Firestore...
-2026-04-07 11:25:35,129 - core.logger - INFO - Connected to Firestore
-2026-04-07 11:25:35,129 - core.logger - INFO - Firestore ready - carts will be created per customer dynamically
-2026-04-07 11:25:35,131 - websockets.server - INFO - server listening on 0.0.0.0:8081
-2026-04-07 11:25:35,131 - core.logger - INFO - Running websocket server on 0.0.0.0:8081...
-2026-04-07 11:25:37,673 - websockets.server - INFO - connection open
-2026-04-07 11:25:37,674 - core.logger - INFO - New client connected. Session ID: 4542544352
-2026-04-07 11:25:37,674 - core.logger - INFO - Customer info received: Tanvi Singhal (CY-9147-8100) - tanvisinghal@google.com
-2026-04-07 11:25:37,675 - core.logger - INFO - ===== get_agent_config() called =====
-2026-04-07 11:25:37,675 - core.logger - INFO - Creating personalized profile for customer: Tanvi Singhal (CY-9147-8100)
-2026-04-07 11:25:37,676 - core.logger - INFO - Context provided with keys: ['language', 'available_products', 'product_catalog_raw', 'customer_profile', 'current_datetime']
-2026-04-07 11:25:37,676 - core.logger - INFO - Product catalog has 107 products
-2026-04-07 11:25:37,677 - core.logger - INFO - Agent 'cymbal_retail_agent' created with 19 tools.
-2026-04-07 11:25:37,677 - core.logger - INFO - VAD configured - Start: LOW, End: LOW, Padding: 20ms, Silence: 100ms
-2026-04-07 11:25:37,678 - core.logger - INFO - Session 4542544352 created with new ADK runner.
-2026-04-07 11:25:37,679 - core.logger - INFO - New session started: 4542544352
-2026-04-07 11:25:37,691 - google_adk.google.adk.flows.llm_flows.base_llm_flow - INFO - Establishing live connection for agent: cymbal_retail_agent
-2026-04-07 11:25:37,692 - google_genai._api_client - INFO - The project/location from the environment variables will take precedence over the API key from the environment variables.
-2026-04-07 11:25:37,747 - google_adk.google.adk.models.google_llm - INFO - Trying to connect to live model: gemini-live-2.5-flash-native-audio with api backend: GoogleLLMVariant.VERTEX_AI
-2026-04-07 11:25:37,747 - google_genai._api_client - INFO - The project/location from the environment variables will take precedence over the API key from the environment variables.
+2026-04-07 12:57:11,711 - core.logger - INFO - Connecting to Firestore...
+2026-04-07 12:57:12,291 - core.logger - INFO - Connected to Firestore
+2026-04-07 12:57:12,292 - core.logger - INFO - Firestore ready - carts will be created per customer dynamically
+2026-04-07 12:57:12,294 - websockets.server - INFO - server listening on 0.0.0.0:8081
+2026-04-07 12:57:12,294 - core.logger - INFO - Running websocket server on 0.0.0.0:8081...

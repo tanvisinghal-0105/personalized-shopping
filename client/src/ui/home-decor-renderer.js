@@ -13,6 +13,7 @@ export class HomeDecorRenderer {
     this.selectedRoom = null;
     this.selectedStyles = [];
     this.selectedColors = [];
+    this.renderedMoodboards = new Set();
   }
 
   /**
@@ -472,7 +473,14 @@ export class HomeDecorRenderer {
       return;
     }
 
-    console.log(`[HomeDecor] Rendering moodboard with ${moodboardData.products.length} products`, moodboardData);
+    const moodboardId = moodboardData.moodboard_id;
+    if (this.renderedMoodboards.has(moodboardId)) {
+      console.log(`[HomeDecor] Moodboard ${moodboardId} already rendered, skipping duplicate`);
+      return;
+    }
+
+    this.renderedMoodboards.add(moodboardId);
+    console.log(`[HomeDecor] Rendering moodboard ${moodboardId} with ${moodboardData.products.length} products`, moodboardData);
 
     const wrapper = this.createMessageWrapper('decor-moodboard');
     const bubble = document.createElement('div');
@@ -620,5 +628,6 @@ export class HomeDecorRenderer {
     this.selectedRoom = null;
     this.selectedStyles = [];
     this.selectedColors = [];
+    this.renderedMoodboards.clear();
   }
 }
