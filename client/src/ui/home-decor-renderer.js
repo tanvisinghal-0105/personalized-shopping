@@ -450,6 +450,155 @@ export class HomeDecorRenderer {
   }
 
   /**
+   * Render Moodboard with product grid (Phase 2)
+   */
+  renderMoodboard(moodboardData) {
+    if (!moodboardData || !moodboardData.products) {
+      console.warn('[HomeDecor] No moodboard data or products found');
+      return;
+    }
+
+    console.log(`[HomeDecor] Rendering moodboard with ${moodboardData.products.length} products`, moodboardData);
+
+    const wrapper = this.createMessageWrapper('decor-moodboard');
+    const bubble = document.createElement('div');
+    bubble.classList.add('message-bubble', 'decor-moodboard-bubble');
+
+    const header = document.createElement('div');
+    header.className = 'moodboard-header mb-4';
+
+    const title = document.createElement('h3');
+    title.className = 'text-xl font-bold mb-2';
+    title.textContent = 'Your Personalized Moodboard';
+    header.appendChild(title);
+
+    const subtitle = document.createElement('p');
+    subtitle.className = 'text-sm text-gray-600 mb-2';
+    subtitle.textContent = moodboardData.message || `Curated ${moodboardData.selected_styles?.join(' & ')} style for your ${moodboardData.room_type || 'space'}`;
+    header.appendChild(subtitle);
+
+    const productCount = document.createElement('p');
+    productCount.className = 'text-xs text-gray-500';
+    productCount.textContent = `${moodboardData.product_count || moodboardData.products.length} curated products`;
+    header.appendChild(productCount);
+
+    bubble.appendChild(header);
+
+    const productsGrid = document.createElement('div');
+    productsGrid.className = 'grid grid-cols-2 md:grid-cols-3 gap-4 my-4';
+
+    moodboardData.products.forEach(product => {
+      const productCard = this.createMoodboardProductCard(product);
+      productsGrid.appendChild(productCard);
+    });
+
+    bubble.appendChild(productsGrid);
+
+    const footer = document.createElement('div');
+    footer.className = 'moodboard-footer mt-4 pt-4 border-t border-gray-200';
+
+    const instructions = document.createElement('p');
+    instructions.className = 'text-xs text-gray-500 text-center';
+    instructions.textContent = 'Click on any product to add it to your cart';
+    footer.appendChild(instructions);
+
+    bubble.appendChild(footer);
+
+    wrapper.appendChild(bubble);
+    this.output.appendChild(wrapper);
+    this.scrollToBottom();
+  }
+
+  /**
+   * Create individual product card for moodboard
+   */
+  createMoodboardProductCard(product) {
+    const card = document.createElement('div');
+    card.className = 'moodboard-product-card bg-white border-2 border-gray-200 rounded-xl overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105';
+    card.dataset.productId = product.product_id;
+
+    const imageContainer = document.createElement('div');
+    imageContainer.className = 'relative w-full h-40 bg-gray-100';
+
+    if (product.image_url) {
+      const img = document.createElement('img');
+      img.src = product.image_url;
+      img.alt = product.name;
+      img.className = 'w-full h-full object-cover';
+      img.loading = 'lazy';
+      img.onerror = () => {
+        img.style.display = 'none';
+        const placeholder = document.createElement('div');
+        placeholder.className = 'w-full h-full flex items-center justify-center text-4xl';
+        placeholder.textContent = '🏠';
+        imageContainer.appendChild(placeholder);
+      };
+      imageContainer.appendChild(img);
+    } else {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'w-full h-full flex items-center justify-center text-4xl';
+      placeholder.textContent = '🏠';
+      imageContainer.appendChild(placeholder);
+    }
+
+    card.appendChild(imageContainer);
+
+    const content = document.createElement('div');
+    content.className = 'p-3';
+
+    const name = document.createElement('div');
+    name.className = 'text-sm font-semibold mb-1 line-clamp-2';
+    name.textContent = product.name;
+    content.appendChild(name);
+
+    const category = document.createElement('div');
+    category.className = 'text-xs text-gray-500 mb-2';
+    category.textContent = product.category;
+    content.appendChild(category);
+
+    const price = document.createElement('div');
+    price.className = 'text-lg font-bold text-black mb-2';
+    price.textContent = `${product.price.toFixed(2)}`;
+    content.appendChild(price);
+
+    const addButton = document.createElement('button');
+    addButton.className = 'w-full bg-black text-white py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity';
+    addButton.textContent = 'Add to Cart';
+    addButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.handleAddToCart(product, e);
+    });
+    content.appendChild(addButton);
+
+    card.appendChild(content);
+
+    return card;
+  }
+
+  /**
+   * Handle add to cart from moodboard
+   */
+  handleAddToCart(product, e) {
+    console.log(`[HomeDecor] Adding product to cart:`, product);
+
+    this.api.sendTextMessage(
+      `add_to_cart(product_id="${product.product_id}", customer_id="${this.getCurrentCustomerId()}", quantity=1)`
+    );
+
+    const button = e.target;
+    const originalText = button.textContent;
+    button.textContent = 'Added!';
+    button.disabled = true;
+    button.classList.add('opacity-50');
+
+    setTimeout(() => {
+      button.textContent = originalText;
+      button.disabled = false;
+      button.classList.remove('opacity-50');
+    }, 2000);
+  }
+
+  /**
    * Reset selections for new session
    */
   reset() {

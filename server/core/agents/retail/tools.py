@@ -1266,6 +1266,7 @@ def create_style_moodboard(
             "price": product["price"],
             "style_tags": product.get("style_tags", []),
             "color_palette": product.get("color_palette", []),
+            "image_url": product.get("image_url", ""),
         })
 
     # Create style description for the moodboard
@@ -1339,6 +1340,15 @@ def start_home_decor_consultation(
                 # Update session with detected room
                 state_manager.update_session(session_id, room_type=detected_room)
                 break
+
+    # If room was detected, skip room selector and proceed to style selection
+    if detected_room:
+        logger.info(f"[HOME DECOR] Room detected ({detected_room}), skipping room selector and proceeding to style selection")
+        return continue_home_decor_consultation(
+            customer_id=customer_id,
+            session_id=session_id,
+            room_type=detected_room
+        )
 
     # Define the consultation stages
     consultation_flow = {

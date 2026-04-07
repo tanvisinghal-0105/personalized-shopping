@@ -762,7 +762,7 @@
   </div>
 </div>
 
-<div id="chatContainer" class="chat-container fixed bottom-6 right-6 w-[550px] min-w-[400px] max-h-[calc(100vh-theme(space.32))] flex flex-col bg-[var(--color-chat-bg)] rounded-xl shadow-xl border-2 z-40" style="border-color: var(--color-accent); display: none;">
+<div id="chatContainer" class="chat-container fixed bottom-6 right-6 w-[750px] min-w-[600px] max-h-[calc(100vh-theme(space.20))] flex flex-col bg-[var(--color-chat-bg)] rounded-xl shadow-xl border-2 z-40" style="border-color: var(--color-accent); display: none;">
   <div class="chat-header p-4 text-lg font-semibold text-[var(--color-accent)] flex-shrink-0 rounded-t-xl flex justify-between items-center border-b border-[var(--color-border)] bg-white">
     <span>AI Assistant</span>
     <button id="minimizeChatBtn" class="ml-auto mr-3 text-gray-500 hover:text-gray-700">
@@ -785,8 +785,8 @@
     <div class="spinner"></div>
     <span class="align-middle ml-2">Processing...</span>
   </div>
-  <div class="input-area-container p-3 md:p-4 flex-shrink-0 rounded-b-xl bg-white border-t border-[var(--color-border)]">
-      <div class="input-area flex items-center space-x-2 bg-gray-100 rounded-full p-1 shadow-sm">
+  <div class="input-area-container p-4 md:p-5 flex-shrink-0 rounded-b-xl bg-white border-t border-[var(--color-border)]">
+      <div class="input-area flex items-center space-x-3 bg-gray-50 rounded-full p-2 shadow-sm border border-gray-200">
           <button id="micButton" disabled class="input-action-button mic-button" title="Start/Stop Recording">
               <span class="material-symbols-outlined">mic</span>
           </button>
@@ -794,10 +794,10 @@
             <span class="material-symbols-outlined">photo_camera</span>
           </button>
           <textarea id="textInput" placeholder="Ask about products..." class="text-input-field" rows="1"></textarea>
-          <button id="interruptButton" class="input-action-button hidden" title="Interrupt Response">
+          <button id="interruptButton" class="input-action-button" style="display: none;" title="Interrupt Response">
             <span class="material-symbols-outlined">stop</span>
           </button>
-          <button id="sendButton" class="input-action-button send-button" title="Send Message" disabled>
+          <button id="sendButton" class="input-action-button send-button" style="display: none;" title="Send Message" disabled>
               <span class="material-symbols-outlined">arrow_upward</span>
           </button>
       </div>
@@ -1173,6 +1173,11 @@
       // Check for home decor ui_data and render interactive elements
       if (data && data.ui_data && decorRenderer) {
         decorRenderer.renderUIData(data.ui_data, data.session_id);
+      }
+
+      // Check for moodboard and render it
+      if (data && data.moodboard && decorRenderer) {
+        decorRenderer.renderMoodboard(data.moodboard);
       }
   };
 

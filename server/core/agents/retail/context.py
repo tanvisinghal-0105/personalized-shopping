@@ -653,6 +653,7 @@ class RetailContext:
             "style_tags": ["modern", "abstract", "warm-tones"],
             "color_palette": ["orange", "pink", "gold"],
             "room_compatibility": ["living room", "bedroom", "office"],
+            "image_url": "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800",
         },
         {
             "product_id": "WALL-ART-BOTANICAL-PRINT",
@@ -665,6 +666,7 @@ class RetailContext:
             "style_tags": ["bohemian", "natural", "tropical"],
             "color_palette": ["green", "white", "beige"],
             "room_compatibility": ["living room", "bedroom", "bathroom"],
+            "image_url": "https://images.unsplash.com/photo-1565690008525-4a4b1c1b6c46?w=800",
         },
         {
             "product_id": "WALL-ART-GEOMETRIC-METAL",
@@ -677,6 +679,7 @@ class RetailContext:
             "style_tags": ["modern", "geometric", "metallic"],
             "color_palette": ["gold", "black", "brass"],
             "room_compatibility": ["living room", "dining room", "entryway"],
+            "image_url": "https://images.unsplash.com/photo-1513519245088-0e12902e35ca?w=800",
         },
         {
             "product_id": "WALL-ART-MINIMALIST-LINE",
@@ -689,6 +692,7 @@ class RetailContext:
             "style_tags": ["minimalist", "modern", "line-art"],
             "color_palette": ["black", "white"],
             "room_compatibility": ["bedroom", "office", "bathroom"],
+            "image_url": "https://images.unsplash.com/photo-1582561833649-fe53d5e4c935?w=800",
         },
         {
             "product_id": "WALL-ART-COASTAL-PHOTO",
@@ -701,6 +705,7 @@ class RetailContext:
             "style_tags": ["coastal", "natural", "calm"],
             "color_palette": ["blue", "white", "turquoise"],
             "room_compatibility": ["living room", "bedroom", "bathroom"],
+            "image_url": "https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=800",
         },
         # Home Decor - Lighting
         {
@@ -714,6 +719,7 @@ class RetailContext:
             "style_tags": ["modern", "luxury", "metallic"],
             "color_palette": ["gold", "white", "marble"],
             "room_compatibility": ["living room", "reading nook", "office"],
+            "image_url": "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=800",
         },
         {
             "product_id": "LAMP-PENDANT-RATTAN",
@@ -726,6 +732,7 @@ class RetailContext:
             "style_tags": ["bohemian", "natural", "woven"],
             "color_palette": ["beige", "natural", "brown"],
             "room_compatibility": ["dining room", "bedroom", "entryway"],
+            "image_url": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800",
         },
         {
             "product_id": "LAMP-TABLE-CERAMIC",
@@ -738,6 +745,7 @@ class RetailContext:
             "style_tags": ["coastal", "traditional", "ceramic"],
             "color_palette": ["blue", "white", "beige"],
             "room_compatibility": ["bedroom", "living room", "office"],
+            "image_url": "https://images.unsplash.com/photo-1565014638959-79f8e5c1bcbb?w=800",
         },
         {
             "product_id": "LAMP-WALL-SCONCE-BRASS",
@@ -750,6 +758,7 @@ class RetailContext:
             "style_tags": ["industrial", "modern", "metallic"],
             "color_palette": ["brass", "black", "gold"],
             "room_compatibility": ["bedroom", "hallway", "bathroom"],
+            "image_url": "https://images.unsplash.com/photo-1550699026-4114bbf4fb49?w=800",
         },
         {
             "product_id": "LAMP-STRING-FAIRY",
@@ -762,6 +771,7 @@ class RetailContext:
             "style_tags": ["bohemian", "cozy", "ambient"],
             "color_palette": ["warm-white", "gold"],
             "room_compatibility": ["bedroom", "living room", "patio"],
+            "image_url": "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=800",
         },
         # Home Decor - Plants & Planters
         {
@@ -775,6 +785,7 @@ class RetailContext:
             "style_tags": ["minimalist", "modern", "clean"],
             "color_palette": ["white", "matte"],
             "room_compatibility": ["living room", "kitchen", "bedroom", "office"],
+            "image_url": "https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=800",
         },
         {
             "product_id": "PLANTER-TERRACOTTA-LARGE",
@@ -787,6 +798,7 @@ class RetailContext:
             "style_tags": ["bohemian", "rustic", "natural"],
             "color_palette": ["terracotta", "orange", "clay"],
             "room_compatibility": ["living room", "patio", "entryway"],
+            "image_url": "https://images.unsplash.com/photo-1459156212016-c812468e2115?w=800",
         },
         {
             "product_id": "PLANT-FAUX-MONSTERA",
@@ -799,6 +811,7 @@ class RetailContext:
             "style_tags": ["tropical", "bohemian", "green"],
             "color_palette": ["green", "natural"],
             "room_compatibility": ["living room", "bedroom", "office"],
+            "image_url": "https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=800",
         },
         {
             "product_id": "PLANTER-HANGING-MACRAME",
@@ -811,6 +824,7 @@ class RetailContext:
             "style_tags": ["bohemian", "handmade", "woven"],
             "color_palette": ["beige", "cream", "natural"],
             "room_compatibility": ["living room", "bedroom", "patio"],
+            "image_url": "https://images.unsplash.com/photo-1521334884684-d80222895322?w=800",
         },
         {
             "product_id": "PLANT-FAUX-EUCALYPTUS",
@@ -823,6 +837,7 @@ class RetailContext:
             "style_tags": ["natural", "minimalist", "greenery"],
             "color_palette": ["sage-green", "grey-green"],
             "room_compatibility": ["bedroom", "bathroom", "kitchen"],
+            "image_url": "https://images.unsplash.com/photo-1597868165956-03a6827955b1?w=800",
         },
         # Home Decor - Textiles
         {
@@ -836,6 +851,7 @@ class RetailContext:
             "style_tags": ["cozy", "minimalist", "textured"],
             "color_palette": ["cream", "beige", "ivory"],
             "room_compatibility": ["living room", "bedroom"],
+            "image_url": "https://images.unsplash.com/photo-1631049552240-59c37f5889ed?w=800",
         },
         {
             "product_id": "CUSHION-VELVET-SET",
@@ -848,6 +864,7 @@ class RetailContext:
             "style_tags": ["luxury", "modern", "rich-colors"],
             "color_palette": ["emerald", "navy", "gold", "burgundy"],
             "room_compatibility": ["living room", "bedroom"],
+            "image_url": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800",
         },
         {
             "product_id": "RUG-MOROCCAN-STYLE",
@@ -860,6 +877,7 @@ class RetailContext:
             "style_tags": ["bohemian", "geometric", "traditional"],
             "color_palette": ["beige", "cream", "black"],
             "room_compatibility": ["living room", "bedroom", "dining room"],
+            "image_url": "https://images.unsplash.com/photo-1600166898405-da9535204843?w=800",
         },
         {
             "product_id": "CURTAIN-LINEN-NATURAL",
@@ -872,6 +890,7 @@ class RetailContext:
             "style_tags": ["minimalist", "natural", "light"],
             "color_palette": ["beige", "natural", "cream"],
             "room_compatibility": ["living room", "bedroom", "dining room"],
+            "image_url": "https://images.unsplash.com/photo-1587205403892-90b1e2e19b44?w=800",
         },
         {
             "product_id": "CUSHION-BOHEMIAN-TASSELS",
@@ -884,6 +903,7 @@ class RetailContext:
             "style_tags": ["bohemian", "textured", "eclectic"],
             "color_palette": ["terracotta", "mustard", "cream"],
             "room_compatibility": ["living room", "bedroom", "reading nook"],
+            "image_url": "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=800",
         },
         # Home Decor - Decorative Objects
         {
@@ -897,6 +917,7 @@ class RetailContext:
             "style_tags": ["minimalist", "scandinavian", "clean"],
             "color_palette": ["white", "matte"],
             "room_compatibility": ["living room", "dining room", "office"],
+            "image_url": "https://images.unsplash.com/photo-1578500494198-246f612d3b3d?w=800",
         },
         {
             "product_id": "MIRROR-ROUND-GOLD",
@@ -909,6 +930,7 @@ class RetailContext:
             "style_tags": ["modern", "luxury", "metallic"],
             "color_palette": ["gold", "brass"],
             "room_compatibility": ["entryway", "bedroom", "bathroom"],
+            "image_url": "https://images.unsplash.com/photo-1618220179428-22790b461013?w=800",
         },
         {
             "product_id": "CANDLE-HOLDER-BRASS-SET",
@@ -921,6 +943,7 @@ class RetailContext:
             "style_tags": ["modern", "metallic", "elegant"],
             "color_palette": ["brass", "gold"],
             "room_compatibility": ["dining room", "living room", "bedroom"],
+            "image_url": "https://images.unsplash.com/photo-1602874801006-47c490a57750?w=800",
         },
         {
             "product_id": "TRAY-MARBLE-GOLD",
@@ -933,6 +956,7 @@ class RetailContext:
             "style_tags": ["luxury", "modern", "marble"],
             "color_palette": ["white", "gold", "marble"],
             "room_compatibility": ["living room", "bedroom", "kitchen"],
+            "image_url": "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800",
         },
         {
             "product_id": "SCULPTURE-ABSTRACT-CERAMIC",
@@ -945,6 +969,7 @@ class RetailContext:
             "style_tags": ["modern", "abstract", "sculptural"],
             "color_palette": ["black", "matte"],
             "room_compatibility": ["living room", "office", "entryway"],
+            "image_url": "https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=800",
         },
         {
             "product_id": "CLOCK-WALL-MINIMALIST",
@@ -957,6 +982,7 @@ class RetailContext:
             "style_tags": ["minimalist", "modern", "wood"],
             "color_palette": ["walnut", "black", "wood"],
             "room_compatibility": ["living room", "kitchen", "office", "bedroom"],
+            "image_url": "https://images.unsplash.com/photo-1563861826100-9cb868fdbe1c?w=800",
         },
         # Home Decor - Shelving & Storage
         {
@@ -970,6 +996,7 @@ class RetailContext:
             "style_tags": ["minimalist", "modern", "wood"],
             "color_palette": ["walnut", "wood", "natural"],
             "room_compatibility": ["living room", "bedroom", "office", "bathroom"],
+            "image_url": "https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=800",
         },
         {
             "product_id": "BASKET-STORAGE-WOVEN",
@@ -982,6 +1009,7 @@ class RetailContext:
             "style_tags": ["bohemian", "natural", "woven"],
             "color_palette": ["natural", "beige", "brown"],
             "room_compatibility": ["living room", "bedroom", "bathroom"],
+            "image_url": "https://images.unsplash.com/photo-1567016432779-094069958ea5?w=800",
         },
         {
             "product_id": "SHELF-LADDER-BLACK",
@@ -994,6 +1022,7 @@ class RetailContext:
             "style_tags": ["industrial", "modern", "metal"],
             "color_palette": ["black", "metal"],
             "room_compatibility": ["living room", "office", "bedroom"],
+            "image_url": "https://images.unsplash.com/photo-1603380353725-f8a4d39cc41e?w=800",
         },
         {
             "product_id": "BOX-STORAGE-VELVET",
@@ -1006,6 +1035,7 @@ class RetailContext:
             "style_tags": ["luxury", "modern", "rich-colors"],
             "color_palette": ["emerald", "green", "gold"],
             "room_compatibility": ["bedroom", "living room", "office"],
+            "image_url": "https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=800",
         },
     ]
 
