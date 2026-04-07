@@ -1171,6 +1171,9 @@ def create_style_moodboard(
         f"Creating style moodboard for customer {customer_id} with styles: {style_preferences}, room: {room_type}, colors: {color_preferences}"
     )
 
+    from .image_fetcher import ImageFetcher
+    image_fetcher = ImageFetcher()
+
     # Available style categories with descriptions
     STYLE_CATALOG = {
         "modern": {
@@ -1256,17 +1259,24 @@ def create_style_moodboard(
     random.shuffle(matching_products)
     moodboard_products = matching_products[:6]
 
+    # Fetch images for selected products
+    logger.info(f"Fetching images for {len(moodboard_products)} moodboard products...")
+    image_results = image_fetcher.fetch_batch_images(moodboard_products)
+
     # Build moodboard response
     product_recommendations = []
     for product in moodboard_products:
+        product_id = product["product_id"]
+        fetched_image_url = image_results.get(product_id, product.get("image_url", "./assets/placeholder_home_decor.jpg"))
+
         product_recommendations.append({
-            "product_id": product["product_id"],
+            "product_id": product_id,
             "name": product["name"],
             "category": product.get("subcategory", product["category"]),
             "price": product["price"],
             "style_tags": product.get("style_tags", []),
             "color_palette": product.get("color_palette", []),
-            "image_url": product.get("image_url", ""),
+            "image_url": fetched_image_url,
         })
 
     # Create style description for the moodboard

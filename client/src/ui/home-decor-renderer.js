@@ -175,11 +175,25 @@ export class HomeDecorRenderer {
     card.className = 'style-card relative bg-gray-100 border-3 border-transparent rounded-xl overflow-hidden cursor-pointer hover:shadow-lg transition-all';
     card.dataset.styleId = style.id;
 
-    // Placeholder image (you can add real images later)
-    const imagePlaceholder = document.createElement('div');
-    imagePlaceholder.className = 'w-full h-32 bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center';
-    imagePlaceholder.innerHTML = `<span class="text-4xl opacity-50">🏠</span>`;
-    card.appendChild(imagePlaceholder);
+    // Image container
+    const imageContainer = document.createElement('div');
+    imageContainer.className = 'w-full h-32 bg-gray-100 overflow-hidden';
+
+    // Use image_url from backend if provided, otherwise use a style-based placeholder
+    const img = document.createElement('img');
+    img.src = style.image_url || `./assets/${style.id}_style_preview.jpg`;
+    img.alt = style.label;
+    img.className = 'w-full h-full object-cover';
+    img.loading = 'lazy';
+    img.onerror = () => {
+      img.style.display = 'none';
+      const placeholder = document.createElement('div');
+      placeholder.className = 'w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-gray-300 to-gray-400';
+      placeholder.textContent = '🏠';
+      imageContainer.appendChild(placeholder);
+    };
+    imageContainer.appendChild(img);
+    card.appendChild(imageContainer);
 
     // Content
     const content = document.createElement('div');
