@@ -499,6 +499,17 @@ async def handle_client(websocket: Any) -> None:
         await websocket.send(json.dumps({"ready": True}))
         logger.info(f"New session started: {session_id}")
 
+        # Send personalized greeting if available (from backstage intelligence)
+        personalized_greeting = agent_config.get("personalized_greeting")
+        if personalized_greeting:
+            logger.info(f"[BACKSTAGE] Sending personalized greeting to client")
+            await websocket.send(
+                json.dumps({
+                    "type": "text",
+                    "data": personalized_greeting
+                })
+            )
+
         await handle_messages(websocket, live_events, live_request_queue)
 
     except asyncio.TimeoutError:

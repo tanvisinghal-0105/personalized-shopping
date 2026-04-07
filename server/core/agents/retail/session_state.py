@@ -25,6 +25,9 @@ class HomeDecorSessionState:
                 "current_stage": "stage_1_room_identification",
                 "collected_data": {
                     "room_type": None,
+                    "room_purpose": None,  # "decoration" or "redesign"
+                    "age_context": None,  # Age of room occupant
+                    "constraints": None,  # Items to keep/remove
                     "style_preferences": None,
                     "color_preferences": None,
                 },
@@ -59,6 +62,9 @@ class HomeDecorSessionState:
         self,
         session_id: str,
         room_type: Optional[str] = None,
+        room_purpose: Optional[str] = None,
+        age_context: Optional[str] = None,
+        constraints: Optional[Dict[str, List[str]]] = None,
         style_preferences: Optional[List[str]] = None,
         color_preferences: Optional[List[str]] = None,
         stage: Optional[str] = None,
@@ -72,6 +78,15 @@ class HomeDecorSessionState:
 
             if room_type is not None:
                 session["collected_data"]["room_type"] = room_type
+
+            if room_purpose is not None:
+                session["collected_data"]["room_purpose"] = room_purpose
+
+            if age_context is not None:
+                session["collected_data"]["age_context"] = age_context
+
+            if constraints is not None:
+                session["collected_data"]["constraints"] = constraints
 
             if style_preferences is not None:
                 session["collected_data"]["style_preferences"] = style_preferences

@@ -1163,6 +1163,9 @@ def create_style_moodboard(
     style_preferences: List[str],
     room_type: Optional[str] = None,
     color_preferences: Optional[List[str]] = None,
+    age_context: Optional[str] = None,
+    room_purpose: Optional[str] = None,
+    constraints: Optional[Dict[str, List[str]]] = None,
 ) -> dict:
     """
     Creates a curated style moodboard with product recommendations based on user preferences.
@@ -1172,12 +1175,15 @@ def create_style_moodboard(
         style_preferences: List of preferred decor styles (e.g., ["modern", "minimalist", "bohemian"]).
         room_type: Optional room type (e.g., "living room", "bedroom", "office").
         color_preferences: Optional list of preferred colors (e.g., ["blue", "white", "gold"]).
+        age_context: Optional age context (e.g., "toddler", "school-age", "teen", "adult").
+        room_purpose: Optional room purpose ("decoration" or "redesign").
+        constraints: Optional constraints (items to keep/remove).
 
     Returns:
         A dictionary with moodboard details and recommended products.
     """
     logger.info(
-        f"Creating style moodboard for customer {customer_id} with styles: {style_preferences}, room: {room_type}, colors: {color_preferences}"
+        f"Creating style moodboard for customer {customer_id} with styles: {style_preferences}, room: {room_type}, colors: {color_preferences}, age: {age_context}, purpose: {room_purpose}"
     )
 
     from .image_fetcher import ImageFetcher
@@ -1233,14 +1239,25 @@ def create_style_moodboard(
         matched_styles = ["modern", "minimalist"]
         logger.warning(f"No matching styles found, using default: {matched_styles}")
 
-    # Filter home decor products by style tags
+    # Determine if this is a full room redesign (includes furniture) or just decoration
+    include_furniture = room_purpose == "redesign" or (room_type and room_type.lower() == "bedroom" and age_context)
+
+    # Filter products by style tags - include both Home Decor and Furniture for redesigns
     matching_products = []
     for product in RetailContext.PRODUCT_CATALOG:
-        if product.get("category") == "Home Decor":
+        # Include Home Decor products always, and Furniture products for redesigns
+        if product.get("category") == "Home Decor" or (include_furniture and product.get("category") == "Furniture"):
             # Check if product's style_tags match user preferences
             product_styles = product.get("style_tags", [])
             if any(style in product_styles for style in matched_styles):
-                matching_products.append(product)
+                # Filter by age_appropriate if age_context is provided
+                if age_context and product.get("category") == "Furniture":
+                    age_tags = product.get("age_appropriate", [])
+                    # Only include if product matches the age context
+                    if age_context in age_tags or not age_tags:
+                        matching_products.append(product)
+                else:
+                    matching_products.append(product)
 
     # Further filter by color preferences if provided
     if color_preferences:
@@ -1264,9 +1281,28 @@ def create_style_moodboard(
         if room_filtered:
             matching_products = room_filtered
 
-    # Limit to top 6 products for moodboard
-    random.shuffle(matching_products)
-    moodboard_products = matching_products[:6]
+    # Determine product count based on room purpose
+    # For redesigns, show more products (furniture + decor)
+    # For decoration only, show fewer products (just decor)
+    product_count = 10 if include_furniture else 6
+
+    # Separate furniture and decor products for better curation
+    if include_furniture:
+        furniture_products = [p for p in matching_products if p.get("category") == "Furniture"]
+        decor_products = [p for p in matching_products if p.get("category") == "Home Decor"]
+
+        random.shuffle(furniture_products)
+        random.shuffle(decor_products)
+
+        # For redesigns: prioritize furniture, then add decor
+        # Aim for 40% furniture, 60% decor
+        furniture_count = min(4, len(furniture_products))
+        decor_count = min(product_count - furniture_count, len(decor_products))
+
+        moodboard_products = furniture_products[:furniture_count] + decor_products[:decor_count]
+    else:
+        random.shuffle(matching_products)
+        moodboard_products = matching_products[:product_count]
 
     # Fetch images for selected products
     logger.info(f"Fetching images for {len(moodboard_products)} moodboard products...")
@@ -1435,6 +1471,9 @@ def continue_home_decor_consultation(
     customer_id: str,
     session_id: Optional[str] = None,
     room_type: Optional[str] = None,
+    room_purpose: Optional[str] = None,
+    age_context: Optional[str] = None,
+    constraints: Optional[Dict[str, List[str]]] = None,
     style_preferences: Optional[List[str]] = None,
     color_preferences: Optional[List[str]] = None,
 ) -> dict:
@@ -1445,13 +1484,16 @@ def continue_home_decor_consultation(
         customer_id: The ID of the customer.
         session_id: The consultation session ID (optional - will be retrieved if not provided).
         room_type: The room type specified by customer.
+        room_purpose: Optional room purpose ("decoration" or "redesign").
+        age_context: Optional age context (e.g., "toddler", "school-age", "teen", "adult").
+        constraints: Optional constraints (items to keep/remove).
         style_preferences: List of style preferences.
         color_preferences: Optional list of color preferences.
 
     Returns:
         A dictionary with the next step in the consultation or final moodboard.
     """
-    logger.info(f"[HOME DECOR] Continuing consultation - room: {room_type}, styles: {style_preferences}, colors: {color_preferences}")
+    logger.info(f"[HOME DECOR] Continuing consultation - room: {room_type}, purpose: {room_purpose}, age: {age_context}, styles: {style_preferences}, colors: {color_preferences}")
 
     state_manager = get_state_manager()
 
@@ -1472,6 +1514,9 @@ def continue_home_decor_consultation(
     state_manager.update_session(
         session_id=session_id,
         room_type=room_type,
+        room_purpose=room_purpose,
+        age_context=age_context,
+        constraints=constraints,
         style_preferences=style_preferences,
         color_preferences=color_preferences
     )
@@ -1484,12 +1529,15 @@ def continue_home_decor_consultation(
     if collected["room_type"] and collected["style_preferences"]:
         logger.info(f"[HOME DECOR] All information collected, generating moodboard...")
 
-        # Call the moodboard creation function
+        # Call the moodboard creation function with all context
         moodboard_result = create_style_moodboard(
             customer_id=customer_id,
             style_preferences=collected["style_preferences"],
             room_type=collected["room_type"],
-            color_preferences=collected["color_preferences"]
+            color_preferences=collected["color_preferences"],
+            age_context=collected.get("age_context"),
+            room_purpose=collected.get("room_purpose"),
+            constraints=collected.get("constraints")
         )
 
         # Mark session as completed
@@ -1518,6 +1566,51 @@ def continue_home_decor_consultation(
             "question": "Which room would you like to decorate?",
             "options": ["living room", "bedroom", "office", "dining room", "kitchen", "bathroom", "entryway"],
             "message": "Let's start by identifying which room you'd like to transform."
+        }
+
+    # Ask about room purpose (for bedrooms - decoration vs redesign)
+    if collected["room_type"].lower() == "bedroom" and not collected.get("room_purpose"):
+        state_manager.update_session(session_id, stage="stage_1a_room_purpose")
+        logger.info(f"[HOME DECOR] Awaiting room purpose from customer")
+        return {
+            "status": "awaiting_input",
+            "session_id": session_id,
+            "stage": "stage_1a_room_purpose",
+            "missing_info": "room_purpose",
+            "question": "Are you looking to redecorate or completely redesign the room?",
+            "options": ["decoration", "redesign"],
+            "message": f"Great choice! For your {collected['room_type']}, are you looking to add decor to refresh the space, or do you need a full redesign with new furniture?",
+            "instructions": "Ask if they want to just add decorative items or if they need furniture too."
+        }
+
+    # Ask about age context (for bedrooms in redesign mode)
+    if collected["room_type"].lower() == "bedroom" and collected.get("room_purpose") == "redesign" and not collected.get("age_context"):
+        state_manager.update_session(session_id, stage="stage_1b_age_context")
+        logger.info(f"[HOME DECOR] Awaiting age context from customer")
+        return {
+            "status": "awaiting_input",
+            "session_id": session_id,
+            "stage": "stage_1b_age_context",
+            "missing_info": "age_context",
+            "question": "Who will be using this bedroom?",
+            "options": ["toddler", "school-age", "teen", "adult"],
+            "message": "To recommend the right furniture, could you tell me who the room is for?",
+            "instructions": "Ask about the age of the person who will use the room so we can recommend age-appropriate furniture."
+        }
+
+    # Ask about constraints (for redesigns - what to keep/remove)
+    if collected.get("room_purpose") == "redesign" and not collected.get("constraints"):
+        state_manager.update_session(session_id, stage="stage_1c_constraints")
+        logger.info(f"[HOME DECOR] Awaiting constraints from customer")
+        return {
+            "status": "awaiting_input",
+            "session_id": session_id,
+            "stage": "stage_1c_constraints",
+            "missing_info": "constraints",
+            "question": "Is there any existing furniture you'd like to keep?",
+            "message": "Before we create your moodboard, let me know if there's any furniture you want to keep in the room.",
+            "instructions": "Ask about existing furniture they want to keep vs remove. This helps us avoid recommending duplicates. The customer can respond conversationally (e.g., 'keep the cube shelf, everything else can go').",
+            "examples": ["The bookshelf stays, everything else goes", "Keep the desk and chair", "Start fresh, replace everything", "Just the storage unit stays"]
         }
 
     if not collected["style_preferences"]:
