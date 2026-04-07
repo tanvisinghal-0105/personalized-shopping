@@ -31,6 +31,7 @@ from .tools import (
     continue_home_decor_consultation,
     analyze_room_for_decor,
     analyze_room_with_history,
+    analyze_room_photos_batch,
     get_customer_order_history,
 )
 
@@ -170,6 +171,7 @@ def create_retail_agent(
         create_style_moodboard,
         analyze_room_for_decor,
         analyze_room_with_history,
+        analyze_room_photos_batch,
         get_customer_order_history,
     ]
     default_sub_agents = []

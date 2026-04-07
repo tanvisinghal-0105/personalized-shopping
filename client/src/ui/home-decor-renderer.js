@@ -5,6 +5,8 @@
  * inline in the chat based on ui_data from backend tool responses.
  */
 
+import { PhotoUploadHandler } from './photo-upload-handler.js';
+
 export class HomeDecorRenderer {
   constructor(api, outputContainer) {
     this.api = api;
@@ -14,6 +16,7 @@ export class HomeDecorRenderer {
     this.selectedStyles = [];
     this.selectedColors = [];
     this.renderedMoodboards = new Set();
+    this.photoUploadHandler = new PhotoUploadHandler();
   }
 
   /**
@@ -37,6 +40,9 @@ export class HomeDecorRenderer {
         break;
       case 'color_selector':
         this.renderColorSelector(uiData);
+        break;
+      case 'photo_upload':
+        this.renderPhotoUpload(uiData);
         break;
       default:
         console.warn(`[HomeDecor] Unknown display_type: ${uiData.display_type}`);
@@ -621,6 +627,228 @@ export class HomeDecorRenderer {
   }
 
   /**
+   * Render Photo Upload UI (Phase 3)
+   */
+  renderPhotoUpload(uiData) {
+    const wrapper = this.createMessageWrapper('decor-ui');
+    const bubble = document.createElement('div');
+    bubble.classList.add('message-bubble', 'decor-selector-bubble');
+
+    // Title
+    const title = document.createElement('h3');
+    title.className = 'text-lg font-bold mb-2';
+    title.textContent = uiData.title || 'Show me your space';
+    bubble.appendChild(title);
+
+    if (uiData.subtitle) {
+      const subtitle = document.createElement('p');
+      subtitle.className = 'text-sm text-gray-600 mb-4';
+      subtitle.textContent = uiData.subtitle;
+      bubble.appendChild(subtitle);
+    }
+
+    // Upload container
+    const uploadContainer = document.createElement('div');
+    uploadContainer.className = 'photo-upload-container';
+
+    // Guidelines
+    if (uiData.photo_guidelines && uiData.photo_guidelines.length > 0) {
+      const guidelines = document.createElement('div');
+      guidelines.className = 'photo-upload-guidelines';
+      guidelines.innerHTML = '<strong>Tips for great photos:</strong>';
+
+      const list = document.createElement('ul');
+      uiData.photo_guidelines.forEach(guideline => {
+        const li = document.createElement('li');
+        li.textContent = guideline;
+        list.appendChild(li);
+      });
+      guidelines.appendChild(list);
+      uploadContainer.appendChild(guidelines);
+    }
+
+    // Photo options buttons
+    const optionsContainer = document.createElement('div');
+    optionsContainer.className = 'photo-upload-options';
+
+    // Option 1: Upload photos
+    const uploadBtn = document.createElement('button');
+    uploadBtn.className = 'photo-upload-btn';
+    uploadBtn.innerHTML = '<span class="material-symbols-outlined">upload</span> Upload Photos';
+    uploadBtn.addEventListener('click', () => this.handlePhotoUploadClick());
+    optionsContainer.appendChild(uploadBtn);
+
+    // Option 2: Live camera (existing feature)
+    const cameraBtn = document.createElement('button');
+    cameraBtn.className = 'photo-upload-btn secondary';
+    cameraBtn.innerHTML = '<span class="material-symbols-outlined">videocam</span> Use Live Camera';
+    cameraBtn.addEventListener('click', () => this.handleLiveCameraClick());
+    optionsContainer.appendChild(cameraBtn);
+
+    uploadContainer.appendChild(optionsContainer);
+
+    // Preview grid (initially hidden)
+    const previewGrid = document.createElement('div');
+    previewGrid.className = 'photo-preview-grid';
+    previewGrid.id = `photo-preview-${this.currentSessionId}`;
+    previewGrid.style.display = 'none';
+    uploadContainer.appendChild(previewGrid);
+
+    // Submit button (initially hidden)
+    const submitBtn = document.createElement('button');
+    submitBtn.className = 'photo-upload-submit';
+    submitBtn.textContent = 'Analyze Photos';
+    submitBtn.id = `photo-submit-${this.currentSessionId}`;
+    submitBtn.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.addEventListener('click', () => this.handlePhotoSubmit());
+    uploadContainer.appendChild(submitBtn);
+
+    bubble.appendChild(uploadContainer);
+
+    // Instructions
+    const instructions = document.createElement('p');
+    instructions.className = 'text-xs text-gray-500 mt-3 text-center';
+    instructions.textContent = 'Choose your preferred method to show the room';
+    bubble.appendChild(instructions);
+
+    wrapper.appendChild(bubble);
+    this.output.appendChild(wrapper);
+    this.scrollToBottom();
+  }
+
+  /**
+   * Handle photo upload button click
+   */
+  handlePhotoUploadClick() {
+    const fileInput = this.photoUploadHandler.createFileInput();
+
+    fileInput.addEventListener('change', async (e) => {
+      const files = e.target.files;
+      if (files.length > 0) {
+        await this.photoUploadHandler.handleFileSelection(files);
+        this.updatePhotoPreview();
+      }
+    });
+
+    fileInput.click();
+  }
+
+  /**
+   * Handle live camera button click
+   */
+  handleLiveCameraClick() {
+    console.log('[HomeDecor] Switching to live camera mode');
+    // Trigger the existing camera button in the main UI
+    const cameraButton = document.getElementById('cameraButton');
+    if (cameraButton) {
+      cameraButton.click();
+      this.api.sendTextMessage('Starting live camera view of the room');
+    } else {
+      console.error('[HomeDecor] Camera button not found');
+      this.api.sendTextMessage('Unable to start camera. Please use the camera button in the input area.');
+    }
+  }
+
+  /**
+   * Update photo preview grid
+   */
+  updatePhotoPreview() {
+    const previewGrid = document.getElementById(`photo-preview-${this.currentSessionId}`);
+    const submitBtn = document.getElementById(`photo-submit-${this.currentSessionId}`);
+
+    if (!previewGrid || !submitBtn) return;
+
+    const photos = this.photoUploadHandler.getPhotos();
+
+    if (photos.length > 0) {
+      previewGrid.style.display = 'grid';
+      submitBtn.style.display = 'block';
+      submitBtn.disabled = false;
+
+      // Clear existing previews
+      previewGrid.innerHTML = '';
+
+      // Add photo previews
+      photos.forEach((photo, index) => {
+        const previewItem = document.createElement('div');
+        previewItem.className = 'photo-preview-item';
+
+        const img = document.createElement('img');
+        img.src = photo.preview;
+        img.alt = `Photo ${index + 1}`;
+        previewItem.appendChild(img);
+
+        // Remove button
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'photo-preview-remove';
+        removeBtn.innerHTML = '&times;';
+        removeBtn.addEventListener('click', () => {
+          this.photoUploadHandler.removePhoto(index);
+          this.updatePhotoPreview();
+        });
+        previewItem.appendChild(removeBtn);
+
+        previewGrid.appendChild(previewItem);
+      });
+
+      // Add upload more button if not at max
+      if (!this.photoUploadHandler.isMaxReached()) {
+        const addMoreBtn = document.createElement('div');
+        addMoreBtn.className = 'photo-preview-item flex items-center justify-center cursor-pointer bg-gray-100 hover:bg-gray-200 border-2 border-dashed border-gray-300';
+        addMoreBtn.innerHTML = '<span class="material-symbols-outlined text-4xl text-gray-400">add_photo_alternate</span>';
+        addMoreBtn.addEventListener('click', () => this.handlePhotoUploadClick());
+        previewGrid.appendChild(addMoreBtn);
+      }
+    } else {
+      previewGrid.style.display = 'none';
+      submitBtn.style.display = 'none';
+    }
+
+    this.scrollToBottom();
+  }
+
+  /**
+   * Handle photo submission to backend
+   */
+  handlePhotoSubmit() {
+    const photos = this.photoUploadHandler.getPhotoData();
+
+    if (photos.length === 0) {
+      console.warn('[HomeDecor] No photos to submit');
+      return;
+    }
+
+    console.log(`[HomeDecor] Submitting ${photos.length} photos for analysis`);
+
+    // Send to backend via text message with special format
+    // The backend will parse this and call analyze_room_with_history
+    this.api.sendTextMessage(
+      `analyze_room_photos(session_id="${this.currentSessionId}", customer_id="${this.getCurrentCustomerId()}", photo_count=${photos.length})`
+    );
+
+    // Send each photo as image data
+    photos.forEach((photoBase64, index) => {
+      setTimeout(() => {
+        this.api.sendImage(photoBase64);
+        console.log(`[HomeDecor] Sent photo ${index + 1}/${photos.length}`);
+      }, index * 100); // Stagger sends by 100ms
+    });
+
+    // Disable submit button
+    const submitBtn = document.getElementById(`photo-submit-${this.currentSessionId}`);
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Analyzing...';
+    }
+
+    // Clear photos after submission
+    setTimeout(() => {
+      this.photoUploadHandler.clearPhotos();
+    }, photos.length * 100 + 500);
+  }
+
+  /**
    * Reset selections for new session
    */
   reset() {
@@ -629,5 +857,6 @@ export class HomeDecorRenderer {
     this.selectedStyles = [];
     this.selectedColors = [];
     this.renderedMoodboards.clear();
+    this.photoUploadHandler.clearPhotos();
   }
 }

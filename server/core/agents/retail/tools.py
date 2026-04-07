@@ -1906,6 +1906,77 @@ def analyze_room_with_history(
     }
 
 
+def analyze_room_photos_batch(
+    customer_id: str,
+    session_id: str,
+    image_data_list: List[str],
+    age_context: Optional[str] = None,
+    room_type: Optional[str] = None,
+) -> dict:
+    """
+    Analyzes multiple room photos at once and cross-references with order history.
+    This handles batch photo uploads from the UI.
+
+    Args:
+        customer_id: The ID of the customer.
+        session_id: The consultation session ID.
+        image_data_list: List of base64 encoded image data.
+        age_context: Optional age context.
+        room_type: Optional room type hint.
+
+    Returns:
+        Combined analysis from all photos.
+    """
+    logger.info(f"[BATCH PHOTOS] Analyzing {len(image_data_list)} photos for customer {customer_id}, session {session_id}")
+
+    if not image_data_list or len(image_data_list) == 0:
+        return {
+            "status": "error",
+            "message": "No photos provided for analysis."
+        }
+
+    # Analyze the first photo in detail (main view)
+    main_photo_result = analyze_room_with_history(
+        image_data=image_data_list[0],
+        customer_id=customer_id,
+        session_id=session_id,
+        age_context=age_context,
+        room_type=room_type
+    )
+
+    # For additional photos, do quick analysis to supplement the main view
+    additional_insights = []
+    if len(image_data_list) > 1:
+        logger.info(f"[BATCH PHOTOS] Analyzing {len(image_data_list) - 1} additional photos")
+        for i, image_data in enumerate(image_data_list[1:], start=2):
+            try:
+                additional_result = analyze_room_for_decor(
+                    image_data=image_data,
+                    customer_id=customer_id,
+                    room_type_hint=room_type
+                )
+                if additional_result.get("status") == "success":
+                    additional_insights.append({
+                        "photo_number": i,
+                        "analysis": additional_result.get("analysis", {})
+                    })
+            except Exception as e:
+                logger.warning(f"[BATCH PHOTOS] Error analyzing photo {i}: {e}")
+                continue
+
+    # Combine insights
+    combined_message = main_photo_result.get("message", "")
+    if additional_insights:
+        combined_message += f" I also analyzed {len(additional_insights)} additional views of your space."
+
+    return {
+        **main_photo_result,
+        "photo_count": len(image_data_list),
+        "additional_photos_analyzed": len(additional_insights),
+        "message": combined_message
+    }
+
+
 def analyze_room_for_decor(
     image_data: Optional[str] = None,
     customer_id: Optional[str] = None,
