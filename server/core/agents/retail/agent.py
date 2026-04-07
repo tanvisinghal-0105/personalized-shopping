@@ -8,6 +8,7 @@ from config.config import AGENT_MODEL
 from .prompts import Prompts
 from ...session_utils import SessionUtils
 from ...logger import logger
+from .intent_detector import get_intent_detector
 
 from .tools import (
     send_call_companion_link,
@@ -25,7 +26,66 @@ from .tools import (
     get_trade_in_value,
     lookup_warranty_details,
     identify_phone_from_camera_feed,
+    create_style_moodboard,
+    start_home_decor_consultation,
+    continue_home_decor_consultation,
+    analyze_room_for_decor,
 )
+
+
+def intent_interceptor(
+    user_message: str, tool_context: ToolContext
+) -> Optional[str]:
+    """
+    Intercepts user messages BEFORE the model processes them.
+    Modifies the message to force appropriate tool calls based on detected intent.
+
+    Returns: Modified message string, or None to use original message
+    """
+    logger.info(f"[INTENT INTERCEPTOR] ===== CALLBACK FIRED =====")
+    logger.info(f"[INTENT INTERCEPTOR] Analyzing message: '{user_message}'")
+    logger.info(f"[INTENT INTERCEPTOR] Tool context state keys: {list(tool_context.state.keys())}")
+
+    intent_detector = get_intent_detector()
+
+    # Check if we should force a tool call
+    forced_call = intent_detector.should_force_tool_call(user_message)
+
+    if forced_call:
+        tool_name = forced_call["tool_name"]
+        parameters = forced_call["parameters"]
+
+        logger.info(
+            f"[INTENT INTERCEPTOR] ===== HOME DECOR INTENT DETECTED ====="
+        )
+        logger.info(
+            f"[INTENT INTERCEPTOR] Forcing tool call: {tool_name}"
+        )
+        logger.info(
+            f"[INTENT INTERCEPTOR] Parameters: {parameters}"
+        )
+
+        # Get customer_id from context
+        customer_id = tool_context.state.get("customer_id", "CY-DEFAULT")
+        logger.info(f"[INTENT INTERCEPTOR] Customer ID: {customer_id}")
+
+        # Modify the user message to explicitly instruct the model to call the tool
+        modified_message = f"""URGENT: The customer just asked about home decoration.
+
+Original request: "{user_message}"
+
+YOU MUST IMMEDIATELY call the {tool_name} tool with these parameters:
+- customer_id: "{customer_id}"
+- initial_request: "{user_message}"
+
+DO NOT respond with text. DO NOT ask questions. JUST CALL THE TOOL NOW.
+Call {tool_name}(customer_id="{customer_id}", initial_request="{user_message}")"""
+
+        logger.info(f"[INTENT INTERCEPTOR] Modified message: {modified_message[:200]}...")
+        return modified_message
+
+    logger.info("[INTENT INTERCEPTOR] No home decor intent detected - message unchanged")
+    return None
 
 
 def logic_check(
@@ -103,6 +163,10 @@ def create_retail_agent(
         get_trade_in_value,
         lookup_warranty_details,
         identify_phone_from_camera_feed,
+        start_home_decor_consultation,
+        continue_home_decor_consultation,
+        create_style_moodboard,
+        analyze_room_for_decor,
     ]
     default_sub_agents = []
 
@@ -140,7 +204,9 @@ def create_retail_agent(
     agent.before_agent_callback = None
     agent.after_agent_callback = None
 
-    agent.before_model_callback = None
+    # CRITICAL: Intent interceptor runs BEFORE the model processes the message
+    # This ensures home decor requests trigger the correct tool immediately
+    agent.before_model_callback = intent_interceptor
     agent.after_model_callback = None
 
     # Log agent creation for debugging/info purposes

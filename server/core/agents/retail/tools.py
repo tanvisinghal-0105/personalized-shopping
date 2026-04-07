@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 from google.cloud import firestore
 from .context import RetailContext
+from .session_state import get_state_manager
 from config.config import RECOMMENDATION_MODEL
 
 # Initialize Firestore client with error handling
@@ -637,15 +638,18 @@ def get_product_recommendations(
 
         client = genai.Client()
 
-        # Build a concise product catalog for Gemini
+        # Build a concise product catalog for Gemini with home decor metadata
         catalog_text = "Available products:\n"
         for product in RetailContext.PRODUCT_CATALOG:
             if product["product_id"] != current_product_id:
-                catalog_text += f"- {
-                    product['product_id']}: {
-                    product['name']} ({
-                    product['category']}) - €{
-                    product['price']:.2f}\n"
+                # Include additional metadata for Home Decor products
+                if product.get("category") == "Home Decor":
+                    style_info = f" [Styles: {', '.join(product.get('style_tags', []))}]" if product.get('style_tags') else ""
+                    color_info = f" [Colors: {', '.join(product.get('color_palette', []))}]" if product.get('color_palette') else ""
+                    room_info = f" [Rooms: {', '.join(product.get('room_compatibility', []))}]" if product.get('room_compatibility') else ""
+                    catalog_text += f"- {product['product_id']}: {product['name']} ({product.get('subcategory', product['category'])}) - €{product['price']:.2f}{style_info}{color_info}{room_info}\n"
+                else:
+                    catalog_text += f"- {product['product_id']}: {product['name']} ({product['category']}) - €{product['price']:.2f}\n"
 
         prompt = f"""You are a product recommendation expert. Based on the customer's interest, recommend the 3 most relevant products from the catalog.
 
@@ -659,7 +663,10 @@ Choose products that best match the customer's interest. For example:
 - "sneakers" or "shoes" → Footwear products (Nike, Adidas, etc.)
 - "laptop" or "computer" → Laptop products
 - "TV" or "television" → TV products
-- "phone" or "smartphone" → Phone products"""
+- "phone" or "smartphone" → Phone products
+- "modern living room" → Home Decor products with modern style tags for living room
+- "coastal bedroom" → Home Decor products with coastal style tags for bedroom
+- "gold accents" → Home Decor products with gold in their color palette"""
 
         response = client.models.generate_content(
             model=RECOMMENDATION_MODEL,
@@ -1139,4 +1146,608 @@ def lookup_warranty_details(product_id: str) -> dict:
                 "warranty_period": "1 year",
                 "coverage_summary": "Covers manufacturing defects for one year from purchase date. Does not cover accidental damage like drops or spills.",
             },
+        }
+
+
+def create_style_moodboard(
+    customer_id: str,
+    style_preferences: List[str],
+    room_type: Optional[str] = None,
+    color_preferences: Optional[List[str]] = None,
+) -> dict:
+    """
+    Creates a curated style moodboard with product recommendations based on user preferences.
+
+    Args:
+        customer_id: The ID of the customer.
+        style_preferences: List of preferred decor styles (e.g., ["modern", "minimalist", "bohemian"]).
+        room_type: Optional room type (e.g., "living room", "bedroom", "office").
+        color_preferences: Optional list of preferred colors (e.g., ["blue", "white", "gold"]).
+
+    Returns:
+        A dictionary with moodboard details and recommended products.
+    """
+    logger.info(
+        f"Creating style moodboard for customer {customer_id} with styles: {style_preferences}, room: {room_type}, colors: {color_preferences}"
+    )
+
+    # Available style categories with descriptions
+    STYLE_CATALOG = {
+        "modern": {
+            "description": "Clean lines, minimal ornamentation, neutral colors with bold accents",
+            "keywords": ["modern", "contemporary", "sleek"],
+        },
+        "minimalist": {
+            "description": "Simplicity, functionality, monochromatic palette, less is more",
+            "keywords": ["minimalist", "simple", "clean"],
+        },
+        "bohemian": {
+            "description": "Eclectic mix, rich colors, patterns, global influences, relaxed vibe",
+            "keywords": ["bohemian", "boho", "eclectic"],
+        },
+        "coastal": {
+            "description": "Light and airy, nautical themes, blues and whites, natural textures",
+            "keywords": ["coastal", "beach", "nautical"],
+        },
+        "industrial": {
+            "description": "Exposed materials, metal accents, reclaimed wood, urban loft aesthetic",
+            "keywords": ["industrial", "urban", "loft"],
+        },
+        "scandinavian": {
+            "description": "Functionality, natural materials, light woods, hygge coziness",
+            "keywords": ["scandinavian", "nordic", "hygge"],
+        },
+        "traditional": {
+            "description": "Classic elegance, rich woods, ornate details, timeless pieces",
+            "keywords": ["traditional", "classic", "elegant"],
+        },
+        "rustic": {
+            "description": "Natural materials, warm tones, handcrafted feel, country charm",
+            "keywords": ["rustic", "farmhouse", "country"],
+        },
+    }
+
+    # Normalize style preferences to match catalog
+    matched_styles = []
+    for pref in style_preferences:
+        pref_lower = pref.lower()
+        for style, data in STYLE_CATALOG.items():
+            if pref_lower in data["keywords"] or pref_lower in style:
+                if style not in matched_styles:
+                    matched_styles.append(style)
+
+    # Fallback if no matches
+    if not matched_styles:
+        matched_styles = ["modern", "minimalist"]
+        logger.warning(f"No matching styles found, using default: {matched_styles}")
+
+    # Filter home decor products by style tags
+    matching_products = []
+    for product in RetailContext.PRODUCT_CATALOG:
+        if product.get("category") == "Home Decor":
+            # Check if product's style_tags match user preferences
+            product_styles = product.get("style_tags", [])
+            if any(style in product_styles for style in matched_styles):
+                matching_products.append(product)
+
+    # Further filter by color preferences if provided
+    if color_preferences:
+        color_filtered = []
+        for product in matching_products:
+            product_colors = product.get("color_palette", [])
+            if any(color.lower() in [c.lower() for c in product_colors] for color in color_preferences):
+                color_filtered.append(product)
+        # If color filtering yields results, use those; otherwise keep style matches
+        if color_filtered:
+            matching_products = color_filtered
+
+    # Further filter by room compatibility if provided
+    if room_type:
+        room_filtered = []
+        for product in matching_products:
+            compatible_rooms = product.get("room_compatibility", [])
+            if room_type.lower() in [r.lower() for r in compatible_rooms]:
+                room_filtered.append(product)
+        # If room filtering yields results, use those; otherwise keep previous matches
+        if room_filtered:
+            matching_products = room_filtered
+
+    # Limit to top 6 products for moodboard
+    random.shuffle(matching_products)
+    moodboard_products = matching_products[:6]
+
+    # Build moodboard response
+    product_recommendations = []
+    for product in moodboard_products:
+        product_recommendations.append({
+            "product_id": product["product_id"],
+            "name": product["name"],
+            "category": product.get("subcategory", product["category"]),
+            "price": product["price"],
+            "style_tags": product.get("style_tags", []),
+            "color_palette": product.get("color_palette", []),
+        })
+
+    # Create style description for the moodboard
+    style_descriptions = [STYLE_CATALOG.get(s, {}).get("description", s) for s in matched_styles]
+
+    moodboard_summary = {
+        "status": "success",
+        "customer_id": customer_id,
+        "moodboard_id": f"MOOD-{random.randint(10000, 99999)}",
+        "selected_styles": matched_styles,
+        "style_descriptions": style_descriptions,
+        "room_type": room_type,
+        "color_palette": color_preferences if color_preferences else "open to all colors",
+        "product_count": len(product_recommendations),
+        "products": product_recommendations,
+        "message": f"Created a {', '.join(matched_styles)} style moodboard with {len(product_recommendations)} curated products{f' for your {room_type}' if room_type else ''}."
+    }
+
+    logger.info(f"Moodboard created with {len(product_recommendations)} products")
+    return moodboard_summary
+
+
+def start_home_decor_consultation(
+    customer_id: str,
+    initial_request: Optional[str] = None,
+) -> dict:
+    """
+    Starts a structured home decor consultation session. This is the entry point for home decor conversations.
+
+    Args:
+        customer_id: The ID of the customer.
+        initial_request: Optional initial request from the customer (e.g., "I want to decorate my living room").
+
+    Returns:
+        A dictionary with the consultation session details and next steps.
+    """
+    logger.info(f"[HOME DECOR] Starting consultation for customer {customer_id}")
+    logger.info(f"[HOME DECOR] Initial request: {initial_request}")
+
+    state_manager = get_state_manager()
+
+    # Check if customer has an existing active session
+    existing_session = state_manager.get_customer_session(customer_id)
+    if existing_session and not existing_session.get("moodboard_generated", False):
+        logger.info(f"[HOME DECOR] Found existing session {existing_session['session_id']}, continuing...")
+        session_id = existing_session["session_id"]
+    else:
+        # Create new session
+        session_id = f"DECOR-CONSULT-{random.randint(10000, 99999)}"
+        state_manager.create_session(customer_id, session_id)
+        logger.info(f"[HOME DECOR] Created new session {session_id}")
+
+    # Try to detect room type from initial request
+    detected_room = None
+    if initial_request:
+        request_lower = initial_request.lower()
+        room_keywords = {
+            "living room": ["living room", "lounge"],
+            "bedroom": ["bedroom", "bed room"],
+            "office": ["office", "home office", "workspace"],
+            "dining room": ["dining room", "dining"],
+            "kitchen": ["kitchen"],
+            "bathroom": ["bathroom", "bath"],
+            "entryway": ["entryway", "entry way", "hallway", "entrance"]
+        }
+
+        for room_type, keywords in room_keywords.items():
+            if any(keyword in request_lower for keyword in keywords):
+                detected_room = room_type
+                logger.info(f"[HOME DECOR] Detected room from initial request: {detected_room}")
+                # Update session with detected room
+                state_manager.update_session(session_id, room_type=detected_room)
+                break
+
+    # Define the consultation stages
+    consultation_flow = {
+        "stage_1_room_identification": {
+            "question": "Which room would you like to decorate?",
+            "options": ["living room", "bedroom", "office", "dining room", "kitchen", "bathroom", "entryway"],
+            "completed": False
+        },
+        "stage_2_style_discovery": {
+            "question": "What decor style resonates with you?",
+            "options": ["modern", "minimalist", "bohemian", "coastal", "industrial", "scandinavian", "traditional", "rustic"],
+            "allow_multiple": True,
+            "completed": False
+        },
+        "stage_3_color_preferences": {
+            "question": "Are there specific colors you'd like to incorporate?",
+            "examples": ["blue and white", "warm earth tones", "black and gold", "neutral palette"],
+            "optional": True,
+            "completed": False
+        },
+        "stage_4_generate_moodboard": {
+            "action": "create_style_moodboard",
+            "description": "Generate personalized moodboard with curated products",
+            "completed": False
+        }
+    }
+
+    # Build UI data for Phase 1 room selection
+    room_options_ui = [
+        {"id": "living_room", "label": "Living Room", "icon": "🛋️"},
+        {"id": "bedroom", "label": "Bedroom", "icon": "🛏️"},
+        {"id": "office", "label": "Office", "icon": "💼"},
+        {"id": "dining_room", "label": "Dining Room", "icon": "🍽️"},
+        {"id": "kitchen", "label": "Kitchen", "icon": "🍳"},
+        {"id": "bathroom", "label": "Bathroom", "icon": "🚿"},
+        {"id": "entryway", "label": "Entryway", "icon": "🚪"}
+    ]
+
+    result = {
+        "status": "consultation_started",
+        "session_id": session_id,
+        "customer_id": customer_id,
+        "current_stage": "stage_1_room_identification",
+        "consultation_flow": consultation_flow,
+        "message": "Home decor consultation started! Let's find the perfect pieces for your space.",
+        "next_question": consultation_flow["stage_1_room_identification"]["question"],
+        "options": consultation_flow["stage_1_room_identification"]["options"],
+        "instructions": "Ask the customer to choose from the provided room options, or let them specify their own.",
+        # NEW: UI display data for Phase 1
+        "ui_data": {
+            "display_type": "room_selector",
+            "title": "Which room would you like to decorate?",
+            "subtitle": "Select the space you'd like to transform",
+            "room_options": room_options_ui,
+            "interaction_mode": "single_select",
+            "phase": "phase_1_initial_interest"
+        }
+    }
+
+    logger.info(f"[HOME DECOR] Consultation started successfully. Session ID: {session_id}")
+    return result
+
+
+def continue_home_decor_consultation(
+    customer_id: str,
+    session_id: Optional[str] = None,
+    room_type: Optional[str] = None,
+    style_preferences: Optional[List[str]] = None,
+    color_preferences: Optional[List[str]] = None,
+) -> dict:
+    """
+    Continues the home decor consultation with customer responses.
+
+    Args:
+        customer_id: The ID of the customer.
+        session_id: The consultation session ID (optional - will be retrieved if not provided).
+        room_type: The room type specified by customer.
+        style_preferences: List of style preferences.
+        color_preferences: Optional list of color preferences.
+
+    Returns:
+        A dictionary with the next step in the consultation or final moodboard.
+    """
+    logger.info(f"[HOME DECOR] Continuing consultation - room: {room_type}, styles: {style_preferences}, colors: {color_preferences}")
+
+    state_manager = get_state_manager()
+
+    # Get or validate session
+    if not session_id:
+        session = state_manager.get_customer_session(customer_id)
+        if not session:
+            logger.warning(f"[HOME DECOR] No session found for customer {customer_id}, creating new one")
+            return start_home_decor_consultation(customer_id)
+        session_id = session["session_id"]
+    else:
+        session = state_manager.get_session(session_id)
+        if not session:
+            logger.warning(f"[HOME DECOR] Session {session_id} not found")
+            return {"status": "error", "message": "Session not found. Please start a new consultation."}
+
+    # Update session state with new information
+    state_manager.update_session(
+        session_id=session_id,
+        room_type=room_type,
+        style_preferences=style_preferences,
+        color_preferences=color_preferences
+    )
+
+    # Get current state
+    session = state_manager.get_session(session_id)
+    collected = session["collected_data"]
+
+    # If we have all required information, generate the moodboard
+    if collected["room_type"] and collected["style_preferences"]:
+        logger.info(f"[HOME DECOR] All information collected, generating moodboard...")
+
+        # Call the moodboard creation function
+        moodboard_result = create_style_moodboard(
+            customer_id=customer_id,
+            style_preferences=collected["style_preferences"],
+            room_type=collected["room_type"],
+            color_preferences=collected["color_preferences"]
+        )
+
+        # Mark session as completed
+        state_manager.mark_moodboard_generated(session_id)
+
+        logger.info(f"[HOME DECOR] Moodboard generated successfully for session {session_id}")
+
+        return {
+            "status": "consultation_completed",
+            "session_id": session_id,
+            "stage": "completed",
+            "moodboard": moodboard_result,
+            "message": f"Based on your {', '.join(collected['style_preferences'])} style preferences for your {collected['room_type']}, I've created a personalized moodboard!",
+            "next_action": "Present the moodboard products to the customer and offer to add any to their cart."
+        }
+
+    # Determine what information we still need
+    if not collected["room_type"]:
+        state_manager.update_session(session_id, stage="stage_1_room_identification")
+        logger.info(f"[HOME DECOR] Awaiting room type from customer")
+        return {
+            "status": "awaiting_input",
+            "session_id": session_id,
+            "stage": "stage_1_room_identification",
+            "missing_info": "room_type",
+            "question": "Which room would you like to decorate?",
+            "options": ["living room", "bedroom", "office", "dining room", "kitchen", "bathroom", "entryway"],
+            "message": "Let's start by identifying which room you'd like to transform."
+        }
+
+    if not collected["style_preferences"]:
+        state_manager.update_session(session_id, stage="stage_2_style_discovery")
+        logger.info(f"[HOME DECOR] Awaiting style preferences from customer")
+
+        # Build UI data for Phase 1 style selection
+        style_options_ui = [
+            {"id": "modern", "label": "Modern", "description": "Clean lines, minimal ornamentation", "image_hint": "modern-interior"},
+            {"id": "minimalist", "label": "Minimalist", "description": "Less is more, simple & functional", "image_hint": "minimalist-room"},
+            {"id": "bohemian", "label": "Bohemian", "description": "Eclectic mix, rich colors & patterns", "image_hint": "boho-decor"},
+            {"id": "coastal", "label": "Coastal", "description": "Light & airy, nautical themes", "image_hint": "coastal-room"},
+            {"id": "industrial", "label": "Industrial", "description": "Exposed materials, urban loft", "image_hint": "industrial-loft"},
+            {"id": "scandinavian", "label": "Scandinavian", "description": "Natural materials, hygge coziness", "image_hint": "scandi-interior"},
+            {"id": "traditional", "label": "Traditional", "description": "Classic elegance, timeless pieces", "image_hint": "traditional-room"},
+            {"id": "rustic", "label": "Rustic", "description": "Natural materials, country charm", "image_hint": "rustic-decor"}
+        ]
+
+        return {
+            "status": "awaiting_input",
+            "session_id": session_id,
+            "stage": "stage_2_style_discovery",
+            "missing_info": "style_preferences",
+            "question": "What decor style resonates with you? You can choose multiple!",
+            "options": ["modern", "minimalist", "bohemian", "coastal", "industrial", "scandinavian", "traditional", "rustic"],
+            "message": f"Great! Now let's explore styles for your {collected['room_type']}.",
+            # NEW: UI display data for Phase 1 style selection
+            "ui_data": {
+                "display_type": "style_selector",
+                "title": f"Perfect! Now, what style speaks to you for your {collected['room_type']}?",
+                "subtitle": "Choose one or more styles that resonate with you",
+                "style_options": style_options_ui,
+                "interaction_mode": "multi_select",
+                "phase": "phase_1_style_discovery"
+            }
+        }
+
+    # If we're here but don't have colors, ask about them (optional)
+    if not collected["color_preferences"]:
+        state_manager.update_session(session_id, stage="stage_3_color_preferences")
+        logger.info(f"[HOME DECOR] Awaiting color preferences (optional) from customer")
+
+        # Build UI data for Phase 1 color selection
+        color_options_ui = [
+            {"id": "blue", "label": "Blue", "hex": "#4A90E2", "description": "Calming & serene"},
+            {"id": "white", "label": "White", "hex": "#FFFFFF", "description": "Clean & bright"},
+            {"id": "gray", "label": "Gray", "hex": "#9B9B9B", "description": "Neutral & modern"},
+            {"id": "beige", "label": "Beige", "hex": "#D4C5B9", "description": "Warm & inviting"},
+            {"id": "black", "label": "Black", "hex": "#000000", "description": "Bold & dramatic"},
+            {"id": "gold", "label": "Gold", "hex": "#D4AF37", "description": "Luxe & elegant"},
+            {"id": "green", "label": "Green", "hex": "#7ED321", "description": "Fresh & natural"},
+            {"id": "pink", "label": "Pink", "hex": "#F8B4D8", "description": "Soft & playful"},
+            {"id": "brown", "label": "Brown", "hex": "#8B5A3C", "description": "Earthy & grounded"},
+            {"id": "cream", "label": "Cream", "hex": "#F5E6D3", "description": "Soft & cozy"}
+        ]
+
+        return {
+            "status": "awaiting_input",
+            "session_id": session_id,
+            "stage": "stage_3_color_preferences",
+            "missing_info": "color_preferences",
+            "question": "Are there any specific colors you'd like to incorporate? (optional)",
+            "examples": ["blue and white", "warm earth tones", "black and gold", "neutral palette", "no preference"],
+            "message": f"Almost there! Any color preferences for your {', '.join(collected['style_preferences'])} {collected['room_type']}?",
+            "optional": True,
+            # NEW: UI display data for Phase 1 color selection
+            "ui_data": {
+                "display_type": "color_selector",
+                "title": "Any color palette in mind?",
+                "subtitle": "Optional - Select colors you'd like to incorporate, or skip",
+                "color_options": color_options_ui,
+                "interaction_mode": "multi_select",
+                "phase": "phase_1_color_preferences",
+                "skip_allowed": True
+            }
+        }
+
+    return {
+        "status": "error",
+        "message": "Unable to determine next step in consultation."
+    }
+
+
+def analyze_room_for_decor(
+    image_data: Optional[str] = None,
+    customer_id: Optional[str] = None,
+    room_type_hint: Optional[str] = None,
+) -> dict:
+    """
+    Analyzes a room photo using Gemini Vision API to provide home decor recommendations.
+
+    Args:
+        image_data: Optional base64 encoded image data of the room (data URI format or raw base64).
+        customer_id: Optional customer ID for context.
+        room_type_hint: Optional hint about the room type (e.g., "living room", "bedroom").
+
+    Returns:
+        A dictionary containing room analysis and decor recommendations.
+    """
+    logger.info(
+        f"Analyzing room photo for customer {customer_id}. Room hint: {room_type_hint}"
+    )
+
+    if not image_data:
+        logger.warning("No image data provided to analyze_room_for_decor tool.")
+        return {
+            "status": "error",
+            "message": "This tool requires an image of the room to analyze. Please provide a photo of your space.",
+            "analysis": None,
+            "recommendations": [],
+        }
+
+    # Extract base64 data if in data URI format
+    if image_data.startswith("data:"):
+        image_base64 = (
+            image_data.split(",")[1] if "," in image_data else image_data
+        )
+    else:
+        image_base64 = image_data
+
+    # Check for minimal image data
+    if len(image_base64) < 1000:
+        return {
+            "status": "failure",
+            "message": "The image quality is too low for accurate analysis. Please provide a clearer photo.",
+            "analysis": None,
+            "recommendations": [],
+        }
+
+    # Use Gemini Vision API for room analysis
+    try:
+        from google import genai
+        from google.genai import types
+        import base64
+
+        client = genai.Client()
+
+        # Decode base64 to bytes
+        image_bytes = base64.b64decode(image_base64)
+
+        # Create the vision prompt for room analysis
+        prompt = """Analyze this room image and provide detailed insights for home decor recommendations.
+
+Please identify and describe:
+
+1. Room Type: What type of room is this (living room, bedroom, office, kitchen, etc.)?
+
+2. Current Style: What is the existing decor style (modern, traditional, minimalist, bohemian, etc.)?
+
+3. Color Palette: What are the dominant colors in the room (walls, furniture, accents)?
+
+4. Lighting: Describe the natural and artificial lighting situation.
+
+5. Furniture & Layout: What furniture is present? How is the space laid out?
+
+6. Opportunities: What decor elements are missing or could be improved (wall art, lighting, plants, textiles, etc.)?
+
+7. Recommendations: Based on the analysis, what specific types of home decor would enhance this space?
+
+Respond in this JSON format:
+{
+  "room_type": "living room",
+  "current_style": "modern minimalist",
+  "dominant_colors": ["white", "gray", "beige"],
+  "lighting_assessment": "Good natural light from windows, needs ambient lighting",
+  "existing_furniture": ["sofa", "coffee table", "TV stand"],
+  "improvement_opportunities": ["Add wall art above sofa", "Include floor lamp for reading", "Add plants for warmth", "Layer with textiles (throw blankets, cushions)"],
+  "recommended_decor_categories": ["Wall Art", "Lighting", "Plants & Planters", "Textiles"]
+}
+
+Response (JSON only):"""
+
+        # Use Gemini for vision analysis
+        vision_model = (
+            "gemini-2.0-flash-exp"
+            if "flash" in RECOMMENDATION_MODEL.lower()
+            else "gemini-1.5-pro"
+        )
+
+        logger.info(f"Using {vision_model} for room analysis")
+
+        response = client.models.generate_content(
+            model=vision_model,
+            contents=[
+                types.Part.from_bytes(
+                    data=image_bytes, mime_type="image/jpeg"
+                ),
+                prompt,
+            ],
+            config=types.GenerateContentConfig(
+                temperature=0.3,
+                max_output_tokens=1000,
+            ),
+        )
+
+        # Parse the JSON response
+        import json
+        response_text = response.text.strip()
+
+        # Remove markdown code blocks if present
+        if response_text.startswith("```"):
+            response_text = response_text.split("```")[1]
+            if response_text.startswith("json"):
+                response_text = response_text[4:]
+            response_text = response_text.strip()
+            if response_text.endswith("```"):
+                response_text = response_text[:-3].strip()
+
+        room_analysis = json.loads(response_text)
+
+        logger.info(f"Room analysis completed: {room_analysis.get('room_type', 'Unknown')} - {room_analysis.get('current_style', 'Unknown')}")
+
+        # Find matching products based on analysis
+        recommended_categories = room_analysis.get("recommended_decor_categories", [])
+        dominant_colors = room_analysis.get("dominant_colors", [])
+        room_type = room_analysis.get("room_type", room_type_hint)
+
+        matching_products = []
+        for product in RetailContext.PRODUCT_CATALOG:
+            if product.get("category") == "Home Decor":
+                # Match by subcategory
+                if product.get("subcategory") in recommended_categories:
+                    # Further filter by room compatibility
+                    compatible_rooms = product.get("room_compatibility", [])
+                    if room_type and any(room_type.lower() in r.lower() for r in compatible_rooms):
+                        matching_products.append({
+                            "product_id": product["product_id"],
+                            "name": product["name"],
+                            "category": product.get("subcategory", "Home Decor"),
+                            "price": product["price"],
+                            "why_recommended": f"Complements your {room_analysis.get('current_style', 'existing')} style"
+                        })
+
+        # Limit to top 5 recommendations
+        random.shuffle(matching_products)
+        product_recommendations = matching_products[:5]
+
+        return {
+            "status": "success",
+            "message": f"Successfully analyzed your {room_analysis.get('room_type', 'room')}. Found {len(product_recommendations)} product recommendations.",
+            "analysis": room_analysis,
+            "product_recommendations": product_recommendations,
+            "analysis_id": f"ROOM-{random.randint(10000, 99999)}",
+        }
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse Gemini Vision response as JSON: {e}")
+        logger.error(f"Raw response: {response_text[:200]}")
+        return {
+            "status": "error",
+            "message": "I had trouble analyzing the room image. Please try again with a different photo.",
+            "analysis": None,
+            "recommendations": [],
+        }
+    except Exception as e:
+        logger.error(f"Error using Gemini Vision for room analysis: {e}")
+        return {
+            "status": "error",
+            "message": f"An error occurred while analyzing the room: {str(e)[:100]}",
+            "analysis": None,
+            "recommendations": [],
         }
