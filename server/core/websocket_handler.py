@@ -401,10 +401,11 @@ DO NOT respond with text. DO NOT ask questions. JUST CALL THE TOOL NOW."""
 
 
 async def handle_client_messages(
-    websocket: Any, live_request_queue: LiveRequestQueue
+    websocket: Any, live_request_queue: LiveRequestQueue, session_id: str
 ) -> None:
     """
     Handles incoming messages from the client, processing and forwarding them to the agent.
+    Now intercepts images and calls analysis tools directly when home decor consultation is active.
     """
     try:
         async for message in websocket:
@@ -421,7 +422,7 @@ async def handle_client_messages(
                     )
                     logger.debug("Audio sent to Agent")
                 elif msg_type == "image":
-                    logger.debug("Client -> Agent: Handling image data...")
+                    logger.info("[IMAGE INTERCEPTOR] ===== IMAGE RECEIVED =====")
                     # Handle both data URI format and raw base64
                     image_data_raw = data.get("data")
                     if "," in image_data_raw:
@@ -432,11 +433,85 @@ async def handle_client_messages(
                         # Raw base64 format
                         image_data_str = image_data_raw
 
+                    # Check if there's an active home decor consultation
+                    from core.agents.retail.session_state import get_state_manager
+                    session_context = SESSION_CONTEXTS.get(session_id, {})
+                    customer_id = session_context.get("customer_id", "CY-DEFAULT")
+                    state_manager = get_state_manager()
+                    existing_session = state_manager.get_customer_session(customer_id)
+
+                    if existing_session and not existing_session.get("moodboard_generated", False):
+                        logger.info(f"[IMAGE INTERCEPTOR] Active home decor session found (session_id: {existing_session['session_id']})")
+                        logger.info("[IMAGE INTERCEPTOR] Calling analyze_room_for_decor directly")
+
+                        # Import the tool
+                        from core.agents.retail.tools import analyze_room_for_decor
+
+                        # Extract room type from session data
+                        room_type = existing_session["collected_data"].get("room_type")
+
+                        # Call the tool directly with the base64 image data
+                        try:
+                            tool_result = analyze_room_for_decor(
+                                customer_id=customer_id,
+                                room_type_hint=room_type,
+                                image_data=image_data_str
+                            )
+
+                            logger.info(f"[IMAGE INTERCEPTOR] Tool result status: {tool_result.get('status')}")
+
+                            # Send the tool result to the agent as if it came from a function response
+                            # This way the agent can present the recommendations naturally
+                            tool_response_message = f"""The room analysis tool has been called automatically and returned results:
+
+Status: {tool_result.get('status')}
+Analysis: {tool_result.get('analysis', {})}
+
+Please present these room analysis results to the customer in a friendly, conversational way. Explain what you see in their space and provide the product recommendations from the analysis."""
+
+                            live_request_queue.send_content(
+                                Content(
+                                    role="user",
+                                    parts=[Part.from_text(text=tool_response_message)],
+                                )
+                            )
+
+                            # Also send acknowledgment to client
+                            await websocket.send(
+                                json.dumps({
+                                    "type": "tool_call",
+                                    "data": {
+                                        "name": "analyze_room_for_decor",
+                                        "args": {
+                                            "customer_id": customer_id,
+                                            "room_type_hint": room_type
+                                        }
+                                    }
+                                })
+                            )
+
+                            await websocket.send(
+                                json.dumps({
+                                    "type": "tool_result",
+                                    "data": tool_result
+                                })
+                            )
+
+                            logger.info("[IMAGE INTERCEPTOR] Successfully processed image and sent results")
+                            continue
+
+                        except Exception as tool_error:
+                            logger.error(f"[IMAGE INTERCEPTOR] Error calling analysis tool: {tool_error}")
+                            logger.error(f"Full traceback:\n{traceback.format_exc()}")
+                            # Fall through to normal processing if tool call fails
+
+                    # Normal processing: send image to agent via multimodal context
+                    # This is only reached if no active consultation or tool call failed
                     decoded_data = base64.b64decode(image_data_str)
                     live_request_queue.send_realtime(
                         Blob(data=decoded_data, mime_type="image/jpeg")
                     )
-                    logger.debug("Image sent to Agent")
+                    logger.debug("Image sent to Agent via multimodal context")
                 elif msg_type == "text":
                     logger.info("Client -> Agent: Sending text data...")
                     live_request_queue.send_content(
@@ -482,7 +557,7 @@ async def handle_messages(
     try:
         async with asyncio.TaskGroup() as tg:
             client_task = tg.create_task(
-                handle_client_messages(websocket, live_request_queue)
+                handle_client_messages(websocket, live_request_queue, session_id)
             )
             agent_task = tg.create_task(
                 handle_agent_responses(websocket, live_events, session_id, live_request_queue)

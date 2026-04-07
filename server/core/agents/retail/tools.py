@@ -2027,34 +2027,32 @@ def analyze_room_for_decor(
     """
     Analyzes a room photo using Gemini Vision API to provide home decor recommendations.
 
-    IMPORTANT: This tool works with the multimodal agent's context. When the customer shares photos
-    via the camera or upload interface, those images are automatically added to your visual context.
-    You DO NOT need to pass image_data as a parameter - the tool will use images from your current
-    multimodal context.
+    IMPORTANT: This tool is called automatically by the websocket handler when images are received
+    during an active home decor consultation. The image_data parameter contains base64-encoded image data.
 
     Args:
         customer_id: Optional customer ID for context.
         room_type_hint: Optional hint about the room type (e.g., "living room", "bedroom").
-        image_data: DEPRECATED - Images come from multimodal context, not as parameters.
+        image_data: Base64-encoded image data (with or without data URI prefix).
 
     Returns:
         A dictionary containing room analysis and decor recommendations.
 
     Usage:
-        - When you see room images in your context, call this tool WITHOUT image_data parameter
-        - The tool will automatically analyze the most recent image from your visual context
-        - Example: analyze_room_for_decor(customer_id="CY-1234", room_type_hint="bedroom")
+        - Websocket handler calls this automatically when images arrive during consultations
+        - Agent can also call it if needed for manual analysis
+        - Example: analyze_room_for_decor(customer_id="CY-1234", room_type_hint="bedroom", image_data="base64...")
     """
     logger.info(
         f"[ROOM ANALYSIS] Called for customer {customer_id}. Room hint: {room_type_hint}"
     )
 
     if not image_data:
-        logger.info("[ROOM ANALYSIS] No image_data parameter provided - this is expected for multimodal context")
+        logger.warning("[ROOM ANALYSIS] No image_data parameter provided - tool called without image")
         return {
             "status": "awaiting_image",
-            "message": "I'm ready to analyze room photos. Please share a photo of your space using the camera or upload feature, and I'll provide detailed recommendations.",
-            "instructions": "This tool works with your multimodal visual context. When the customer shares photos via WebSocket (camera or upload), those images appear in your context automatically. You should wait for images to appear in your visual context, then call this tool to analyze them.",
+            "message": "No image data was provided. Please ask the customer to share a photo of their space using the camera or upload feature.",
+            "instructions": "This tool requires image_data parameter. The websocket handler should call this automatically when images arrive during consultations. If you're seeing this, the image may not have been intercepted properly.",
             "analysis": None,
             "recommendations": [],
         }
