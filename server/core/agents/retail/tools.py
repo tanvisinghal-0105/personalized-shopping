@@ -83,8 +83,7 @@ def approve_discount(
     # if product_id == 'PLUSGARANTIE-PIXEL' and type == 'percentage' and value == 10:
     #      return {"status": "approved", "message": f"Discount of {value}{'%' if type == 'percentage' else 'EUR'} approved for {product_id}."}
     # Fallback generic approval
-    return {"status": "approved", "message": f"Discount of {value}{
-            '%' if type == 'percentage' else 'EUR'} approved."}
+    return {"status": "approved", "message": f"Discount of {value}{'%' if type == 'percentage' else 'EUR'} approved."}
 
 
 def sync_ask_for_approval(
@@ -180,8 +179,7 @@ def identify_phone_from_camera_feed(
 
     if image_data:
         logger.info(
-            f"Image data received (length: {
-                len(image_data)} characters). Processing with Gemini Vision..."
+            f"Image data received (length: {len(image_data)} characters). Processing with Gemini Vision..."
         )
 
         # Extract base64 data if it's in data URI format
@@ -294,9 +292,7 @@ Response (model name only):"""
             )
             # Fallback to default
             identified_model = "Unknown Device (identification error)"
-            message = f"I had trouble analyzing the image. Error: {
-                str(e)[
-                    :100]}"
+            message = f"I had trouble analyzing the image. Error: {str(e)[:100]}"
             return {
                 "status": "error",
                 "identified_phone_model": identified_model,
@@ -476,8 +472,7 @@ def modify_cart(
                         if len(suggestions) >= 3:
                             break
 
-            error_msg = f"ERROR: Invalid product ID(s): {
-                ', '.join(invalid_products)}. "
+            error_msg = f"ERROR: Invalid product ID(s): {', '.join(invalid_products)}. "
             error_msg += "These products do not exist in the catalog. "
             error_msg += "You MUST use EXACT product IDs from the available_products catalog table. "
             error_msg += "NEVER create or modify product IDs. "
@@ -711,8 +706,7 @@ Choose products that best match the customer's interest. For example:
                     )
                     break
 
-        logger.info(f"Gemini recommended {
-                len(recommendations)} products for '{interest}'")
+        logger.info(f"Gemini recommended {len(recommendations)} products for '{interest}'")
 
         if recommendations:
             return {"recommendations": recommendations[:3]}
@@ -894,17 +888,14 @@ def generate_qr_code(
 ) -> dict:
     """Generates a QR code for a discount or offer."""
     logger.info(
-        f"Generating QR code for customer: {customer_id} - {discount_value}{
-            '%' if discount_type == 'percentage' else 'EUR'} discount. Desc: {description}"
+        f"Generating QR code for customer: {customer_id} - {discount_value}{'%' if discount_type == 'percentage' else 'EUR'} discount. Desc: {description}"
     )
     # MOCK API RESPONSE - Match example.py output format
     expiration_date = (
         datetime.now() + timedelta(days=expiration_days)
     ).strftime("%Y-%m-%d")
     # Construct payload similar to example
-    qr_code_payload = f"MOCK_QR_CODE_FOR_CUSTOMER:{customer_id};DISCOUNT:{discount_value};TYPE:{discount_type};EXP:{expiration_date};DESC:{
-        description.replace(
-            ' ', '_')};LIMIT:{usage_limit}"
+    qr_code_payload = f"MOCK_QR_CODE_FOR_CUSTOMER:{customer_id};DISCOUNT:{discount_value};TYPE:{discount_type};EXP:{expiration_date};DESC:{description.replace(' ', '_')};LIMIT:{usage_limit}"
 
     return {
         "status": "success",
@@ -944,11 +935,9 @@ def process_exchange_request(
         message = f"Exchange approved (ID: {exchange_id}). Please return the original item '{original_product_id}'. "
         if desired_product_id:
             if price_difference > 0.01:
-                message += f"An additional payment of {
-                    price_difference:.2f} EUR is required for '{desired_product_id}'."
+                message += f"An additional payment of {price_difference:.2f} EUR is required for '{desired_product_id}'."
             elif price_difference < -0.01:
-                message += f"A refund of {
-                    -price_difference:.2f} EUR will be issued upon return of the original item."
+                message += f"A refund of {-price_difference:.2f} EUR will be issued upon return of the original item."
             else:
                 message += (
                     f"There is no price difference for '{desired_product_id}'."
@@ -1075,9 +1064,7 @@ def get_trade_in_value(
 
     if estimated_value_max > 0:
         status = "success"
-        message = f"Trade-in value estimated between {
-            estimated_value_min:.2f} and {
-            estimated_value_max:.2f} {currency}. Final value depends on inspection."
+        message = f"Trade-in value estimated between {estimated_value_min:.2f} and {estimated_value_max:.2f} {currency}. Final value depends on inspection."
     else:
         status = "success"  # Still a success in terms of processing, but value is zero
         message = "The device is eligible for trade-in, but the estimated value is currently 0 EUR based on the provided details."

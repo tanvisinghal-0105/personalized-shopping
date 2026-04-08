@@ -530,8 +530,7 @@ Please present these room analysis results to the customer in a friendly, conver
                         and debug_data.get("type") == "audio"
                     ):
                         debug_data["data"] = "<audio data>"
-                    logger.warning(f"Unsupported message type from client: {
-                            data.get('type')}. Full data: {debug_data}")
+                    logger.warning(f"Unsupported message type from client: {data.get('type')}. Full data: {debug_data}")
 
             except json.JSONDecodeError:
                 logger.error(
