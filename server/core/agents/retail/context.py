@@ -653,7 +653,7 @@ class RetailContext:
             "style_tags": ["modern", "abstract", "warm-tones"],
             "color_palette": ["orange", "pink", "gold"],
             "room_compatibility": ["living room", "bedroom", "office"],
-            "image_url": "./assets/abstract_canvas_art.jpg",
+            "image_url": "./assets/products/apple_iphone_16.jpg",
         },
         {
             "product_id": "WALL-ART-BOTANICAL-PRINT",
@@ -666,7 +666,7 @@ class RetailContext:
             "style_tags": ["bohemian", "natural", "tropical"],
             "color_palette": ["green", "white", "beige"],
             "room_compatibility": ["living room", "bedroom", "bathroom"],
-            "image_url": "./assets/botanical_prints.jpg",
+            "image_url": "./assets/products/wall_art_botanical_print.jpg",
         },
         {
             "product_id": "WALL-ART-GEOMETRIC-METAL",
@@ -679,7 +679,7 @@ class RetailContext:
             "style_tags": ["modern", "geometric", "metallic"],
             "color_palette": ["gold", "black", "brass"],
             "room_compatibility": ["living room", "dining room", "entryway"],
-            "image_url": "./assets/gold_mirror.jpg",
+            "image_url": "./assets/products/wall_art_geometric_metal.jpg",
         },
         {
             "product_id": "WALL-ART-MINIMALIST-LINE",
@@ -692,7 +692,7 @@ class RetailContext:
             "style_tags": ["minimalist", "modern", "line-art"],
             "color_palette": ["black", "white"],
             "room_compatibility": ["bedroom", "office", "bathroom"],
-            "image_url": "./assets/floating_shelves.jpg",
+            "image_url": "./assets/products/wall_art_minimalist_line.jpg",
         },
         {
             "product_id": "WALL-ART-COASTAL-PHOTO",
@@ -705,7 +705,7 @@ class RetailContext:
             "style_tags": ["coastal", "natural", "calm"],
             "color_palette": ["blue", "white", "turquoise"],
             "room_compatibility": ["living room", "bedroom", "bathroom"],
-            "image_url": "./assets/botanical_prints.jpg",
+            "image_url": "./assets/products/wall_art_coastal_photo.jpg",
         },
         # Home Decor - Lighting
         {
@@ -719,7 +719,7 @@ class RetailContext:
             "style_tags": ["modern", "luxury", "metallic"],
             "color_palette": ["gold", "white", "marble"],
             "room_compatibility": ["living room", "reading nook", "office"],
-            "image_url": "./assets/arc_floor_lamp.jpg",
+            "image_url": "./assets/products/lamp_arc_floor_gold.jpg",
         },
         {
             "product_id": "LAMP-PENDANT-RATTAN",
@@ -732,7 +732,7 @@ class RetailContext:
             "style_tags": ["bohemian", "natural", "woven"],
             "color_palette": ["beige", "natural", "brown"],
             "room_compatibility": ["dining room", "bedroom", "entryway"],
-            "image_url": "./assets/botanical_prints.jpg",
+            "image_url": "./assets/products/lamp_pendant_rattan.jpg",
         },
         {
             "product_id": "LAMP-TABLE-CERAMIC",
@@ -745,7 +745,7 @@ class RetailContext:
             "style_tags": ["coastal", "traditional", "ceramic"],
             "color_palette": ["blue", "white", "beige"],
             "room_compatibility": ["bedroom", "living room", "office"],
-            "image_url": "./assets/arc_floor_lamp.jpg",
+            "image_url": "./assets/products/lamp_table_ceramic.jpg",
         },
         {
             "product_id": "LAMP-WALL-SCONCE-BRASS",
@@ -758,7 +758,7 @@ class RetailContext:
             "style_tags": ["industrial", "modern", "metallic"],
             "color_palette": ["brass", "black", "gold"],
             "room_compatibility": ["bedroom", "hallway", "bathroom"],
-            "image_url": "./assets/candle_holders.jpg",
+            "image_url": "./assets/products/lamp_wall_sconce_brass.jpg",
         },
         {
             "product_id": "LAMP-STRING-FAIRY",
@@ -771,7 +771,7 @@ class RetailContext:
             "style_tags": ["bohemian", "cozy", "ambient"],
             "color_palette": ["warm-white", "gold"],
             "room_compatibility": ["bedroom", "living room", "patio"],
-            "image_url": "./assets/arc_floor_lamp.jpg",
+            "image_url": "./assets/products/lamp_string_fairy.jpg",
         },
         # Home Decor - Plants & Planters
         {
@@ -785,7 +785,7 @@ class RetailContext:
             "style_tags": ["minimalist", "modern", "clean"],
             "color_palette": ["white", "matte"],
             "room_compatibility": ["living room", "kitchen", "bedroom", "office"],
-            "image_url": "./assets/monstera_plant.jpg",
+            "image_url": "./assets/products/planter_ceramic_white_set.jpg",
         },
         {
             "product_id": "PLANTER-TERRACOTTA-LARGE",
@@ -798,7 +798,7 @@ class RetailContext:
             "style_tags": ["bohemian", "rustic", "natural"],
             "color_palette": ["terracotta", "orange", "clay"],
             "room_compatibility": ["living room", "patio", "entryway"],
-            "image_url": "./assets/monstera_plant.jpg",
+            "image_url": "./assets/products/planter_terracotta_large.jpg",
         },
         {
             "product_id": "PLANT-FAUX-MONSTERA",
@@ -811,7 +811,7 @@ class RetailContext:
             "style_tags": ["tropical", "bohemian", "green"],
             "color_palette": ["green", "natural"],
             "room_compatibility": ["living room", "bedroom", "office"],
-            "image_url": "./assets/monstera_plant.jpg",
+            "image_url": "./assets/products/plant_faux_monstera.jpg",
         },
         {
             "product_id": "PLANTER-HANGING-MACRAME",
@@ -824,7 +824,7 @@ class RetailContext:
             "style_tags": ["bohemian", "handmade", "woven"],
             "color_palette": ["beige", "cream", "natural"],
             "room_compatibility": ["living room", "bedroom", "patio"],
-            "image_url": "./assets/monstera_plant.jpg",
+            "image_url": "./assets/products/planter_hanging_macrame.jpg",
         },
         {
             "product_id": "PLANT-FAUX-EUCALYPTUS",
@@ -837,7 +837,7 @@ class RetailContext:
             "style_tags": ["natural", "minimalist", "greenery"],
             "color_palette": ["sage-green", "grey-green"],
             "room_compatibility": ["bedroom", "bathroom", "kitchen"],
-            "image_url": "./assets/botanical_prints.jpg",
+            "image_url": "./assets/products/plant_faux_eucalyptus.jpg",
         },
         # Home Decor - Textiles
         {
@@ -851,7 +851,7 @@ class RetailContext:
             "style_tags": ["cozy", "minimalist", "textured"],
             "color_palette": ["cream", "beige", "ivory"],
             "room_compatibility": ["living room", "bedroom"],
-            "image_url": "./assets/chunky_knit_blanket.jpg",
+            "image_url": "./assets/products/throw_blanket_chunky_knit.jpg",
         },
         {
             "product_id": "CUSHION-VELVET-SET",
@@ -864,7 +864,7 @@ class RetailContext:
             "style_tags": ["luxury", "modern", "rich-colors"],
             "color_palette": ["emerald", "navy", "gold", "burgundy"],
             "room_compatibility": ["living room", "bedroom"],
-            "image_url": "./assets/velvet_cushions.jpg",
+            "image_url": "./assets/products/cushion_velvet_set.jpg",
         },
         {
             "product_id": "RUG-MOROCCAN-STYLE",
@@ -877,7 +877,7 @@ class RetailContext:
             "style_tags": ["bohemian", "geometric", "traditional"],
             "color_palette": ["beige", "cream", "black"],
             "room_compatibility": ["living room", "bedroom", "dining room"],
-            "image_url": "./assets/moroccan_rug.jpg",
+            "image_url": "./assets/products/rug_moroccan_style.jpg",
         },
         {
             "product_id": "CURTAIN-LINEN-NATURAL",
@@ -890,7 +890,7 @@ class RetailContext:
             "style_tags": ["minimalist", "natural", "light"],
             "color_palette": ["beige", "natural", "cream"],
             "room_compatibility": ["living room", "bedroom", "dining room"],
-            "image_url": "./assets/chunky_knit_blanket.jpg",
+            "image_url": "./assets/products/curtain_linen_natural.jpg",
         },
         {
             "product_id": "CUSHION-BOHEMIAN-TASSELS",
@@ -903,7 +903,7 @@ class RetailContext:
             "style_tags": ["bohemian", "textured", "eclectic"],
             "color_palette": ["terracotta", "mustard", "cream"],
             "room_compatibility": ["living room", "bedroom", "reading nook"],
-            "image_url": "./assets/velvet_cushions.jpg",
+            "image_url": "./assets/products/cushion_bohemian_tassels.jpg",
         },
         # Home Decor - Decorative Objects
         {
@@ -917,7 +917,7 @@ class RetailContext:
             "style_tags": ["minimalist", "scandinavian", "clean"],
             "color_palette": ["white", "matte"],
             "room_compatibility": ["living room", "dining room", "office"],
-            "image_url": "./assets/velvet_cushions.jpg",
+            "image_url": "./assets/products/vase_ceramic_minimalist.jpg",
         },
         {
             "product_id": "MIRROR-ROUND-GOLD",
@@ -930,7 +930,7 @@ class RetailContext:
             "style_tags": ["modern", "luxury", "metallic"],
             "color_palette": ["gold", "brass"],
             "room_compatibility": ["entryway", "bedroom", "bathroom"],
-            "image_url": "./assets/gold_mirror.jpg",
+            "image_url": "./assets/products/mirror_round_gold.jpg",
         },
         {
             "product_id": "CANDLE-HOLDER-BRASS-SET",
@@ -943,7 +943,7 @@ class RetailContext:
             "style_tags": ["modern", "metallic", "elegant"],
             "color_palette": ["brass", "gold"],
             "room_compatibility": ["dining room", "living room", "bedroom"],
-            "image_url": "./assets/candle_holders.jpg",
+            "image_url": "./assets/products/candle_holder_brass_set.jpg",
         },
         {
             "product_id": "TRAY-MARBLE-GOLD",
@@ -956,7 +956,7 @@ class RetailContext:
             "style_tags": ["luxury", "modern", "marble"],
             "color_palette": ["white", "gold", "marble"],
             "room_compatibility": ["living room", "bedroom", "kitchen"],
-            "image_url": "./assets/gold_mirror.jpg",
+            "image_url": "./assets/products/tray_marble_gold.jpg",
         },
         {
             "product_id": "SCULPTURE-ABSTRACT-CERAMIC",
@@ -969,7 +969,7 @@ class RetailContext:
             "style_tags": ["modern", "abstract", "sculptural"],
             "color_palette": ["black", "matte"],
             "room_compatibility": ["living room", "office", "entryway"],
-            "image_url": "./assets/abstract_canvas_art.jpg",
+            "image_url": "./assets/products/sculpture_abstract_ceramic.jpg",
         },
         {
             "product_id": "CLOCK-WALL-MINIMALIST",
@@ -982,7 +982,7 @@ class RetailContext:
             "style_tags": ["minimalist", "modern", "wood"],
             "color_palette": ["walnut", "black", "wood"],
             "room_compatibility": ["living room", "kitchen", "office", "bedroom"],
-            "image_url": "./assets/floating_shelves.jpg",
+            "image_url": "./assets/products/clock_wall_minimalist.jpg",
         },
         # Home Decor - Shelving & Storage
         {
@@ -996,7 +996,7 @@ class RetailContext:
             "style_tags": ["minimalist", "modern", "wood"],
             "color_palette": ["walnut", "wood", "natural"],
             "room_compatibility": ["living room", "bedroom", "office", "bathroom"],
-            "image_url": "./assets/floating_shelves.jpg",
+            "image_url": "./assets/products/shelf_floating_walnut.jpg",
         },
         {
             "product_id": "BASKET-STORAGE-WOVEN",
@@ -1009,7 +1009,7 @@ class RetailContext:
             "style_tags": ["bohemian", "natural", "woven"],
             "color_palette": ["natural", "beige", "brown"],
             "room_compatibility": ["living room", "bedroom", "bathroom"],
-            "image_url": "./assets/monstera_plant.jpg",
+            "image_url": "./assets/products/basket_storage_woven.jpg",
         },
         {
             "product_id": "SHELF-LADDER-BLACK",
@@ -1022,7 +1022,7 @@ class RetailContext:
             "style_tags": ["industrial", "modern", "metal"],
             "color_palette": ["black", "metal"],
             "room_compatibility": ["living room", "office", "bedroom"],
-            "image_url": "./assets/floating_shelves.jpg",
+            "image_url": "./assets/products/shelf_ladder_black.jpg",
         },
         {
             "product_id": "BOX-STORAGE-VELVET",
@@ -1035,7 +1035,7 @@ class RetailContext:
             "style_tags": ["luxury", "modern", "rich-colors"],
             "color_palette": ["emerald", "green", "gold"],
             "room_compatibility": ["bedroom", "living room", "office"],
-            "image_url": "./assets/floating_shelves.jpg",
+            "image_url": "./assets/products/box_storage_velvet.jpg",
         },
         # Furniture - Desks
         {
@@ -1050,7 +1050,7 @@ class RetailContext:
             "style_tags": ["modern", "minimalist", "scandinavian"],
             "color_palette": ["white", "wood"],
             "room_compatibility": ["bedroom", "office"],
-            "image_url": "./assets/furniture/desk_child_white.jpg",
+            "image_url": "./assets/products/desk_child_white.jpg",
         },
         {
             "product_id": "DESK-TODDLER-NATURAL",
@@ -1064,7 +1064,7 @@ class RetailContext:
             "style_tags": ["scandinavian", "natural", "minimalist"],
             "color_palette": ["wood", "natural", "beige"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/furniture/desk_toddler_natural.jpg",
+            "image_url": "./assets/products/desk_toddler_natural.jpg",
         },
         {
             "product_id": "DESK-TEEN-GREY",
@@ -1078,7 +1078,7 @@ class RetailContext:
             "style_tags": ["modern", "industrial", "functional"],
             "color_palette": ["grey", "black", "metal"],
             "room_compatibility": ["bedroom", "office"],
-            "image_url": "./assets/furniture/desk_teen_grey.jpg",
+            "image_url": "./assets/products/desk_teen_grey.jpg",
         },
         {
             "product_id": "DESK-ADULT-WALNUT",
@@ -1092,7 +1092,7 @@ class RetailContext:
             "style_tags": ["traditional", "modern", "wood"],
             "color_palette": ["walnut", "wood", "brown"],
             "room_compatibility": ["office", "bedroom"],
-            "image_url": "./assets/furniture/desk_adult_walnut.jpg",
+            "image_url": "./assets/products/desk_adult_walnut.jpg",
         },
         {
             "product_id": "DESK-CORNER-WHITE",
@@ -1106,7 +1106,7 @@ class RetailContext:
             "style_tags": ["modern", "minimalist", "space-saving"],
             "color_palette": ["white", "metal"],
             "room_compatibility": ["office", "bedroom"],
-            "image_url": "./assets/furniture/desk_corner_white.jpg",
+            "image_url": "./assets/products/desk_corner_white.jpg",
         },
         # Furniture - Beds
         {
@@ -1121,7 +1121,7 @@ class RetailContext:
             "style_tags": ["scandinavian", "playful", "natural"],
             "color_palette": ["wood", "natural", "white"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/furniture/bed_toddler_house.jpg",
+            "image_url": "./assets/products/bed_toddler_house.jpg",
         },
         {
             "product_id": "BED-SINGLE-WHITE",
@@ -1135,7 +1135,7 @@ class RetailContext:
             "style_tags": ["minimalist", "modern", "scandinavian"],
             "color_palette": ["white", "wood"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/furniture/bed_single_white.jpg",
+            "image_url": "./assets/products/bed_single_white.jpg",
         },
         {
             "product_id": "BED-TWIN-GREY",
@@ -1149,7 +1149,7 @@ class RetailContext:
             "style_tags": ["modern", "functional", "storage"],
             "color_palette": ["grey", "white"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/furniture/bed_twin_grey.jpg",
+            "image_url": "./assets/products/bed_twin_grey.jpg",
         },
         {
             "product_id": "BED-BUNK-NATURAL",
@@ -1163,7 +1163,7 @@ class RetailContext:
             "style_tags": ["scandinavian", "natural", "space-saving"],
             "color_palette": ["wood", "natural"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/furniture/bed_bunk_natural.jpg",
+            "image_url": "./assets/products/bed_bunk_natural.jpg",
         },
         {
             "product_id": "BED-LOFT-BLACK",
@@ -1177,7 +1177,7 @@ class RetailContext:
             "style_tags": ["industrial", "modern", "space-saving"],
             "color_palette": ["black", "metal"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/furniture/bed_loft_black.jpg",
+            "image_url": "./assets/products/bed_loft_black.jpg",
         },
         {
             "product_id": "BED-DOUBLE-UPHOLSTERED",
@@ -1191,7 +1191,7 @@ class RetailContext:
             "style_tags": ["modern", "luxury", "upholstered"],
             "color_palette": ["grey", "velvet"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/furniture/bed_double_upholstered.jpg",
+            "image_url": "./assets/products/bed_double_upholstered.jpg",
         },
         {
             "product_id": "BED-QUEEN-PLATFORM",
@@ -1205,7 +1205,7 @@ class RetailContext:
             "style_tags": ["minimalist", "modern", "wood"],
             "color_palette": ["walnut", "wood", "brown"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/furniture/bed_queen_platform.jpg",
+            "image_url": "./assets/products/bed_queen_platform.jpg",
         },
         # Furniture - Wardrobes & Storage
         {
@@ -1220,7 +1220,7 @@ class RetailContext:
             "style_tags": ["scandinavian", "minimalist", "functional"],
             "color_palette": ["white", "wood"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/furniture/wardrobe_child_white.jpg",
+            "image_url": "./assets/products/wardrobe_child_white.jpg",
         },
         {
             "product_id": "WARDROBE-TEEN-GREY",
@@ -1234,7 +1234,7 @@ class RetailContext:
             "style_tags": ["modern", "functional", "mirror"],
             "color_palette": ["grey", "white", "mirror"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/furniture/wardrobe_teen_grey.jpg",
+            "image_url": "./assets/products/wardrobe_teen_grey.jpg",
         },
         {
             "product_id": "WARDROBE-ADULT-WALNUT",
@@ -1248,7 +1248,7 @@ class RetailContext:
             "style_tags": ["traditional", "wood", "spacious"],
             "color_palette": ["walnut", "wood", "brown"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/furniture/wardrobe_adult_walnut.jpg",
+            "image_url": "./assets/products/wardrobe_adult_walnut.jpg",
         },
         {
             "product_id": "DRESSER-CHILD-WHITE",
@@ -1262,7 +1262,7 @@ class RetailContext:
             "style_tags": ["scandinavian", "minimalist", "clean"],
             "color_palette": ["white", "wood"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/furniture/dresser_child_white.jpg",
+            "image_url": "./assets/products/dresser_child_white.jpg",
         },
         {
             "product_id": "CHEST-DRAWERS-MODERN",
@@ -1276,7 +1276,7 @@ class RetailContext:
             "style_tags": ["modern", "minimalist", "functional"],
             "color_palette": ["grey", "white"],
             "room_compatibility": ["bedroom", "living room"],
-            "image_url": "./assets/furniture/chest_drawers_modern.jpg",
+            "image_url": "./assets/products/chest_drawers_modern.jpg",
         },
         {
             "product_id": "TOY-STORAGE-CUBE",
@@ -1290,7 +1290,7 @@ class RetailContext:
             "style_tags": ["functional", "playful", "modular"],
             "color_palette": ["white", "multicolor"],
             "room_compatibility": ["bedroom", "playroom"],
-            "image_url": "./assets/furniture/toy_storage_cube.jpg",
+            "image_url": "./assets/products/toy_storage_cube.jpg",
         },
         # Furniture - Bookshelves
         {
@@ -1305,7 +1305,7 @@ class RetailContext:
             "style_tags": ["scandinavian", "natural", "accessible"],
             "color_palette": ["wood", "natural"],
             "room_compatibility": ["bedroom", "playroom"],
-            "image_url": "./assets/furniture/bookshelf_low_child.jpg",
+            "image_url": "./assets/products/bookshelf_low_child.jpg",
         },
         {
             "product_id": "BOOKSHELF-MEDIUM-WHITE",
@@ -1319,7 +1319,7 @@ class RetailContext:
             "style_tags": ["modern", "minimalist", "functional"],
             "color_palette": ["white", "wood"],
             "room_compatibility": ["bedroom", "office"],
-            "image_url": "./assets/furniture/bookshelf_medium_white.jpg",
+            "image_url": "./assets/products/bookshelf_medium_white.jpg",
         },
         {
             "product_id": "BOOKSHELF-TALL-WALNUT",
@@ -1333,7 +1333,7 @@ class RetailContext:
             "style_tags": ["traditional", "wood", "spacious"],
             "color_palette": ["walnut", "wood", "brown"],
             "room_compatibility": ["office", "living room", "bedroom"],
-            "image_url": "./assets/furniture/bookshelf_tall_walnut.jpg",
+            "image_url": "./assets/products/bookshelf_tall_walnut.jpg",
         },
         {
             "product_id": "BOOKSHELF-LADDER-BLACK",
@@ -1347,7 +1347,7 @@ class RetailContext:
             "style_tags": ["industrial", "modern", "space-saving"],
             "color_palette": ["black", "metal"],
             "room_compatibility": ["office", "living room", "bedroom"],
-            "image_url": "./assets/furniture/bookshelf_ladder_black.jpg",
+            "image_url": "./assets/products/bookshelf_ladder_black.jpg",
         },
         {
             "product_id": "BOOKSHELF-CUBE-MODULAR",
@@ -1361,7 +1361,7 @@ class RetailContext:
             "style_tags": ["modern", "modular", "flexible"],
             "color_palette": ["white"],
             "room_compatibility": ["bedroom", "office", "living room"],
-            "image_url": "./assets/furniture/bookshelf_cube_modular.jpg",
+            "image_url": "./assets/products/bookshelf_cube_modular.jpg",
         },
     ]
 
