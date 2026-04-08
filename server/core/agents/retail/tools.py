@@ -1331,6 +1331,116 @@ def create_style_moodboard(
     return moodboard_summary
 
 
+def display_product_search_results(
+    customer_id: str,
+    category: Optional[str] = None,
+    search_term: Optional[str] = None,
+    max_results: int = 6
+) -> dict:
+    """
+    Displays product search results as visual cards with images.
+    Works for any product category (Laptops, Smartphones, TVs, etc.).
+
+    This tool enables the agent to show products from ANY category (not just Home Decor)
+    as visual product cards with images, similar to the moodboard display.
+
+    Args:
+        customer_id: The ID of the customer.
+        category: Optional category filter (e.g., "Laptops", "Smartphones", "TVs").
+        search_term: Optional search term for product name/description.
+        max_results: Maximum number of products to return (default 6).
+
+    Returns:
+        Dictionary with ui_data for rendering product cards with images.
+    """
+    logger.info(
+        f"[PRODUCT SEARCH] Displaying products for customer {customer_id} - category: {category}, search: {search_term}, max: {max_results}"
+    )
+
+    from .image_fetcher import ImageFetcher
+    image_fetcher = ImageFetcher()
+
+    matching_products = []
+
+    # Filter products by category and/or search term
+    for product in RetailContext.PRODUCT_CATALOG:
+        # Check if product is in stock
+        if not product.get("in_stock", True):
+            continue
+
+        # Category filter
+        if category:
+            if product.get("category", "").lower() != category.lower():
+                continue
+
+        # Search term filter (matches name or category)
+        if search_term:
+            search_lower = search_term.lower()
+            name_match = search_lower in product.get("name", "").lower()
+            category_match = search_lower in product.get("category", "").lower()
+
+            if not (name_match or category_match):
+                continue
+
+        matching_products.append(product)
+
+    # If we have too many results, select the most relevant ones
+    if len(matching_products) > max_results:
+        # Shuffle to provide variety, then limit
+        random.shuffle(matching_products)
+        selected_products = matching_products[:max_results]
+    else:
+        selected_products = matching_products
+
+    # Fetch images for selected products
+    logger.info(f"[PRODUCT SEARCH] Fetching images for {len(selected_products)} products...")
+    image_results = image_fetcher.fetch_batch_images(selected_products)
+
+    # Build product list with images
+    product_list = []
+    for product in selected_products:
+        product_id = product["product_id"]
+        fetched_image_url = image_results.get(
+            product_id,
+            product.get("image_url", "./assets/placeholder_product.jpg")
+        )
+
+        product_list.append({
+            "product_id": product_id,
+            "name": product["name"],
+            "category": product.get("category"),
+            "price": product["price"],
+            "image_url": fetched_image_url,
+        })
+
+    # Create search result ID
+    search_id = f"SEARCH-{random.randint(10000, 99999)}"
+
+    # Build response with ui_data for moodboard-style rendering
+    search_results = {
+        "status": "success",
+        "customer_id": customer_id,
+        "search_id": search_id,
+        "category_filter": category,
+        "search_term": search_term,
+        "product_count": len(product_list),
+        "products": product_list,
+        "message": f"Found {len(product_list)} {category if category else 'products'}" +
+                   (f" matching '{search_term}'" if search_term else ""),
+        "ui_data": {
+            "display_type": "moodboard",
+            "moodboard_id": search_id,
+            "products": product_list,
+            "product_count": len(product_list),
+            "message": f"Here are {len(product_list)} {category if category else 'products'} I found for you" +
+                       (f" matching '{search_term}'" if search_term else "")
+        }
+    }
+
+    logger.info(f"[PRODUCT SEARCH] Returning {len(product_list)} products for display")
+    return search_results
+
+
 def start_home_decor_consultation(
     customer_id: str,
     initial_request: Optional[str] = None,
