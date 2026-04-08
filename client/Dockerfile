@@ -6,6 +6,10 @@ COPY index.html /usr/share/nginx/html/
 COPY src /usr/share/nginx/html/src/
 COPY assets /usr/share/nginx/html/assets/
 
+# Fix file permissions
+RUN chmod -R 755 /usr/share/nginx/html && \
+    chown -R nginx:nginx /usr/share/nginx/html
+
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
