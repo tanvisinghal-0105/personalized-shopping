@@ -44,6 +44,9 @@ export class HomeDecorRenderer {
       case 'photo_upload':
         this.renderPhotoUpload(uiData);
         break;
+      case 'moodboard':
+        this.renderMoodboard(uiData);
+        break;
       default:
         console.warn(`[HomeDecor] Unknown display_type: ${uiData.display_type}`);
     }

@@ -1173,9 +1173,6 @@ def create_style_moodboard(
         f"Creating style moodboard for customer {customer_id} with styles: {style_preferences}, room: {room_type}, colors: {color_preferences}, age: {age_context}, purpose: {room_purpose}"
     )
 
-    from .image_fetcher import ImageFetcher
-    image_fetcher = ImageFetcher()
-
     # Available style categories with descriptions
     STYLE_CATALOG = {
         "modern": {
@@ -1291,15 +1288,15 @@ def create_style_moodboard(
         random.shuffle(matching_products)
         moodboard_products = matching_products[:product_count]
 
-    # Fetch images for selected products
-    logger.info(f"Fetching images for {len(moodboard_products)} moodboard products...")
-    image_results = image_fetcher.fetch_batch_images(moodboard_products)
-
-    # Build moodboard response
+    # Build moodboard response with images directly from catalog
+    logger.info(f"Building moodboard with {len(moodboard_products)} products...")
     product_recommendations = []
     for product in moodboard_products:
         product_id = product["product_id"]
-        fetched_image_url = image_results.get(product_id, product.get("image_url", "./assets/placeholder_home_decor.jpg"))
+        # Use the image_url directly from the product catalog
+        image_url = product.get("image_url", "./assets/placeholder_home_decor.jpg")
+
+        logger.info(f"[MOODBOARD] Product {product_id} using image: {image_url}")
 
         product_recommendations.append({
             "product_id": product_id,
@@ -1308,7 +1305,7 @@ def create_style_moodboard(
             "price": product["price"],
             "style_tags": product.get("style_tags", []),
             "color_palette": product.get("color_palette", []),
-            "image_url": fetched_image_url,
+            "image_url": image_url,
         })
 
     # Create style description for the moodboard
@@ -1357,9 +1354,6 @@ def display_product_search_results(
         f"[PRODUCT SEARCH] Displaying products for customer {customer_id} - category: {category}, search: {search_term}, max: {max_results}"
     )
 
-    from .image_fetcher import ImageFetcher
-    image_fetcher = ImageFetcher()
-
     matching_products = []
 
     # Filter products by category and/or search term
@@ -1392,25 +1386,24 @@ def display_product_search_results(
     else:
         selected_products = matching_products
 
-    # Fetch images for selected products
-    logger.info(f"[PRODUCT SEARCH] Fetching images for {len(selected_products)} products...")
-    image_results = image_fetcher.fetch_batch_images(selected_products)
+    logger.info(f"[PRODUCT SEARCH] Building product list for {len(selected_products)} products...")
 
-    # Build product list with images
+    # Build product list with images directly from catalog
+    # All products in catalog have image_url field, so we use those directly
     product_list = []
     for product in selected_products:
         product_id = product["product_id"]
-        fetched_image_url = image_results.get(
-            product_id,
-            product.get("image_url", "./assets/placeholder_product.jpg")
-        )
+        # Use the image_url directly from the product catalog
+        image_url = product.get("image_url", "./assets/placeholder_product.jpg")
+
+        logger.info(f"[PRODUCT SEARCH] Product {product_id} using image: {image_url}")
 
         product_list.append({
             "product_id": product_id,
             "name": product["name"],
             "category": product.get("category"),
             "price": product["price"],
-            "image_url": fetched_image_url,
+            "image_url": image_url,
         })
 
     # Create search result ID
@@ -1658,13 +1651,21 @@ def continue_home_decor_consultation(
 
         logger.info(f"[HOME DECOR] Moodboard generated successfully for session {session_id}")
 
+        # Add ui_data to the response so frontend can render the moodboard
         return {
             "status": "consultation_completed",
             "session_id": session_id,
             "stage": "completed",
             "moodboard": moodboard_result,
             "message": f"Based on your {', '.join(collected['style_preferences'])} style preferences for your {collected['room_type']}, I've created a personalized moodboard!",
-            "next_action": "Present the moodboard products to the customer and offer to add any to their cart."
+            "next_action": "Present the moodboard products to the customer and offer to add any to their cart.",
+            "ui_data": {
+                "display_type": "moodboard",
+                "moodboard_id": moodboard_result.get("moodboard_id"),
+                "products": moodboard_result.get("products", []),
+                "product_count": moodboard_result.get("product_count", 0),
+                "message": f"Here are {moodboard_result.get('product_count', 0)} {', '.join(collected['style_preferences'])} products I found for your {collected['room_type']}"
+            }
         }
 
     # Determine what information we still need
