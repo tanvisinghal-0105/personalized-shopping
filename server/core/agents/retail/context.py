@@ -1540,15 +1540,8 @@ def _format_product_catalog():
         "|------------|-----|------|----------|-------------|----------|",
     ]
     for product in RetailContext.PRODUCT_CATALOG:
-        lines.append(f"| {
-                product['product_id']} | {
-                product['sku']} | {
-                product['name']} | " f"{
-                    product['category']} | €{
-                        product['price']:.2f} | " f"{
-                            'Yes' if product.get(
-                                'in_stock',
-                                True) else 'No'} |")
+        in_stock = 'Yes' if product.get('in_stock', True) else 'No'
+        lines.append(f"| {product['product_id']} | {product['sku']} | {product['name']} | {product['category']} | €{product['price']:.2f} | {in_stock} |")
     return "\n".join(lines)
 
 
