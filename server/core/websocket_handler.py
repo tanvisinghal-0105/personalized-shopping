@@ -537,17 +537,17 @@ async def handle_client_messages(
 
                         # Send the tool result to the agent as if it came from a function response
                         # This way the agent can present the recommendations naturally
-                        tool_response_message = f"""The room analysis tool has been called automatically and returned results:
+                        # Send a slim summary to the live agent to avoid overloading the audio session
+                        analysis = tool_result.get('analysis', {})
+                        analysis_summary = {
+                            "room_type": analysis.get("room_type", "unknown"),
+                            "current_style": analysis.get("current_style", "unknown"),
+                            "dominant_colors": analysis.get("dominant_colors", []),
+                        }
+                        tool_response_message = f"""Room analysis complete. Status: {tool_result.get('status')}
+Room: {analysis_summary['room_type']}, Style: {analysis_summary['current_style']}, Colors: {', '.join(analysis_summary['dominant_colors'])}
 
-Status: {tool_result.get('status')}
-Analysis: {tool_result.get('analysis', {})}
-
-IMPORTANT: After presenting these room analysis results to the customer:
-1. Present the analysis in a friendly, conversational way
-2. Explain what you see in their space
-3. Then IMMEDIATELY call continue_home_decor_consultation to proceed to the next phase (style discovery)
-
-DO NOT wait for the customer to respond after presenting the analysis. The consultation flow must continue automatically."""
+IMPORTANT: Briefly tell the customer what you see, then IMMEDIATELY call continue_home_decor_consultation to proceed. Do NOT wait for the customer to respond."""
 
                         live_request_queue.send_content(
                             Content(

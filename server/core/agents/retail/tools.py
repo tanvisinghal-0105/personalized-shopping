@@ -1665,14 +1665,20 @@ def continue_home_decor_consultation(
 
         logger.info(f"[HOME DECOR] Moodboard generated successfully for session {session_id}")
 
-        # Add ui_data to the response so frontend can render the moodboard
+        # Build a slim summary for the live agent (avoid overloading the audio session context)
+        product_summary = [
+            {"name": p["name"], "price": p["price"], "product_id": p["product_id"]}
+            for p in moodboard_result.get("products", [])
+        ]
+
         return {
             "status": "consultation_completed",
             "session_id": session_id,
             "stage": "moodboard_presented",
-            "moodboard": moodboard_result,
             "message": f"Based on your {', '.join(collected['style_preferences'])} style preferences for your {collected['room_type']}, I've created a personalized moodboard!",
-            "next_action": "Present the moodboard products to the customer. Offer to explain any product choices, make adjustments to the recommendations, or add items to their cart. The customer can ask questions, request changes, or continue shopping.",
+            "product_summary": product_summary,
+            "product_count": len(product_summary),
+            "next_action": "Present the moodboard products to the customer. Offer to explain any product choices, make adjustments to the recommendations, or add items to their cart.",
             "ui_data": {
                 "display_type": "moodboard",
                 "moodboard_id": moodboard_result.get("moodboard_id"),
