@@ -188,6 +188,42 @@ class IntentDetector:
         return detected_colors if detected_colors else None
 
     @classmethod
+    def detect_photo_analysis_intent(cls, message: str) -> bool:
+        """
+        Detect if message contains intent to analyze photos.
+
+        Args:
+            message: User message text
+
+        Returns:
+            True if photo analysis intent detected
+        """
+        if not message:
+            return False
+
+        message_lower = message.lower()
+
+        # Photo analysis patterns
+        photo_analysis_patterns = [
+            r"\banalyze\s+(the\s+)?(photo|photos|picture|pictures|image|images|room)\b",
+            r"\btake\s+a\s+look\s+at\s+(the\s+)?(photo|photos|picture|pictures|room)\b",
+            r"\bcheck\s+(out\s+)?(the\s+)?(photo|photos|picture|pictures|room)\b",
+            r"\blook\s+at\s+(the\s+)?(photo|photos|picture|pictures|room)\b",
+            r"\bsee\s+(the\s+)?(photo|photos|picture|pictures|room)\b",
+            r"\bshow\s+me\s+recommendations\s+for\s+(the\s+)?(photo|photos|room)\b",
+            r"\bwhat\s+do\s+you\s+think\s+(of|about)\s+(the\s+)?(photo|photos|room)\b",
+            r"\banalyze\s+my\s+room\b",
+            r"\banalyze\s+my\s+space\b",
+        ]
+
+        for pattern in photo_analysis_patterns:
+            if re.search(pattern, message_lower):
+                logger.info(f"[INTENT DETECTOR] Photo analysis intent detected: '{pattern}'")
+                return True
+
+        return False
+
+    @classmethod
     def should_force_tool_call(
         cls, message: str, conversation_history: List[Dict[str, Any]] = None
     ) -> Optional[Dict[str, Any]]:
@@ -201,6 +237,14 @@ class IntentDetector:
         Returns:
             Dict with tool_name and parameters if tool call should be forced, None otherwise
         """
+        # Check for photo analysis intent
+        if cls.detect_photo_analysis_intent(message):
+            logger.info("[INTENT DETECTOR] Photo analysis intent detected")
+            return {
+                "tool_name": "analyze_photos",
+                "parameters": {},
+            }
+
         # Check for home decor intent
         if cls.detect_home_decor_intent(message):
             logger.info(

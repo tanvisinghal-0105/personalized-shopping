@@ -47,6 +47,7 @@ export class GeminiAPI {
             this.logMessage({type: 'tool_result', data: data});
         };
         this.onInterrupted = () => {};  // New callback for interruption events
+        this.onTriggerPhotoAnalysis = () => {};  // New callback for voice-triggered photo analysis
         
         this.setupWebSocket();
         this.logMessage = () => {};
@@ -90,6 +91,9 @@ export class GeminiAPI {
                     console.log('Response interrupted:', response.data);
                     this.isSpeaking = false;
                     this.onInterrupted(response.data);
+                } else if (response.type === 'trigger_photo_analysis') {
+                    console.log('Voice command triggered photo analysis:', response.data);
+                    this.onTriggerPhotoAnalysis(response.data);
                 } else if (response.type === 'audio') {
                     console.log('Received audio data');
                     this.onAudioData(response.data);

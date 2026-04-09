@@ -2,6 +2,7 @@ import random
 import time
 from typing import Optional, List, Dict, Any
 import requests
+import json
 from ...logger import logger
 from datetime import datetime, timedelta
 
@@ -681,8 +682,6 @@ Choose products that best match the customer's interest. For example:
         )
 
         # Parse the response to get product IDs
-        import json
-
         response_text = response.text.strip()
         # Remove markdown code blocks if present
         if response_text.startswith("```"):
@@ -1226,44 +1225,62 @@ def create_style_moodboard(
     # Determine if this is a full room redesign (includes furniture) or just decoration
     include_furniture = room_purpose == "redesign" or (room_type and room_type.lower() == "bedroom" and age_context)
 
-    # Filter products by style tags - include both Home Decor and Furniture for redesigns
-    matching_products = []
+    # NEW APPROACH: Multi-tier filtering with intelligent expansion
+    # Tier 1: Strict matching (style + color + room)
+    # Tier 2: Style + color (if not enough products)
+    # Tier 3: Color-coordinated with complementary styles (if still not enough)
+
+    # Start with all relevant products (Home Decor + Furniture for redesigns)
+    all_relevant_products = []
     for product in RetailContext.PRODUCT_CATALOG:
-        # Include Home Decor products always, and Furniture products for redesigns
         if product.get("category") == "Home Decor" or (include_furniture and product.get("category") == "Furniture"):
-            # Check if product's style_tags match user preferences
-            product_styles = product.get("style_tags", [])
-            if any(style in product_styles for style in matched_styles):
-                # Filter by age_appropriate if age_context is provided
-                if age_context and product.get("category") == "Furniture":
-                    age_tags = product.get("age_appropriate", [])
-                    # Only include if product matches the age context
-                    if age_context in age_tags or not age_tags:
-                        matching_products.append(product)
-                else:
-                    matching_products.append(product)
+            # Filter by age_appropriate if age_context is provided
+            if age_context and product.get("category") == "Furniture":
+                age_tags = product.get("age_appropriate", [])
+                if age_context in age_tags or not age_tags:
+                    all_relevant_products.append(product)
+            else:
+                all_relevant_products.append(product)
 
-    # Further filter by color preferences if provided
-    if color_preferences:
-        color_filtered = []
-        for product in matching_products:
-            product_colors = product.get("color_palette", [])
-            if any(color.lower() in [c.lower() for c in product_colors] for color in color_preferences):
-                color_filtered.append(product)
-        # If color filtering yields results, use those; otherwise keep style matches
-        if color_filtered:
-            matching_products = color_filtered
+    # Normalize color preferences for matching
+    normalized_color_prefs = [c.lower() for c in color_preferences] if color_preferences else []
 
-    # Further filter by room compatibility if provided
-    if room_type:
-        room_filtered = []
-        for product in matching_products:
-            compatible_rooms = product.get("room_compatibility", [])
-            if room_type.lower() in [r.lower() for r in compatible_rooms]:
-                room_filtered.append(product)
-        # If room filtering yields results, use those; otherwise keep previous matches
-        if room_filtered:
-            matching_products = room_filtered
+    # Score each product based on how well it matches preferences
+    product_scores = {}
+    for product in all_relevant_products:
+        score = 0
+        product_id = product["product_id"]
+        product_styles = [s.lower() for s in product.get("style_tags", [])]
+        product_colors = [c.lower() for c in product.get("color_palette", [])]
+        product_rooms = [r.lower() for r in product.get("room_compatibility", [])]
+
+        # Style match: +10 points per matching style
+        style_matches = sum(1 for style in matched_styles if style in product_styles)
+        score += style_matches * 10
+
+        # Color match: +15 points per matching color (PRIORITIZE color coordination!)
+        if normalized_color_prefs:
+            color_matches = sum(1 for color in normalized_color_prefs if color in product_colors)
+            score += color_matches * 15
+
+        # Room match: +5 points if room compatible
+        if room_type and room_type.lower() in product_rooms:
+            score += 5
+
+        if score > 0:  # Only include products with at least some match
+            product_scores[product_id] = score
+
+    # Sort products by score (highest first)
+    matching_products = sorted(
+        [p for p in all_relevant_products if p["product_id"] in product_scores],
+        key=lambda p: product_scores[p["product_id"]],
+        reverse=True
+    )
+
+    logger.info(
+        f"[MOODBOARD] Scored {len(matching_products)} products. "
+        f"Top scores: {[(p['name'], product_scores[p['product_id']]) for p in matching_products[:3]]}"
+    )
 
     # Determine product count based on room purpose
     # For redesigns, show more products (furniture + decor)
@@ -1655,10 +1672,10 @@ def continue_home_decor_consultation(
         return {
             "status": "consultation_completed",
             "session_id": session_id,
-            "stage": "completed",
+            "stage": "moodboard_presented",
             "moodboard": moodboard_result,
             "message": f"Based on your {', '.join(collected['style_preferences'])} style preferences for your {collected['room_type']}, I've created a personalized moodboard!",
-            "next_action": "Present the moodboard products to the customer and offer to add any to their cart.",
+            "next_action": "Present the moodboard products to the customer. Offer to explain any product choices, make adjustments to the recommendations, or add items to their cart. The customer can ask questions, request changes, or continue shopping.",
             "ui_data": {
                 "display_type": "moodboard",
                 "moodboard_id": moodboard_result.get("moodboard_id"),
@@ -2217,11 +2234,8 @@ Respond in this JSON format:
 Response (JSON only):"""
 
         # Use Gemini for vision analysis
-        vision_model = (
-            "gemini-2.0-flash-exp"
-            if "flash" in RECOMMENDATION_MODEL.lower()
-            else "gemini-1.5-pro"
-        )
+        # Use gemini-2.0-flash-exp which has vision capabilities and is widely available
+        vision_model = "gemini-2.0-flash-exp"
 
         logger.info(f"Using {vision_model} for room analysis")
 
@@ -2240,7 +2254,6 @@ Response (JSON only):"""
         )
 
         # Parse the JSON response
-        import json
         response_text = response.text.strip()
 
         # Remove markdown code blocks if present

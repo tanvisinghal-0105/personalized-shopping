@@ -121,7 +121,7 @@ class HomeDecorSessionState:
         with self._lock:
             if session_id in self._sessions:
                 self._sessions[session_id]["moodboard_generated"] = True
-                self._sessions[session_id]["current_stage"] = "completed"
+                self._sessions[session_id]["current_stage"] = "moodboard_presented"
 
     def add_conversation_turn(
         self,

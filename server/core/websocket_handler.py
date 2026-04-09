@@ -212,22 +212,42 @@ async def handle_agent_responses(websocket: Any, live_events: Any, session_id: s
                 if transcribed_text and is_finished:
                     logger.info(f"[VOICE INTENT] User said (finished): '{transcribed_text}'")
 
-                    # IMPORTANT: Check if there's already an active home decor consultation
-                    # If yes, allow natural conversation flow without forcing tool calls
+                    # Get session context for all intent checks
                     from core.agents.retail.session_state import get_state_manager
                     session_context = SESSION_CONTEXTS.get(session_id, {})
                     customer_id = session_context.get("customer_id", "CY-DEFAULT")
                     state_manager = get_state_manager()
                     existing_session = state_manager.get_customer_session(customer_id)
 
-                    if existing_session and not existing_session.get("moodboard_generated", False):
+                    # Check for photo analysis intent first
+                    forced_call = intent_detector.should_force_tool_call(transcribed_text)
+
+                    if forced_call and forced_call["tool_name"] == "analyze_photos":
+                        # User said something like "analyze the photos" or "analyze my room"
+                        logger.info("[VOICE INTENT] ===== PHOTO ANALYSIS INTENT DETECTED =====")
+
+                        # Signal frontend to automatically submit uploaded photos
+                        await websocket.send(
+                            json.dumps({
+                                "type": "trigger_photo_analysis",
+                                "data": {
+                                    "trigger": "voice_command",
+                                    "transcription": transcribed_text
+                                }
+                            })
+                        )
+                        logger.info("[VOICE INTENT] Sent trigger_photo_analysis to frontend")
+                        continue
+
+                    # IMPORTANT: Check if there's already an active home decor consultation
+                    # If yes (and moodboard not yet generated), allow natural conversation flow without forcing tool calls
+                    # After moodboard is presented, allow forced tool calls for new requests
+                    if existing_session and existing_session.get("current_stage") not in ["moodboard_presented", None]:
                         logger.info(f"[VOICE INTENT] Active home decor session exists (session_id: {existing_session['session_id']})")
+                        logger.info(f"[VOICE INTENT] Stage: {existing_session.get('current_stage')}")
                         logger.info("[VOICE INTENT] Allowing natural conversation flow - NOT forcing tool call")
                         # Don't process voice intent detection, let the message flow naturally
                         continue
-
-                    # Check for home decor intent in voice input
-                    forced_call = intent_detector.should_force_tool_call(transcribed_text)
 
                     if forced_call:
                         tool_name = forced_call["tool_name"]
@@ -413,6 +433,7 @@ async def handle_client_messages(
                 data = json.loads(message)
 
                 msg_type = data.get("type")
+                logger.info(f"[WEBSOCKET] Received message type: {msg_type}, data length: {len(str(data.get('data', '')))}")
 
                 if msg_type == "audio":
                     logger.debug("Client -> Agent: Handling audio data...")
@@ -440,70 +461,110 @@ async def handle_client_messages(
                     state_manager = get_state_manager()
                     existing_session = state_manager.get_customer_session(customer_id)
 
-                    if existing_session and not existing_session.get("moodboard_generated", False):
+                    # Allow photo analysis during active consultations AND after moodboard is presented
+                    # (for follow-up questions and refinements)
+                    if existing_session:
                         logger.info(f"[IMAGE INTERCEPTOR] Active home decor session found (session_id: {existing_session['session_id']})")
-                        logger.info("[IMAGE INTERCEPTOR] Calling analyze_room_for_decor directly")
 
-                        # Import the tool
-                        from core.agents.retail.tools import analyze_room_for_decor
+                        # Check the current stage to determine which analysis tool to call
+                        current_stage = existing_session.get("stage", "")
+                        collected_data = existing_session.get("collected_data", {})
+                        room_type = collected_data.get("room_type")
+                        age_context = collected_data.get("age_context")
+                        decor_session_id = existing_session["session_id"]
 
-                        # Extract room type from session data
-                        room_type = existing_session["collected_data"].get("room_type")
+                        # If we're in Phase 3 (after constraints, awaiting photos for redesign), call analyze_room_with_history
+                        # This cross-references with order history
+                        if current_stage == "stage_1d_photo_request" and collected_data.get("room_purpose") == "redesign":
+                            logger.info("[IMAGE INTERCEPTOR] Phase 3: Calling analyze_room_with_history for order history cross-reference")
+                            from core.agents.retail.tools import analyze_room_with_history
 
-                        # Call the tool directly with the base64 image data
-                        try:
-                            tool_result = analyze_room_for_decor(
-                                customer_id=customer_id,
-                                room_type_hint=room_type,
-                                image_data=image_data_str
-                            )
+                            try:
+                                tool_result = analyze_room_with_history(
+                                    customer_id=customer_id,
+                                    session_id=decor_session_id,
+                                    age_context=age_context,
+                                    room_type=room_type,
+                                    image_data=image_data_str
+                                )
+                                logger.info(f"[IMAGE INTERCEPTOR] Tool result status: {tool_result.get('status')}")
+                            except Exception as tool_error:
+                                logger.error(f"[IMAGE INTERCEPTOR] Error calling analyze_room_with_history: {tool_error}")
+                                logger.error(f"Full traceback:\n{traceback.format_exc()}")
+                                # Fall through to normal processing if tool call fails
+                                decoded_data = base64.b64decode(image_data_str)
+                                live_request_queue.send_realtime(
+                                    Blob(data=decoded_data, mime_type="image/jpeg")
+                                )
+                                logger.debug("Image sent to Agent via multimodal context after tool error")
+                                continue
+                        else:
+                            # For other scenarios (simple decor requests without order history), call analyze_room_for_decor
+                            logger.info("[IMAGE INTERCEPTOR] Calling analyze_room_for_decor directly")
+                            from core.agents.retail.tools import analyze_room_for_decor
 
-                            logger.info(f"[IMAGE INTERCEPTOR] Tool result status: {tool_result.get('status')}")
+                            try:
+                                tool_result = analyze_room_for_decor(
+                                    customer_id=customer_id,
+                                    room_type_hint=room_type,
+                                    image_data=image_data_str
+                                )
+                                logger.info(f"[IMAGE INTERCEPTOR] Tool result status: {tool_result.get('status')}")
+                            except Exception as tool_error:
+                                logger.error(f"[IMAGE INTERCEPTOR] Error calling analyze_room_for_decor: {tool_error}")
+                                logger.error(f"Full traceback:\n{traceback.format_exc()}")
+                                # Fall through to normal processing if tool call fails
+                                decoded_data = base64.b64decode(image_data_str)
+                                live_request_queue.send_realtime(
+                                    Blob(data=decoded_data, mime_type="image/jpeg")
+                                )
+                                logger.debug("Image sent to Agent via multimodal context after tool error")
+                                continue
 
-                            # Send the tool result to the agent as if it came from a function response
-                            # This way the agent can present the recommendations naturally
-                            tool_response_message = f"""The room analysis tool has been called automatically and returned results:
+                        # Send the tool result to the agent as if it came from a function response
+                        # This way the agent can present the recommendations naturally
+                        tool_response_message = f"""The room analysis tool has been called automatically and returned results:
 
 Status: {tool_result.get('status')}
 Analysis: {tool_result.get('analysis', {})}
 
-Please present these room analysis results to the customer in a friendly, conversational way. Explain what you see in their space and provide the product recommendations from the analysis."""
+IMPORTANT: After presenting these room analysis results to the customer:
+1. Present the analysis in a friendly, conversational way
+2. Explain what you see in their space
+3. Then IMMEDIATELY call continue_home_decor_consultation to proceed to the next phase (style discovery)
 
-                            live_request_queue.send_content(
-                                Content(
-                                    role="user",
-                                    parts=[Part.from_text(text=tool_response_message)],
-                                )
+DO NOT wait for the customer to respond after presenting the analysis. The consultation flow must continue automatically."""
+
+                        live_request_queue.send_content(
+                            Content(
+                                role="user",
+                                parts=[Part.from_text(text=tool_response_message)],
                             )
+                        )
 
-                            # Also send acknowledgment to client
-                            await websocket.send(
-                                json.dumps({
-                                    "type": "tool_call",
-                                    "data": {
-                                        "name": "analyze_room_for_decor",
-                                        "args": {
-                                            "customer_id": customer_id,
-                                            "room_type_hint": room_type
-                                        }
+                        # Also send acknowledgment to client
+                        await websocket.send(
+                            json.dumps({
+                                "type": "tool_call",
+                                "data": {
+                                    "name": "analyze_room_for_decor" if current_stage != "stage_1d_photo_request" else "analyze_room_with_history",
+                                    "args": {
+                                        "customer_id": customer_id,
+                                        "room_type_hint": room_type
                                     }
-                                })
-                            )
+                                }
+                            })
+                        )
 
-                            await websocket.send(
-                                json.dumps({
-                                    "type": "tool_result",
-                                    "data": tool_result
-                                })
-                            )
+                        await websocket.send(
+                            json.dumps({
+                                "type": "tool_result",
+                                "data": tool_result
+                            })
+                        )
 
-                            logger.info("[IMAGE INTERCEPTOR] Successfully processed image and sent results")
-                            continue
-
-                        except Exception as tool_error:
-                            logger.error(f"[IMAGE INTERCEPTOR] Error calling analysis tool: {tool_error}")
-                            logger.error(f"Full traceback:\n{traceback.format_exc()}")
-                            # Fall through to normal processing if tool call fails
+                        logger.info("[IMAGE INTERCEPTOR] Successfully processed image and sent results")
+                        continue
 
                     # Normal processing: send image to agent via multimodal context
                     # This is only reached if no active consultation or tool call failed

@@ -824,13 +824,8 @@ export class HomeDecorRenderer {
 
     console.log(`[HomeDecor] Submitting ${photos.length} photos for analysis`);
 
-    // Send to backend via text message with special format
-    // The backend will parse this and call analyze_room_with_history
-    this.api.sendTextMessage(
-      `analyze_room_photos(session_id="${this.currentSessionId}", customer_id="${this.getCurrentCustomerId()}", photo_count=${photos.length})`
-    );
-
     // Send each photo as image data
+    // The WebSocket handler will automatically intercept and analyze them
     photos.forEach((photoBase64, index) => {
       setTimeout(() => {
         this.api.sendImage(photoBase64);

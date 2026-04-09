@@ -1305,6 +1305,20 @@
       }
   };
 
+  api.onTriggerPhotoAnalysis = (data) => {
+    console.log('[Voice Trigger] Photo analysis requested via voice:', data);
+    // Automatically trigger photo submission if decorRenderer has photos
+    if (decorRenderer && decorRenderer.photoUploadHandler) {
+      const photos = decorRenderer.photoUploadHandler.getPhotoData();
+      if (photos.length > 0) {
+        console.log(`[Voice Trigger] Auto-submitting ${photos.length} photos`);
+        decorRenderer.handlePhotoSubmit();
+      } else {
+        logMessage('No photos uploaded yet. Please upload photos first.', 'system');
+      }
+    }
+  };
+
   api.onError = (error) => {
     logMessage(error.message || 'Connection error occurred', 'system');
   };
