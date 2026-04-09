@@ -22,6 +22,7 @@ async def main() -> None:
         port,
         ping_interval=30,
         ping_timeout=10,
+        max_size=10 * 1024 * 1024,  # 10MB to support base64-encoded images
     ):
         print(f"Running websocket server on 0.0.0.0:{port}...")
         logger.info(f"Running websocket server on 0.0.0.0:{port}...")

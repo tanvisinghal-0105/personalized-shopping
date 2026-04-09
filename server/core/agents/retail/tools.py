@@ -1292,9 +1292,7 @@ def create_style_moodboard(
         furniture_products = [p for p in matching_products if p.get("category") == "Furniture"]
         decor_products = [p for p in matching_products if p.get("category") == "Home Decor"]
 
-        random.shuffle(furniture_products)
-        random.shuffle(decor_products)
-
+        # Keep score ordering -- highest scored products first
         # For redesigns: prioritize furniture, then add decor
         # Aim for 40% furniture, 60% decor
         furniture_count = min(4, len(furniture_products))
@@ -1302,7 +1300,6 @@ def create_style_moodboard(
 
         moodboard_products = furniture_products[:furniture_count] + decor_products[:decor_count]
     else:
-        random.shuffle(matching_products)
         moodboard_products = matching_products[:product_count]
 
     # Build moodboard response with images directly from catalog
@@ -2191,6 +2188,7 @@ def analyze_room_for_decor(
         }
 
     # Use Gemini Vision API for room analysis
+    response_text = ""
     try:
         from google import genai
         from google.genai import types
@@ -2234,26 +2232,51 @@ Respond in this JSON format:
 Response (JSON only):"""
 
         # Use Gemini for vision analysis
-        # Use gemini-2.0-flash-exp which has vision capabilities and is widely available
-        vision_model = "gemini-2.0-flash-exp"
+        vision_model = "gemini-2.5-flash"
 
         logger.info(f"Using {vision_model} for room analysis")
 
-        response = client.models.generate_content(
-            model=vision_model,
-            contents=[
-                types.Part.from_bytes(
-                    data=image_bytes, mime_type="image/jpeg"
+        import concurrent.futures
+
+        def _call_gemini():
+            return client.models.generate_content(
+                model=vision_model,
+                contents=[
+                    types.Part.from_bytes(
+                        data=image_bytes, mime_type="image/jpeg"
+                    ),
+                    prompt,
+                ],
+                config=types.GenerateContentConfig(
+                    temperature=0.3,
+                    max_output_tokens=4096,
                 ),
-                prompt,
-            ],
-            config=types.GenerateContentConfig(
-                temperature=0.3,
-                max_output_tokens=1000,
-            ),
-        )
+            )
+
+        # Run the Gemini API call with a 60-second timeout to prevent hanging
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_call_gemini)
+            try:
+                response = future.result(timeout=60)
+            except concurrent.futures.TimeoutError:
+                logger.error("Gemini Vision API call timed out after 60 seconds")
+                return {
+                    "status": "error",
+                    "message": "The image analysis took too long. Please try again with a smaller or clearer photo.",
+                    "analysis": None,
+                    "recommendations": [],
+                }
 
         # Parse the JSON response
+        if not response.text:
+            logger.error("Gemini Vision API returned empty response")
+            return {
+                "status": "error",
+                "message": "I couldn't analyze the image. Please try again with a different photo.",
+                "analysis": None,
+                "recommendations": [],
+            }
+
         response_text = response.text.strip()
 
         # Remove markdown code blocks if present

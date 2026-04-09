@@ -480,7 +480,8 @@ async def handle_client_messages(
                             from core.agents.retail.tools import analyze_room_with_history
 
                             try:
-                                tool_result = analyze_room_with_history(
+                                tool_result = await asyncio.to_thread(
+                                    analyze_room_with_history,
                                     customer_id=customer_id,
                                     session_id=decor_session_id,
                                     age_context=age_context,
@@ -504,7 +505,8 @@ async def handle_client_messages(
                             from core.agents.retail.tools import analyze_room_for_decor
 
                             try:
-                                tool_result = analyze_room_for_decor(
+                                tool_result = await asyncio.to_thread(
+                                    analyze_room_for_decor,
                                     customer_id=customer_id,
                                     room_type_hint=room_type,
                                     image_data=image_data_str
@@ -520,6 +522,18 @@ async def handle_client_messages(
                                 )
                                 logger.debug("Image sent to Agent via multimodal context after tool error")
                                 continue
+
+                        # Mark room photos as analyzed in session state so the consultation can advance
+                        if tool_result.get('status') == 'success':
+                            try:
+                                state_manager.update_session(
+                                    session_id=decor_session_id,
+                                    room_photos_analyzed=True,
+                                    photo_analysis=tool_result.get('analysis', {})
+                                )
+                                logger.info(f"[IMAGE INTERCEPTOR] Updated session {decor_session_id} with room_photos_analyzed=True")
+                            except Exception as update_error:
+                                logger.error(f"[IMAGE INTERCEPTOR] Failed to update session state: {update_error}")
 
                         # Send the tool result to the agent as if it came from a function response
                         # This way the agent can present the recommendations naturally
@@ -653,6 +667,23 @@ async def handle_messages(
                     )
             elif "connection closed" in str(exc).lower():
                 logger.info("WebSocket connection closed")
+                handled = True
+                break
+            elif "input audio" in str(exc).lower() or "1007" in str(exc):
+                logger.warning(f"Gemini Live audio session error: {exc}")
+                try:
+                    await websocket.send(
+                        json.dumps({
+                            "type": "error",
+                            "data": {
+                                "message": "Audio session interrupted. Please reconnect.",
+                                "error_type": "audio_session_error",
+                                "action": "reconnect",
+                            }
+                        })
+                    )
+                except Exception:
+                    pass
                 handled = True
                 break
 
