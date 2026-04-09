@@ -78,13 +78,21 @@
 
 ---
 
-## Phase 4: Style Discovery
+## Phase 4: Themed Style Finder
 
-### Step 1: Style Selection
-**Expected AI:** "Now let's explore styles for Mila's bedroom. Choose one or more that resonate with you!"
-- Shows style selector cards: Modern, Minimalist, Bohemian, Coastal, Industrial, Scandinavian, Traditional, Rustic
+### Step 1: Child-Themed Style Selection
+**Expected AI:** "Style Finder: Which worlds do you love? Everyone pick your favourites!"
+- Because age context = school-age, the AI shows **6 child-themed tiles** (not adult styles):
+  - Underwater World, Forest Adventure, Northern Lights, Space Explorer, Safari Wild, Rainbow Bright
+- Each tile shows a themed room image generated with Imagen 3
 
-**User (Nova):** "Modern and Scandinavian look perfect."
+**User (Mila):** "That one! With the dolphins!" [taps Underwater World]
+**User (Mila):** "And the bright one. But no baby pink." [taps Northern Lights]
+**User (Nova):** [clicks Continue]
+
+**Expected AI Response:**
+- Registers selections: underwater_world + northern_lights
+- Message: "Great choices, Mila! Underwater World and Northern Lights combine beautifully -- ocean blues with cool aurora pastels."
 
 ---
 
@@ -95,30 +103,66 @@
 **User (Nova):** "Blue and white would be lovely."
 
 **Expected AI Response:**
-- Validates choices: "Great choices! Modern and Scandinavian styles with blue and white will create a clean, calm space perfect for studying and playing."
+- Validates choices: "Blue and white will complement the underwater and northern lights themes perfectly!"
 
 ---
 
-## Phase 5: Moodboard Generation
+## Phase 5: Room Dimensions
+
+**Expected AI:** "One last thing before I create your moodboard -- how big is Mila's bedroom? This helps me ensure the products fit your space perfectly."
+- Shows preset size cards (Small / Medium / Large) and custom input fields
+
+**User (Nova):** [Clicks "Medium" preset -- 4m x 3.5m, ~14 m2]
+
+**Expected AI Response:**
+- Records dimensions
+- Message: "A 14 square metre room gives us plenty to work with!"
+
+---
+
+## Phase 6: Moodboard Generation
 
 **Expected AI Actions (Behind the Scenes):**
-- Filters 23 furniture items by age-appropriateness (school-age)
-- Matches style tags (modern, scandinavian)
+- Filters furniture items by age-appropriateness (school-age)
+- Matches style tags via theme keywords (underwater_world maps to coastal/nautical, northern_lights maps to scandinavian/modern/pastel)
 - Coordinates with color palette (blue, white)
 - Balances furniture (40%) and decor (60%)
 - Respects constraints (keeps cube shelf, no duplicate storage)
 
 **Expected AI Response:**
-"I've created a personalized moodboard for Mila's room! Here are 10 curated products combining modern and scandinavian styles with your blue and white palette."
+"I've created a personalized moodboard for Mila's room! Here are 10 curated products combining Underwater World and Northern Lights themes with your blue and white palette."
 
 **Moodboard Contains:**
 - 4 furniture pieces (bed, desk, chair, wardrobe)
 - 6 decor items (wall art, lighting, textiles, plants)
 - All items: age-appropriate, style-matched, color-coordinated
+- **"Visualize in my room"** button at bottom of moodboard
 
 ---
 
-## Phase 6: Cart & Recommendations
+## Phase 7: Room Visualization with Imagen 3
+
+**User (Nova):** [Clicks "Visualize in my room" button on the moodboard]
+
+**Expected AI Actions (Behind the Scenes):**
+- Calls `visualize_room_with_products()` tool
+- Builds detailed prompt from style (modern + scandinavian), room type (bedroom), dimensions (4m x 3.5m), and product names
+- If room photos were uploaded earlier: uses Imagen 3 inpainting to render products into the actual room
+- If no photos: generates a fresh photorealistic room rendering
+
+**Expected AI Response:**
+- Shows room visualization image with all selected products rendered in the space
+- Displays room dimensions (4m x 3.5m, ~14 m2) and product tags
+- Action buttons: "Add All to Cart" and "Try Another Look"
+- Message: "Here is how Mila's bedroom could look with the modern Scandinavian design! All the products fit beautifully in the 14 m2 space."
+
+**User (Nova):** "That looks amazing! Can you show me a different version?"
+
+**Expected AI:** Regenerates visualization with same products in a slightly different arrangement.
+
+---
+
+## Phase 8: Cart & Recommendations
 
 ### Step 1: Add to Cart
 **User (Nova):** "Add the bed and desk to my cart."

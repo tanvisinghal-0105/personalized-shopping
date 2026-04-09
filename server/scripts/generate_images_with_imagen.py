@@ -68,7 +68,7 @@ def generate_image_with_imagen(prompt: str, output_path: str, filename: str):
         vertexai.init(project=PROJECT_ID, location=LOCATION)
 
         # Load the Imagen 4.0 model
-        model = ImageGenerationModel.from_pretrained("imagen-3.0-generate-001")
+        model = ImageGenerationModel.from_pretrained("imagen-4.0-ultra-generate-001")
 
         print(f"Generating {filename}...")
         print(f"Prompt: {prompt[:100]}...")

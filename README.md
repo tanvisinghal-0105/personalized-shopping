@@ -31,6 +31,14 @@ The system consists of three main components:
 - Price matching and discount approvals
 - Manager escalation workflow via CRM
 - Low-latency responses with Gemini 2.0 Flash Live API
+
+### Home Decor Consultation
+- Multi-phase guided consultation flow (room selection, purpose, age context, constraints, style, colour, dimensions)
+- Themed style finder for child bedrooms (Underwater World, Forest Adventure, Northern Lights, Space Explorer, Safari Wild, Rainbow Bright)
+- Room photo analysis using Gemini Vision API with order history cross-referencing
+- Room size collection with preset sizes and custom dimension input
+- Intelligent moodboard generation with age-appropriate, style-matched, colour-coordinated products
+- Room visualization powered by Imagen 3 -- renders selected products into the customer's actual room photo via inpainting, or generates a fresh photorealistic rendering
   
 ## Repository Structure
 

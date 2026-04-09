@@ -34,6 +34,7 @@ from .tools import (
     analyze_room_with_history,
     analyze_room_photos_batch,
     get_customer_order_history,
+    visualize_room_with_products,
 )
 
 
@@ -185,6 +186,7 @@ def create_retail_agent(
         analyze_room_with_history,
         analyze_room_photos_batch,
         get_customer_order_history,
+        visualize_room_with_products,
     ]
     default_sub_agents = []
 

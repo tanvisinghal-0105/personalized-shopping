@@ -523,15 +523,28 @@ async def handle_client_messages(
                                 logger.debug("Image sent to Agent via multimodal context after tool error")
                                 continue
 
-                        # Mark room photos as analyzed in session state so the consultation can advance
+                        # Mark room photos as analyzed and store photo for visualization
                         if tool_result.get('status') == 'success':
                             try:
+                                # Store the first photo as primary for inpainting,
+                                # and append all photos to the list
+                                existing_session_data = state_manager.get_session(decor_session_id)
+                                existing_photos = existing_session_data.get("collected_data", {}).get("room_photos_list", []) if existing_session_data else []
+                                existing_photos.append(image_data_str)
+                                primary_photo = existing_session_data.get("collected_data", {}).get("room_photo_base64") if existing_session_data else None
+
                                 state_manager.update_session(
                                     session_id=decor_session_id,
                                     room_photos_analyzed=True,
-                                    photo_analysis=tool_result.get('analysis', {})
+                                    photo_analysis=tool_result.get('analysis', {}),
+                                    room_photo_base64=primary_photo or image_data_str,
                                 )
-                                logger.info(f"[IMAGE INTERCEPTOR] Updated session {decor_session_id} with room_photos_analyzed=True")
+                                # Update the photos list directly
+                                session_obj = state_manager.get_session(decor_session_id)
+                                if session_obj:
+                                    session_obj["collected_data"]["room_photos_list"] = existing_photos
+
+                                logger.info(f"[IMAGE INTERCEPTOR] Updated session {decor_session_id} with room_photos_analyzed=True, stored {len(existing_photos)} photo(s)")
                             except Exception as update_error:
                                 logger.error(f"[IMAGE INTERCEPTOR] Failed to update session state: {update_error}")
 

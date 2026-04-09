@@ -33,6 +33,9 @@ class HomeDecorSessionState:
                     "order_history": None,  # Customer order history
                     "style_preferences": None,
                     "color_preferences": None,
+                    "room_dimensions": None,  # {"length": float, "width": float} in meters
+                    "room_photo_base64": None,  # Base64 of first uploaded room photo for visualization
+                    "room_photos_list": [],  # List of all uploaded photo base64 strings
                 },
                 "conversation_history": [],
                 "moodboard_generated": False,
@@ -73,6 +76,8 @@ class HomeDecorSessionState:
         order_history: Optional[List[Dict[str, Any]]] = None,
         style_preferences: Optional[List[str]] = None,
         color_preferences: Optional[List[str]] = None,
+        room_dimensions: Optional[Dict[str, float]] = None,
+        room_photo_base64: Optional[str] = None,
         stage: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """Update session data."""
@@ -108,6 +113,12 @@ class HomeDecorSessionState:
 
             if color_preferences is not None:
                 session["collected_data"]["color_preferences"] = color_preferences
+
+            if room_dimensions is not None:
+                session["collected_data"]["room_dimensions"] = room_dimensions
+
+            if room_photo_base64 is not None:
+                session["collected_data"]["room_photo_base64"] = room_photo_base64
 
             if stage is not None:
                 session["current_stage"] = stage

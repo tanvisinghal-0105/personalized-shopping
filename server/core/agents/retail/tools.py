@@ -14,17 +14,10 @@ from config.config import RECOMMENDATION_MODEL
 # Initialize Firestore client with error handling
 db = None
 CUSTOMER_CART_INFO = {
-    "cart_id": "CART-112233",  # Use example ID for consistency
-    "items": {
-        "GENERIC-PIXEL-CASE": {
-            "sku": "1122334",
-            "name": "Generic Google Pixel Case",
-            "quantity": 1,
-            "price": 19,
-        }
-    },
-    "subtotal": 19,
-    "last_updated": "2025-04-23 11:05:00",  # Use example timestamp
+    "cart_id": "CART-112233",
+    "items": {},
+    "subtotal": 0,
+    "last_updated": "",
 }
 
 try:
@@ -1206,6 +1199,31 @@ def create_style_moodboard(
             "description": "Natural materials, warm tones, handcrafted feel, country charm",
             "keywords": ["rustic", "farmhouse", "country"],
         },
+        # Child-themed styles -- mapped to product style_tags for scoring
+        "underwater_world": {
+            "description": "Soft blues, ocean vibes, dolphins, shells, aqua palette",
+            "keywords": ["underwater", "ocean", "dolphins", "coastal", "nautical"],
+        },
+        "forest_adventure": {
+            "description": "Warm greens and browns, woodland creatures, natural wood",
+            "keywords": ["forest", "woodland", "rustic", "natural"],
+        },
+        "northern_lights": {
+            "description": "Cool pastels, aurora colours, dreamy ethereal atmosphere",
+            "keywords": ["northern lights", "aurora", "pastel", "scandinavian", "modern"],
+        },
+        "space_explorer": {
+            "description": "Deep navy and silver, planets, rockets, modern clean lines",
+            "keywords": ["space", "modern", "industrial"],
+        },
+        "safari_wild": {
+            "description": "Earthy tones, jungle animals, natural materials, adventure",
+            "keywords": ["safari", "jungle", "bohemian", "rustic", "natural"],
+        },
+        "rainbow_bright": {
+            "description": "Bold primary colours, playful, cheerful, modern clean design",
+            "keywords": ["rainbow", "modern", "bohemian"],
+        },
     }
 
     # Normalize style preferences to match catalog
@@ -1596,6 +1614,7 @@ def continue_home_decor_consultation(
     constraints: Optional[Dict[str, List[str]]] = None,
     style_preferences: Optional[List[str]] = None,
     color_preferences: Optional[List[str]] = None,
+    room_dimensions: Optional[Dict[str, float]] = None,
 ) -> dict:
     """
     Continues the home decor consultation with customer responses.
@@ -1609,11 +1628,12 @@ def continue_home_decor_consultation(
         constraints: Optional constraints (items to keep/remove).
         style_preferences: List of style preferences.
         color_preferences: Optional list of color preferences.
+        room_dimensions: Optional room dimensions {"length": float, "width": float} in meters.
 
     Returns:
         A dictionary with the next step in the consultation or final moodboard.
     """
-    logger.info(f"[HOME DECOR] Continuing consultation - room: {room_type}, purpose: {room_purpose}, age: {age_context}, styles: {style_preferences}, colors: {color_preferences}")
+    logger.info(f"[HOME DECOR] Continuing consultation - room: {room_type}, purpose: {room_purpose}, age: {age_context}, styles: {style_preferences}, colors: {color_preferences}, dimensions: {room_dimensions}")
 
     state_manager = get_state_manager()
 
@@ -1638,15 +1658,58 @@ def continue_home_decor_consultation(
         age_context=age_context,
         constraints=constraints,
         style_preferences=style_preferences,
-        color_preferences=color_preferences
+        color_preferences=color_preferences,
+        room_dimensions=room_dimensions,
     )
 
     # Get current state
     session = state_manager.get_session(session_id)
     collected = session["collected_data"]
 
+    # Validate style preferences for child rooms -- reject adult styles
+    CHILD_THEME_IDS = {"underwater_world", "forest_adventure", "northern_lights", "space_explorer", "safari_wild", "rainbow_bright"}
+    ADULT_STYLE_IDS = {"modern", "minimalist", "bohemian", "coastal", "industrial", "scandinavian", "traditional", "rustic"}
+    age = collected.get("age_context")
+    is_child_room = age in ("toddler", "school-age", "teen")
+
+    if is_child_room and collected.get("style_preferences"):
+        # If the agent passed adult style names for a child room, clear them
+        # so the themed style selector is shown instead
+        given_styles = set(s.lower() for s in collected["style_preferences"])
+        if given_styles & ADULT_STYLE_IDS and not (given_styles & CHILD_THEME_IDS):
+            logger.info(f"[HOME DECOR] Rejecting adult styles {given_styles} for child room -- forcing themed style selector")
+            collected["style_preferences"] = None
+            collected["color_preferences"] = None
+            state_manager.update_session(session_id, style_preferences=None, color_preferences=None)
+            # Return with the themed style selector UI so the frontend renders it
+            child_style_options = [
+                {"id": "underwater_world", "label": "Underwater World", "description": "Soft blues with dolphins, shells & ocean vibes", "image_url": "./assets/theme_underwater_world.jpg"},
+                {"id": "forest_adventure", "label": "Forest Adventure", "description": "Warm greens & browns, woodland creatures", "image_url": "./assets/theme_forest_adventure.jpg"},
+                {"id": "northern_lights", "label": "Northern Lights", "description": "Cool pastels, aurora colours & starry skies", "image_url": "./assets/theme_northern_lights.jpg"},
+                {"id": "space_explorer", "label": "Space Explorer", "description": "Deep navy & silver, planets & rockets", "image_url": "./assets/theme_space_explorer.jpg"},
+                {"id": "safari_wild", "label": "Safari Wild", "description": "Earthy tones, jungle animals & adventure", "image_url": "./assets/theme_safari_wild.jpg"},
+                {"id": "rainbow_bright", "label": "Rainbow Bright", "description": "Bold primary colours, playful & cheerful", "image_url": "./assets/theme_rainbow_bright.jpg"},
+            ]
+            return {
+                "status": "awaiting_input",
+                "session_id": session_id,
+                "stage": "stage_2_style_discovery",
+                "missing_info": "style_preferences",
+                "message": "This is a child's room! Let them choose from the fun themed styles below.",
+                "instructions": "STOP: Do NOT call this tool again with style_preferences. The UI is showing child-themed tiles. Wait for the customer to select from the UI and click Continue.",
+                "options": [s["id"] for s in child_style_options],
+                "ui_data": {
+                    "display_type": "style_selector",
+                    "title": "Style Finder: Which worlds do you love?",
+                    "subtitle": "Everyone pick your favourites! Tap as many as you like.",
+                    "style_options": child_style_options,
+                    "interaction_mode": "multi_select",
+                    "phase": "phase_1_style_discovery",
+                }
+            }
+
     # If we have all required information, generate the moodboard
-    if collected["room_type"] and collected["style_preferences"]:
+    if collected["room_type"] and collected["style_preferences"] and collected.get("room_dimensions"):
         logger.info(f"[HOME DECOR] All information collected, generating moodboard...")
 
         # Call the moodboard creation function with all context
@@ -1684,7 +1747,11 @@ def continue_home_decor_consultation(
                 "moodboard_id": moodboard_result.get("moodboard_id"),
                 "products": moodboard_result.get("products", []),
                 "product_count": moodboard_result.get("product_count", 0),
-                "message": f"Here are {moodboard_result.get('product_count', 0)} {', '.join(collected['style_preferences'])} products I found for your {collected['room_type']}"
+                "room_dimensions": collected.get("room_dimensions"),
+                "room_type": collected["room_type"],
+                "style_preferences": collected["style_preferences"],
+                "message": f"Here are {moodboard_result.get('product_count', 0)} {', '.join(collected['style_preferences'])} products I found for your {collected['room_type']}",
+                "show_visualize_button": collected.get("room_photos_analyzed", False),
             }
         }
 
@@ -1777,32 +1844,49 @@ def continue_home_decor_consultation(
         state_manager.update_session(session_id, stage="stage_2_style_discovery")
         logger.info(f"[HOME DECOR] Awaiting style preferences from customer")
 
-        # Build UI data for Phase 1 style selection with room-specific images
-        # Convert room_type to match our image naming convention
-        # Map room names to image filenames
-        room_image_map = {
-            "living room": "living_room",
-            "bedroom": "bedroom",
-            "office": "home_office",
-            "home office": "home_office",
-            "dining room": "dining_room",
-            "kitchen": "kitchen",
-            "bathroom": "bathroom",
-            "entryway": "living_room"  # Fallback to living_room for entryway
-        }
+        age = collected.get("age_context")
+        is_child_room = age in ("toddler", "school-age", "teen")
 
-        room_key = room_image_map.get(collected["room_type"].lower(), "living_room")
+        if is_child_room:
+            # Child-themed style tiles -- fun imaginative worlds
+            style_options_ui = [
+                {"id": "underwater_world", "label": "Underwater World", "description": "Soft blues with dolphins, shells & ocean vibes", "image_url": "./assets/theme_underwater_world.jpg"},
+                {"id": "forest_adventure", "label": "Forest Adventure", "description": "Warm greens & browns, woodland creatures", "image_url": "./assets/theme_forest_adventure.jpg"},
+                {"id": "northern_lights", "label": "Northern Lights", "description": "Cool pastels, aurora colours & starry skies", "image_url": "./assets/theme_northern_lights.jpg"},
+                {"id": "space_explorer", "label": "Space Explorer", "description": "Deep navy & silver, planets & rockets", "image_url": "./assets/theme_space_explorer.jpg"},
+                {"id": "safari_wild", "label": "Safari Wild", "description": "Earthy tones, jungle animals & adventure", "image_url": "./assets/theme_safari_wild.jpg"},
+                {"id": "rainbow_bright", "label": "Rainbow Bright", "description": "Bold primary colours, playful & cheerful", "image_url": "./assets/theme_rainbow_bright.jpg"},
+            ]
+            style_ids = [s["id"] for s in style_options_ui]
+            title = "Style Finder: Which worlds do you love?"
+            subtitle = "Everyone pick your favourites! Tap as many as you like."
+        else:
+            # Standard adult style tiles
+            room_image_map = {
+                "living room": "living_room",
+                "bedroom": "bedroom",
+                "office": "home_office",
+                "home office": "home_office",
+                "dining room": "dining_room",
+                "kitchen": "kitchen",
+                "bathroom": "bathroom",
+                "entryway": "living_room"
+            }
+            room_key = room_image_map.get(collected["room_type"].lower(), "living_room")
 
-        style_options_ui = [
-            {"id": "modern", "label": "Modern", "description": "Clean lines, minimal ornamentation", "image_url": f"./assets/{room_key}_modern.jpg"},
-            {"id": "minimalist", "label": "Minimalist", "description": "Less is more, simple & functional", "image_url": f"./assets/{room_key}_minimalist.jpg"},
-            {"id": "bohemian", "label": "Bohemian", "description": "Eclectic mix, rich colors & patterns", "image_url": f"./assets/{room_key}_bohemian.jpg"},
-            {"id": "coastal", "label": "Coastal", "description": "Light & airy, nautical themes", "image_url": f"./assets/{room_key}_coastal.jpg"},
-            {"id": "industrial", "label": "Industrial", "description": "Exposed materials, urban loft", "image_url": f"./assets/{room_key}_industrial.jpg"},
-            {"id": "scandinavian", "label": "Scandinavian", "description": "Natural materials, hygge coziness", "image_url": f"./assets/{room_key}_scandinavian.jpg"},
-            {"id": "traditional", "label": "Traditional", "description": "Classic elegance, timeless pieces", "image_url": f"./assets/{room_key}_traditional.jpg"},
-            {"id": "rustic", "label": "Rustic", "description": "Natural materials, country charm", "image_url": f"./assets/{room_key}_rustic.jpg"}
-        ]
+            style_options_ui = [
+                {"id": "modern", "label": "Modern", "description": "Clean lines, minimal ornamentation", "image_url": f"./assets/{room_key}_modern.jpg"},
+                {"id": "minimalist", "label": "Minimalist", "description": "Less is more, simple & functional", "image_url": f"./assets/{room_key}_minimalist.jpg"},
+                {"id": "bohemian", "label": "Bohemian", "description": "Eclectic mix, rich colors & patterns", "image_url": f"./assets/{room_key}_bohemian.jpg"},
+                {"id": "coastal", "label": "Coastal", "description": "Light & airy, nautical themes", "image_url": f"./assets/{room_key}_coastal.jpg"},
+                {"id": "industrial", "label": "Industrial", "description": "Exposed materials, urban loft", "image_url": f"./assets/{room_key}_industrial.jpg"},
+                {"id": "scandinavian", "label": "Scandinavian", "description": "Natural materials, hygge coziness", "image_url": f"./assets/{room_key}_scandinavian.jpg"},
+                {"id": "traditional", "label": "Traditional", "description": "Classic elegance, timeless pieces", "image_url": f"./assets/{room_key}_traditional.jpg"},
+                {"id": "rustic", "label": "Rustic", "description": "Natural materials, country charm", "image_url": f"./assets/{room_key}_rustic.jpg"}
+            ]
+            style_ids = [s["id"] for s in style_options_ui]
+            title = f"Perfect! Now, what style speaks to you for your {collected['room_type']}?"
+            subtitle = "Choose one or more styles that resonate with you"
 
         return {
             "status": "awaiting_input",
@@ -1810,13 +1894,12 @@ def continue_home_decor_consultation(
             "stage": "stage_2_style_discovery",
             "missing_info": "style_preferences",
             "question": "What decor style resonates with you? You can choose multiple!",
-            "options": ["modern", "minimalist", "bohemian", "coastal", "industrial", "scandinavian", "traditional", "rustic"],
+            "options": style_ids,
             "message": f"Great! Now let's explore styles for your {collected['room_type']}.",
-            # NEW: UI display data for Phase 1 style selection
             "ui_data": {
                 "display_type": "style_selector",
-                "title": f"Perfect! Now, what style speaks to you for your {collected['room_type']}?",
-                "subtitle": "Choose one or more styles that resonate with you",
+                "title": title,
+                "subtitle": subtitle,
                 "style_options": style_options_ui,
                 "interaction_mode": "multi_select",
                 "phase": "phase_1_style_discovery"
@@ -1860,6 +1943,59 @@ def continue_home_decor_consultation(
                 "interaction_mode": "multi_select",
                 "phase": "phase_1_color_preferences",
                 "skip_allowed": True
+            }
+        }
+
+    # Phase 2: Collect room dimensions for visualization
+    if not collected.get("room_dimensions"):
+        state_manager.update_session(session_id, stage="stage_4_room_dimensions")
+        logger.info(f"[HOME DECOR] Awaiting room dimensions from customer")
+
+        # Common room size presets based on room type
+        room_type_lower = collected["room_type"].lower()
+        if "bedroom" in room_type_lower:
+            presets = [
+                {"id": "small", "label": "Small", "length": 3.0, "width": 2.5, "description": "~7.5 m2"},
+                {"id": "medium", "label": "Medium", "length": 4.0, "width": 3.5, "description": "~14 m2"},
+                {"id": "large", "label": "Large", "length": 5.0, "width": 4.0, "description": "~20 m2"},
+            ]
+        elif "living" in room_type_lower:
+            presets = [
+                {"id": "small", "label": "Small", "length": 4.0, "width": 3.0, "description": "~12 m2"},
+                {"id": "medium", "label": "Medium", "length": 5.0, "width": 4.0, "description": "~20 m2"},
+                {"id": "large", "label": "Large", "length": 6.0, "width": 5.0, "description": "~30 m2"},
+            ]
+        else:
+            presets = [
+                {"id": "small", "label": "Small", "length": 3.0, "width": 2.5, "description": "~7.5 m2"},
+                {"id": "medium", "label": "Medium", "length": 4.0, "width": 3.5, "description": "~14 m2"},
+                {"id": "large", "label": "Large", "length": 5.5, "width": 4.5, "description": "~25 m2"},
+            ]
+
+        return {
+            "status": "awaiting_input",
+            "session_id": session_id,
+            "stage": "stage_4_room_dimensions",
+            "missing_info": "room_dimensions",
+            "question": "What are the approximate dimensions of your room?",
+            "message": f"One last thing before I create your moodboard -- how big is the {collected['room_type']}? This helps me ensure the products fit your space perfectly.",
+            "ui_data": {
+                "display_type": "room_dimensions",
+                "title": "How big is your space?",
+                "subtitle": "Select a preset or enter custom dimensions",
+                "presets": presets,
+                "custom_input": {
+                    "length_label": "Length (m)",
+                    "width_label": "Width (m)",
+                    "length_min": 1.5,
+                    "length_max": 12.0,
+                    "width_min": 1.5,
+                    "width_max": 12.0,
+                    "step": 0.5,
+                },
+                "interaction_mode": "single_select_or_custom",
+                "phase": "phase_2_room_dimensions",
+                "skip_allowed": False
             }
         }
 
@@ -2347,4 +2483,339 @@ Response (JSON only):"""
             "message": f"An error occurred while analyzing the room: {str(e)[:100]}",
             "analysis": None,
             "recommendations": [],
+        }
+
+
+def visualize_room_with_products(
+    customer_id: str,
+    session_id: str,
+    product_ids: Optional[List[str]] = None,
+    style_preferences: Optional[List[str]] = None,
+    room_type: Optional[str] = None,
+    room_dimensions: Optional[Dict[str, float]] = None,
+    image_data: Optional[str] = None,
+) -> dict:
+    """
+    Generates a photorealistic room visualization showing how selected products
+    would look in the customer's room.
+
+    When product_ids is provided, ONLY those products are visualized.
+    When product_ids is not provided, all moodboard products from the session are used.
+
+    Args:
+        customer_id: The ID of the customer.
+        session_id: The consultation session ID.
+        product_ids: List of product IDs to visualize. Pass the exact IDs the customer selected.
+        style_preferences: Optional. Auto-resolved from session if not provided.
+        room_type: Optional. Auto-resolved from session if not provided.
+        room_dimensions: Optional. Auto-resolved from session if not provided.
+        image_data: Base64-encoded room photo to use as base. If not provided,
+                    falls back to generating a fresh room rendering.
+
+    Returns:
+        A dictionary with the visualization result and UI data.
+    """
+    logger.info(f"[ROOM VIZ] Generating visualization for customer {customer_id}, session {session_id}")
+
+    state_manager = get_state_manager()
+
+    # Retrieve session data for context
+    session = state_manager.get_session(session_id) if session_id else None
+    collected = {}
+    if session:
+        collected = session.get("collected_data", {})
+        if not style_preferences:
+            style_preferences = collected.get("style_preferences", [])
+        if not room_type:
+            room_type = collected.get("room_type", "bedroom")
+        if not room_dimensions:
+            room_dimensions = collected.get("room_dimensions")
+        # Use the uploaded room photo as base for inpainting
+        if not image_data and collected.get("room_photo_base64"):
+            image_data = collected["room_photo_base64"]
+            logger.info("[ROOM VIZ] Using stored room photo from session for inpainting")
+
+    # --- Resolve products to show ---
+    # Priority 1: explicit product_ids passed in
+    # Priority 2: re-run the moodboard scoring logic using session data (gets ALL moodboard products)
+    products_to_show = []
+    if product_ids:
+        for product in RetailContext.PRODUCT_CATALOG:
+            if product["product_id"] in product_ids:
+                products_to_show.append(product)
+
+    if not products_to_show:
+        # Re-run the same scoring logic as create_style_moodboard to get the exact
+        # same products the customer saw.  This avoids the mismatch from loose keyword search.
+        age_context = collected.get("age_context")
+        room_purpose = collected.get("room_purpose")
+        include_furniture = room_purpose == "redesign" or (room_type and room_type.lower() == "bedroom" and age_context)
+
+        STYLE_KEYWORDS = {
+            "underwater_world": ["underwater", "ocean", "dolphins", "coastal", "nautical"],
+            "forest_adventure": ["forest", "woodland", "rustic", "natural"],
+            "northern_lights": ["northern lights", "aurora", "pastel", "scandinavian", "modern"],
+            "space_explorer": ["space", "modern", "industrial"],
+            "safari_wild": ["safari", "jungle", "bohemian", "rustic", "natural"],
+            "rainbow_bright": ["rainbow", "modern", "bohemian"],
+            "modern": ["modern", "contemporary", "sleek"],
+            "minimalist": ["minimalist", "simple", "clean"],
+            "bohemian": ["bohemian", "boho", "eclectic"],
+            "coastal": ["coastal", "beach", "nautical"],
+            "industrial": ["industrial", "urban", "loft"],
+            "scandinavian": ["scandinavian", "nordic", "hygge"],
+            "traditional": ["traditional", "classic", "elegant"],
+            "rustic": ["rustic", "farmhouse", "country"],
+        }
+
+        matched_styles = []
+        for pref in (style_preferences or []):
+            pref_lower = pref.lower()
+            for style, kws in STYLE_KEYWORDS.items():
+                if pref_lower in kws or pref_lower in style:
+                    if style not in matched_styles:
+                        matched_styles.append(style)
+        if not matched_styles:
+            matched_styles = style_preferences or ["modern"]
+
+        color_prefs = collected.get("color_preferences")
+        normalized_colors = [c.lower() for c in color_prefs] if color_prefs else []
+
+        all_relevant = []
+        for product in RetailContext.PRODUCT_CATALOG:
+            cat = product.get("category", "")
+            if cat == "Home Decor" or (include_furniture and cat == "Furniture"):
+                if age_context and cat == "Furniture":
+                    age_tags = product.get("age_appropriate", [])
+                    if age_context in age_tags or not age_tags:
+                        all_relevant.append(product)
+                else:
+                    all_relevant.append(product)
+
+        scored = {}
+        for product in all_relevant:
+            score = 0
+            p_styles = [s.lower() for s in product.get("style_tags", [])]
+            p_colors = [c.lower() for c in product.get("color_palette", [])]
+            p_rooms = [r.lower() for r in product.get("room_compatibility", [])]
+            score += sum(1 for s in matched_styles if s in p_styles) * 10
+            if normalized_colors:
+                score += sum(1 for c in normalized_colors if c in p_colors) * 15
+            if room_type and room_type.lower() in p_rooms:
+                score += 5
+            if score > 0:
+                scored[product["product_id"]] = score
+
+        sorted_products = sorted(
+            [p for p in all_relevant if p["product_id"] in scored],
+            key=lambda p: scored[p["product_id"]],
+            reverse=True,
+        )
+
+        if include_furniture:
+            furn = [p for p in sorted_products if p.get("category") == "Furniture"]
+            decor = [p for p in sorted_products if p.get("category") == "Home Decor"]
+            products_to_show = furn[:4] + decor[:6]
+        else:
+            products_to_show = sorted_products[:6]
+
+    logger.info(f"[ROOM VIZ] Products to visualize: {[p['name'] for p in products_to_show]}")
+
+    # --- Build prompt ---
+    product_descriptions = [
+        f"{p['name']} ({p.get('subcategory', p.get('category', ''))})"
+        for p in products_to_show[:8]
+    ]
+
+    style_desc_map = {
+        "underwater_world": "underwater ocean theme with soft blues, dolphins, shells, and coral accents",
+        "forest_adventure": "woodland forest theme with warm greens, browns, and nature elements",
+        "northern_lights": "aurora northern lights theme with cool pastels, lavender, and mint tones",
+        "space_explorer": "space exploration theme with deep navy, silver accents, and constellation elements",
+        "safari_wild": "safari jungle theme with earthy khaki, olive tones, and animal motifs",
+        "rainbow_bright": "cheerful rainbow theme with bold primary colours against clean white",
+        "modern": "modern style with clean lines and minimal ornamentation",
+        "minimalist": "minimalist design with simple functional furniture",
+        "bohemian": "bohemian style with eclectic mix and rich patterns",
+        "coastal": "coastal style with light blues, whites, and nautical textures",
+        "industrial": "industrial style with exposed materials and metal accents",
+        "scandinavian": "Scandinavian style with light woods and cozy textiles",
+        "traditional": "traditional style with classic elegance",
+        "rustic": "rustic style with natural wood and warm earth tones",
+    }
+
+    style_descriptions = [
+        style_desc_map.get(s.lower(), s) for s in (style_preferences or [])
+    ]
+    style_text = " combined with ".join(style_descriptions) if style_descriptions else "modern clean"
+
+    dim_text = ""
+    if room_dimensions:
+        area = room_dimensions.get("length", 4) * room_dimensions.get("width", 3)
+        dim_text = f" The room is approximately {room_dimensions.get('length', 4)}m x {room_dimensions.get('width', 3)}m ({area:.0f} m2)."
+
+    room_label = room_type or "bedroom"
+
+    # Build product placement descriptions with specific positioning hints
+    product_placement = []
+    for i, p in enumerate(products_to_show[:8]):
+        name = p['name']
+        subcat = p.get('subcategory', p.get('category', ''))
+        if 'bed' in subcat.lower() or 'bed' in name.lower():
+            product_placement.append(f"a {name} positioned against the main wall")
+        elif 'desk' in subcat.lower() or 'desk' in name.lower():
+            product_placement.append(f"a {name} placed near the window for natural light")
+        elif 'lamp' in subcat.lower() or 'light' in subcat.lower():
+            product_placement.append(f"a {name} providing warm ambient lighting")
+        elif 'rug' in subcat.lower() or 'rug' in name.lower():
+            product_placement.append(f"a {name} on the floor anchoring the space")
+        elif 'art' in subcat.lower() or 'print' in subcat.lower():
+            product_placement.append(f"a {name} hanging on the wall as a focal point")
+        elif 'plant' in subcat.lower() or 'planter' in name.lower():
+            product_placement.append(f"a {name} adding a touch of greenery")
+        elif 'shelf' in subcat.lower() or 'bookshelf' in name.lower():
+            product_placement.append(f"a {name} mounted or standing against a wall")
+        else:
+            product_placement.append(f"a {name}")
+
+    prompt = (
+        f"Ultra-realistic interior design photograph of a {room_label} "
+        f"styled with {style_text}.{dim_text} "
+        f"The room contains these specific items: {'; '.join(product_placement)}. "
+        f"Shot with a wide-angle lens from the doorway perspective. "
+        f"Natural daylight streaming through windows complemented by warm interior lighting. "
+        f"Realistic textures on all surfaces -- visible wood grain, fabric weave, ceramic glaze. "
+        f"Styled like a real lived-in home, not a showroom. "
+        f"Professional architectural photography, 4K resolution, depth of field, "
+        f"soft shadows, colour-accurate, editorial interior design magazine quality."
+    )
+
+    logger.info(f"[ROOM VIZ] Prompt: {prompt[:300]}...")
+
+    # --- Attempt image generation via google-genai SDK (Vertex AI) ---
+    generated_image_b64 = None
+
+    try:
+        from google import genai
+        from google.genai import types as genai_types
+        import base64
+
+        client = genai.Client()
+
+        if image_data:
+            # --- Inpainting: edit the customer's uploaded room photo ---
+            logger.info("[ROOM VIZ] Using customer's room photo as base for Imagen 3 Capability editing")
+
+            edit_prompt = (
+                f"Keep this exact room layout, walls, floor, windows, and lighting. "
+                f"Place the following new furniture and decor items naturally into the existing space: "
+                f"{'; '.join(product_placement[:6])}. "
+                f"Style the room with {style_text}. "
+                f"The new items must look like they physically belong in this room -- "
+                f"correct perspective, matching shadows, realistic scale relative to the room. "
+                f"Do not change the room structure, wall colour, or window positions. "
+                f"Photorealistic result, as if the items were photographed in this actual room."
+            )
+
+            # Decode the base64 photo
+            photo_bytes = base64.b64decode(image_data)
+            reference_image = genai_types.RawReferenceImage(
+                reference_id=1,
+                reference_image=genai_types.Image(image_bytes=photo_bytes),
+            )
+
+            image_response = client.models.edit_image(
+                model="imagen-3.0-capability-001",
+                prompt=edit_prompt,
+                reference_images=[reference_image],
+                config=genai_types.EditImageConfig(
+                    number_of_images=1,
+                    safety_filter_level="block_some",
+                    person_generation="dont_allow",
+                ),
+            )
+
+            if image_response and image_response.generated_images:
+                img_bytes = image_response.generated_images[0].image.image_bytes
+                generated_image_b64 = base64.b64encode(img_bytes).decode("utf-8")
+                logger.info(f"[ROOM VIZ] Imagen 3 Capability inpainting successful ({len(img_bytes)} bytes)")
+            else:
+                logger.warning("[ROOM VIZ] Imagen 3 Capability returned no images, falling back to generation")
+                image_data = None  # Clear so fallback generates fresh
+
+        if not generated_image_b64:
+            # --- Fresh generation: no base photo ---
+            logger.info("[ROOM VIZ] Generating fresh room rendering with Imagen 4 Ultra")
+
+            image_response = client.models.generate_images(
+                model="imagen-4.0-ultra-generate-001",
+                prompt=prompt,
+                config=genai_types.GenerateImagesConfig(
+                    number_of_images=1,
+                    aspect_ratio="4:3",
+                    safety_filter_level="block_some",
+                    person_generation="dont_allow",
+                ),
+            )
+
+            if image_response and image_response.generated_images:
+                img_bytes = image_response.generated_images[0].image.image_bytes
+                generated_image_b64 = base64.b64encode(img_bytes).decode("utf-8")
+                logger.info(f"[ROOM VIZ] Imagen 4 Ultra image generated successfully ({len(img_bytes)} bytes)")
+            else:
+                logger.warning("[ROOM VIZ] Imagen 4 Ultra returned no images")
+
+    except Exception as e:
+        logger.warning(f"[ROOM VIZ] Image generation failed: {e}")
+
+    # --- Build response ---
+    viz_id = f"VIZ-{random.randint(10000, 99999)}"
+    product_info = [
+        {"product_id": p["product_id"], "name": p["name"], "price": p["price"]}
+        for p in products_to_show[:8]
+    ]
+
+    if generated_image_b64:
+        return {
+            "status": "success",
+            "visualization_id": viz_id,
+            "session_id": session_id,
+            "message": f"Here is how your {room_label} could look with the {style_text} design!",
+            "products_shown": [p["name"] for p in products_to_show[:8]],
+            "room_dimensions": room_dimensions,
+            "ui_data": {
+                "display_type": "room_visualization",
+                "visualization_id": viz_id,
+                "image_base64": generated_image_b64,
+                "room_type": room_label,
+                "style_preferences": style_preferences,
+                "products_shown": product_info,
+                "room_dimensions": room_dimensions,
+                "message": f"Your {room_label} reimagined with {', '.join(style_preferences or ['your chosen'])} style",
+            }
+        }
+    else:
+        return {
+            "status": "partial",
+            "visualization_id": viz_id,
+            "session_id": session_id,
+            "message": (
+                f"I've designed a concept for your {room_label} with {style_text}. "
+                f"Products included: {', '.join(p['name'] for p in products_to_show[:8])}."
+                f"{dim_text}"
+            ),
+            "visualization_prompt": prompt,
+            "products_shown": [p["name"] for p in products_to_show[:8]],
+            "room_dimensions": room_dimensions,
+            "ui_data": {
+                "display_type": "room_visualization",
+                "visualization_id": viz_id,
+                "image_base64": None,
+                "room_type": room_label,
+                "style_preferences": style_preferences,
+                "products_shown": product_info,
+                "room_dimensions": room_dimensions,
+                "message": f"Your {room_label} concept with {', '.join(style_preferences or ['your chosen'])} style",
+                "fallback_description": prompt,
+            }
         }

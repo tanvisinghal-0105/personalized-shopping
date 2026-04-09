@@ -16,6 +16,8 @@ export class HomeDecorRenderer {
     this.selectedStyles = [];
     this.selectedColors = [];
     this.renderedMoodboards = new Set();
+    this._selectedDimensions = null;
+    this._vizSelectedProducts = [];
     this.photoUploadHandler = new PhotoUploadHandler();
   }
 
@@ -41,11 +43,17 @@ export class HomeDecorRenderer {
       case 'color_selector':
         this.renderColorSelector(uiData);
         break;
+      case 'room_dimensions':
+        this.renderRoomDimensions(uiData);
+        break;
       case 'photo_upload':
         this.renderPhotoUpload(uiData);
         break;
       case 'moodboard':
         this.renderMoodboard(uiData);
+        break;
+      case 'room_visualization':
+        this.renderRoomVisualization(uiData);
         break;
       default:
         console.warn(`[HomeDecor] Unknown display_type: ${uiData.display_type}`);
@@ -127,6 +135,9 @@ export class HomeDecorRenderer {
    * Render Style Selector Cards
    */
   renderStyleSelector(uiData) {
+    // Reset selected styles for fresh selection
+    this.selectedStyles = [];
+
     const wrapper = this.createMessageWrapper('decor-ui');
     const bubble = document.createElement('div');
     bubble.classList.add('message-bubble', 'decor-selector-bubble');
@@ -256,8 +267,9 @@ export class HomeDecorRenderer {
       this.selectedStyles = this.selectedStyles.filter(id => id !== styleId);
     }
 
-    // Enable/disable continue button
-    const continueBtn = document.getElementById('stylesContinueBtn');
+    // Enable/disable continue button - find within the same bubble, not globally
+    const bubble = card.closest('.decor-selector-bubble');
+    const continueBtn = bubble ? bubble.querySelector('#stylesContinueBtn') : document.getElementById('stylesContinueBtn');
     if (continueBtn) {
       continueBtn.disabled = this.selectedStyles.length === 0;
     }
@@ -383,6 +395,205 @@ export class HomeDecorRenderer {
       checkmark.classList.add('hidden');
       this.selectedColors = this.selectedColors.filter(id => id !== colorId);
     }
+  }
+
+  /**
+   * Render Room Dimensions selector (Phase 2)
+   */
+  renderRoomDimensions(uiData) {
+    const wrapper = this.createMessageWrapper('decor-ui');
+    const bubble = document.createElement('div');
+    bubble.classList.add('message-bubble', 'decor-selector-bubble');
+
+    // Title
+    const title = document.createElement('h3');
+    title.className = 'text-lg font-bold mb-2';
+    title.textContent = uiData.title || 'Room dimensions';
+    bubble.appendChild(title);
+
+    if (uiData.subtitle) {
+      const subtitle = document.createElement('p');
+      subtitle.className = 'text-sm text-gray-600 mb-4';
+      subtitle.textContent = uiData.subtitle;
+      bubble.appendChild(subtitle);
+    }
+
+    // Preset size cards
+    if (uiData.presets && uiData.presets.length > 0) {
+      const presetGrid = document.createElement('div');
+      presetGrid.className = 'grid grid-cols-3 gap-3 my-4';
+
+      uiData.presets.forEach(preset => {
+        const card = document.createElement('div');
+        card.className = 'room-size-card bg-gray-100 border-2 border-transparent rounded-xl p-4 cursor-pointer hover:bg-gray-200 transition-all text-center';
+        card.dataset.presetId = preset.id;
+
+        const icon = document.createElement('div');
+        icon.className = 'text-2xl mb-1';
+        icon.textContent = preset.id === 'small' ? '\u25AB' : preset.id === 'medium' ? '\u25AB\u25AB' : '\u25AB\u25AB\u25AB';
+        card.appendChild(icon);
+
+        const label = document.createElement('div');
+        label.className = 'text-sm font-semibold';
+        label.textContent = preset.label;
+        card.appendChild(label);
+
+        const dims = document.createElement('div');
+        dims.className = 'text-xs text-gray-500 mt-1';
+        dims.textContent = `${preset.length}m x ${preset.width}m`;
+        card.appendChild(dims);
+
+        const area = document.createElement('div');
+        area.className = 'text-xs text-gray-400 mt-0.5';
+        area.textContent = preset.description;
+        card.appendChild(area);
+
+        card.addEventListener('click', () => {
+          // Deselect all
+          presetGrid.querySelectorAll('.room-size-card').forEach(c => {
+            c.classList.remove('selected', 'border-black', 'bg-white', 'shadow-xl');
+          });
+          // Select this one
+          card.classList.add('selected', 'border-black', 'bg-white', 'shadow-xl');
+          // Clear custom inputs
+          const lengthInput = bubble.querySelector('#dimLengthInput');
+          const widthInput = bubble.querySelector('#dimWidthInput');
+          if (lengthInput) lengthInput.value = preset.length;
+          if (widthInput) widthInput.value = preset.width;
+          this._selectedDimensions = { length: preset.length, width: preset.width };
+          // Enable submit
+          const submitBtn = bubble.querySelector('#dimSubmitBtn');
+          if (submitBtn) submitBtn.disabled = false;
+        });
+
+        presetGrid.appendChild(card);
+      });
+
+      bubble.appendChild(presetGrid);
+    }
+
+    // Divider
+    const divider = document.createElement('div');
+    divider.className = 'flex items-center gap-3 my-4';
+    divider.innerHTML = '<div class="flex-1 h-px bg-gray-300"></div><span class="text-xs text-gray-400">or enter custom</span><div class="flex-1 h-px bg-gray-300"></div>';
+    bubble.appendChild(divider);
+
+    // Custom dimension inputs
+    const customContainer = document.createElement('div');
+    customContainer.className = 'flex gap-4 items-end';
+
+    const customConfig = uiData.custom_input || {};
+
+    // Length input
+    const lengthGroup = document.createElement('div');
+    lengthGroup.className = 'flex-1';
+    const lengthLabel = document.createElement('label');
+    lengthLabel.className = 'text-xs text-gray-500 block mb-1';
+    lengthLabel.textContent = customConfig.length_label || 'Length (m)';
+    lengthGroup.appendChild(lengthLabel);
+    const lengthInput = document.createElement('input');
+    lengthInput.type = 'number';
+    lengthInput.id = 'dimLengthInput';
+    lengthInput.className = 'w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-black focus:outline-none';
+    lengthInput.min = customConfig.length_min || 1.5;
+    lengthInput.max = customConfig.length_max || 12.0;
+    lengthInput.step = customConfig.step || 0.5;
+    lengthInput.placeholder = 'e.g. 4.0';
+    lengthGroup.appendChild(lengthInput);
+    customContainer.appendChild(lengthGroup);
+
+    // x label
+    const xLabel = document.createElement('div');
+    xLabel.className = 'text-gray-400 pb-2 font-bold';
+    xLabel.textContent = 'x';
+    customContainer.appendChild(xLabel);
+
+    // Width input
+    const widthGroup = document.createElement('div');
+    widthGroup.className = 'flex-1';
+    const widthLabel = document.createElement('label');
+    widthLabel.className = 'text-xs text-gray-500 block mb-1';
+    widthLabel.textContent = customConfig.width_label || 'Width (m)';
+    widthGroup.appendChild(widthLabel);
+    const widthInput = document.createElement('input');
+    widthInput.type = 'number';
+    widthInput.id = 'dimWidthInput';
+    widthInput.className = 'w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-black focus:outline-none';
+    widthInput.min = customConfig.width_min || 1.5;
+    widthInput.max = customConfig.width_max || 12.0;
+    widthInput.step = customConfig.step || 0.5;
+    widthInput.placeholder = 'e.g. 3.5';
+    widthGroup.appendChild(widthInput);
+    customContainer.appendChild(widthGroup);
+
+    bubble.appendChild(customContainer);
+
+    // Custom input change listeners - deselect presets and enable submit
+    const onCustomChange = () => {
+      const l = parseFloat(lengthInput.value);
+      const w = parseFloat(widthInput.value);
+      if (l > 0 && w > 0) {
+        // Deselect preset cards
+        bubble.querySelectorAll('.room-size-card').forEach(c => {
+          c.classList.remove('selected', 'border-black', 'bg-white', 'shadow-xl');
+        });
+        this._selectedDimensions = { length: l, width: w };
+        const submitBtn = bubble.querySelector('#dimSubmitBtn');
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    };
+    lengthInput.addEventListener('input', onCustomChange);
+    widthInput.addEventListener('input', onCustomChange);
+
+    // Area display
+    const areaDisplay = document.createElement('div');
+    areaDisplay.className = 'text-xs text-gray-400 mt-2 text-center';
+    areaDisplay.id = 'dimAreaDisplay';
+    areaDisplay.textContent = '';
+    bubble.appendChild(areaDisplay);
+
+    // Update area display on any change
+    const updateArea = () => {
+      if (this._selectedDimensions) {
+        const area = (this._selectedDimensions.length * this._selectedDimensions.width).toFixed(1);
+        areaDisplay.textContent = `Room area: ~${area} m2`;
+      }
+    };
+    lengthInput.addEventListener('input', updateArea);
+    widthInput.addEventListener('input', updateArea);
+
+    // Submit button
+    const submitBtn = document.createElement('button');
+    submitBtn.id = 'dimSubmitBtn';
+    submitBtn.className = 'w-full bg-black text-white py-3 rounded-lg font-semibold mt-4 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed';
+    submitBtn.textContent = 'Continue';
+    submitBtn.disabled = true;
+    submitBtn.addEventListener('click', () => {
+      if (this._selectedDimensions) {
+        this.handleDimensionsSelection(this._selectedDimensions);
+      }
+    });
+    bubble.appendChild(submitBtn);
+
+    // Instructions
+    const instructions = document.createElement('p');
+    instructions.className = 'text-xs text-gray-500 mt-3 text-center';
+    instructions.textContent = 'Pick a size or type your own measurements';
+    bubble.appendChild(instructions);
+
+    wrapper.appendChild(bubble);
+    this.output.appendChild(wrapper);
+    this.scrollToBottom();
+  }
+
+  /**
+   * Handle room dimensions selection
+   */
+  handleDimensionsSelection(dimensions) {
+    console.log(`[HomeDecor] Dimensions selected:`, dimensions);
+    this.api.sendTextMessage(
+      `The room is ${dimensions.length}m by ${dimensions.width}m`
+    );
   }
 
   /**
@@ -528,6 +739,158 @@ export class HomeDecorRenderer {
     const footer = document.createElement('div');
     footer.className = 'moodboard-footer mt-4 pt-4 border-t border-gray-200';
 
+    // --- Visualization selection panel (always present, collapsed initially) ---
+    const vizPanel = document.createElement('div');
+    vizPanel.className = 'viz-panel';
+    vizPanel.dataset.state = 'collapsed';
+
+    // Expand button
+    const vizExpandBtn = document.createElement('button');
+    vizExpandBtn.className = 'w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-semibold mb-2 hover:opacity-90 transition-opacity flex items-center justify-center gap-2';
+    vizExpandBtn.innerHTML = '<span class="material-symbols-outlined text-lg">auto_awesome</span> Visualize in my room';
+    vizPanel.appendChild(vizExpandBtn);
+
+    // Selection controls (hidden until expanded)
+    const vizControls = document.createElement('div');
+    vizControls.className = 'viz-controls p-3 bg-indigo-50 rounded-lg border border-indigo-200 mb-2';
+    vizControls.style.display = 'none';
+
+    const vizLabel = document.createElement('p');
+    vizLabel.className = 'text-sm text-indigo-700 text-center mb-2 font-medium';
+    vizLabel.textContent = 'Tap products above to select them';
+    vizControls.appendChild(vizLabel);
+
+    const vizActions = document.createElement('div');
+    vizActions.className = 'flex gap-2';
+
+    const selectAllBtn = document.createElement('button');
+    selectAllBtn.className = 'flex-1 bg-white text-indigo-600 border border-indigo-300 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-50 transition-colors';
+    selectAllBtn.textContent = 'Select All';
+    vizActions.appendChild(selectAllBtn);
+
+    const generateBtn = document.createElement('button');
+    generateBtn.className = 'flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed';
+    generateBtn.textContent = 'Generate';
+    generateBtn.disabled = true;
+    vizActions.appendChild(generateBtn);
+
+    vizControls.appendChild(vizActions);
+    vizPanel.appendChild(vizControls);
+    footer.appendChild(vizPanel);
+
+    // Track selected product IDs for this moodboard
+    const vizState = { selectedIds: [], active: false };
+
+    const updateVizUI = () => {
+      const count = vizState.selectedIds.length;
+      vizLabel.textContent = count > 0
+        ? `${count} product${count > 1 ? 's' : ''} selected`
+        : 'Tap products above to select them';
+      generateBtn.disabled = count === 0;
+      generateBtn.textContent = 'Generate';
+      generateBtn.classList.remove('opacity-50');
+    };
+
+    const setCardSelected = (card, selected) => {
+      const indicator = card.querySelector('.viz-indicator');
+      if (selected) {
+        card.style.outline = '3px solid #6366f1';
+        card.style.outlineOffset = '-1px';
+        if (indicator) {
+          indicator.style.background = '#6366f1';
+          indicator.innerHTML = '<span class="material-symbols-outlined" style="color:#fff;font-size:16px">check</span>';
+        }
+      } else {
+        card.style.outline = '';
+        card.style.outlineOffset = '';
+        if (indicator) {
+          indicator.style.background = '#fff';
+          indicator.innerHTML = '';
+        }
+      }
+    };
+
+    // Add selection indicators to all product cards upfront (hidden until active)
+    const allCards = bubble.querySelectorAll('.moodboard-product-card');
+    allCards.forEach(card => {
+      card.style.position = 'relative';
+      const indicator = document.createElement('div');
+      indicator.className = 'viz-indicator';
+      indicator.style.cssText = 'position:absolute;top:8px;left:8px;width:28px;height:28px;border-radius:50%;border:2px solid #6366f1;background:#fff;display:none;align-items:center;justify-content:center;z-index:20;pointer-events:none;transition:all 0.15s;';
+      card.appendChild(indicator);
+    });
+
+    // Expand/collapse handler
+    vizExpandBtn.addEventListener('click', () => {
+      vizState.active = !vizState.active;
+      if (vizState.active) {
+        vizControls.style.display = 'block';
+        vizExpandBtn.innerHTML = '<span class="material-symbols-outlined text-lg">close</span> Cancel selection';
+        vizExpandBtn.className = 'w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold mb-2 hover:bg-gray-300 transition-colors flex items-center justify-center gap-2';
+        // Show indicators
+        allCards.forEach(card => {
+          const ind = card.querySelector('.viz-indicator');
+          if (ind) ind.style.display = 'flex';
+        });
+      } else {
+        vizControls.style.display = 'none';
+        vizExpandBtn.innerHTML = '<span class="material-symbols-outlined text-lg">auto_awesome</span> Visualize in my room';
+        vizExpandBtn.className = 'w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-semibold mb-2 hover:opacity-90 transition-opacity flex items-center justify-center gap-2';
+        // Hide indicators and clear selection
+        vizState.selectedIds = [];
+        allCards.forEach(card => {
+          const ind = card.querySelector('.viz-indicator');
+          if (ind) ind.style.display = 'none';
+          setCardSelected(card, false);
+        });
+        updateVizUI();
+      }
+      this.scrollToBottom();
+    });
+
+    // Card click handler for selection (only when viz mode is active)
+    allCards.forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (!vizState.active) return;
+        if (e.target.closest('button')) return; // Don't block Add to Cart
+        e.stopPropagation();
+
+        const pid = card.dataset.productId;
+        const idx = vizState.selectedIds.indexOf(pid);
+        if (idx === -1) {
+          vizState.selectedIds.push(pid);
+          setCardSelected(card, true);
+        } else {
+          vizState.selectedIds.splice(idx, 1);
+          setCardSelected(card, false);
+        }
+        updateVizUI();
+      });
+    });
+
+    // Select All
+    selectAllBtn.addEventListener('click', () => {
+      vizState.selectedIds = [];
+      allCards.forEach(card => {
+        vizState.selectedIds.push(card.dataset.productId);
+        setCardSelected(card, true);
+      });
+      updateVizUI();
+    });
+
+    // Generate
+    generateBtn.addEventListener('click', () => {
+      if (vizState.selectedIds.length === 0) return;
+      generateBtn.textContent = 'Generating...';
+      generateBtn.disabled = true;
+      generateBtn.classList.add('opacity-50');
+
+      const idsJson = JSON.stringify(vizState.selectedIds);
+      this.api.sendTextMessage(
+        `Please call visualize_room_with_products with customer_id="${this.getCurrentCustomerId()}", session_id="${this.currentSessionId}", product_ids=${idsJson}`
+      );
+    });
+
     const instructions = document.createElement('p');
     instructions.className = 'text-xs text-gray-500 text-center';
     instructions.textContent = 'Click on any product to add it to your cart';
@@ -604,6 +967,149 @@ export class HomeDecorRenderer {
     card.appendChild(content);
 
     return card;
+  }
+
+  // toggleVisualizationMode and handleVisualizeRoom are now inline in renderMoodboard
+
+  /**
+   * Render Room Visualization (Phase 3)
+   */
+  renderRoomVisualization(uiData) {
+    const vizId = uiData.visualization_id;
+    if (this.renderedMoodboards.has(vizId)) {
+      console.log(`[HomeDecor] Visualization ${vizId} already rendered, skipping`);
+      return;
+    }
+    this.renderedMoodboards.add(vizId);
+
+    const wrapper = this.createMessageWrapper('decor-visualization');
+    const bubble = document.createElement('div');
+    bubble.classList.add('message-bubble', 'decor-moodboard-bubble');
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'mb-4';
+
+    const title = document.createElement('h3');
+    title.className = 'text-xl font-bold mb-2';
+    title.textContent = 'Your Room, Reimagined';
+    header.appendChild(title);
+
+    const subtitle = document.createElement('p');
+    subtitle.className = 'text-sm text-gray-600 mb-2';
+    subtitle.textContent = uiData.message || 'See how your selected products look in your space';
+    header.appendChild(subtitle);
+
+    if (uiData.room_dimensions) {
+      const dims = uiData.room_dimensions;
+      const area = (dims.length * dims.width).toFixed(1);
+      const dimLabel = document.createElement('p');
+      dimLabel.className = 'text-xs text-gray-400';
+      dimLabel.textContent = `Room: ${dims.length}m x ${dims.width}m (~${area} m2)`;
+      header.appendChild(dimLabel);
+    }
+
+    bubble.appendChild(header);
+
+    // Visualization image
+    const imageContainer = document.createElement('div');
+    imageContainer.className = 'relative w-full rounded-xl overflow-hidden mb-4';
+
+    if (uiData.image_base64) {
+      const img = document.createElement('img');
+      img.src = `data:image/jpeg;base64,${uiData.image_base64}`;
+      img.alt = 'Room visualization';
+      img.className = 'w-full h-auto rounded-xl shadow-lg';
+      img.loading = 'lazy';
+      imageContainer.appendChild(img);
+    } else {
+      // Fallback: show a styled description card
+      const fallback = document.createElement('div');
+      fallback.className = 'w-full bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 text-center';
+
+      const icon = document.createElement('div');
+      icon.className = 'text-5xl mb-3';
+      icon.textContent = '\u2728';
+      fallback.appendChild(icon);
+
+      const desc = document.createElement('p');
+      desc.className = 'text-sm text-gray-600';
+      desc.textContent = uiData.fallback_description
+        ? uiData.fallback_description.substring(0, 200) + '...'
+        : 'Room visualization is being prepared...';
+      fallback.appendChild(desc);
+
+      imageContainer.appendChild(fallback);
+    }
+
+    bubble.appendChild(imageContainer);
+
+    // Products shown list
+    if (uiData.products_shown && uiData.products_shown.length > 0) {
+      const productsSection = document.createElement('div');
+      productsSection.className = 'mb-4';
+
+      const productsLabel = document.createElement('div');
+      productsLabel.className = 'text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2';
+      productsLabel.textContent = 'Products in this visualization';
+      productsSection.appendChild(productsLabel);
+
+      const productsList = document.createElement('div');
+      productsList.className = 'flex flex-wrap gap-2';
+
+      uiData.products_shown.forEach(product => {
+        const tag = document.createElement('div');
+        tag.className = 'bg-gray-100 rounded-full px-3 py-1 text-xs text-gray-700';
+        tag.textContent = `${product.name} - ${product.price.toFixed(2)}`;
+        productsList.appendChild(tag);
+      });
+
+      productsSection.appendChild(productsList);
+      bubble.appendChild(productsSection);
+    }
+
+    // Action buttons
+    const actions = document.createElement('div');
+    actions.className = 'flex gap-3 mt-4';
+
+    const addAllBtn = document.createElement('button');
+    addAllBtn.className = 'flex-1 bg-black text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity';
+    addAllBtn.textContent = 'Add All to Cart';
+    addAllBtn.addEventListener('click', () => {
+      if (uiData.products_shown) {
+        uiData.products_shown.forEach(product => {
+          this.api.sendTextMessage(
+            `add_to_cart(product_id="${product.product_id}", customer_id="${this.getCurrentCustomerId()}", quantity=1)`
+          );
+        });
+        addAllBtn.textContent = 'Added!';
+        addAllBtn.disabled = true;
+        addAllBtn.classList.add('opacity-50');
+      }
+    });
+    actions.appendChild(addAllBtn);
+
+    const regenerateBtn = document.createElement('button');
+    regenerateBtn.className = 'flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors';
+    regenerateBtn.textContent = 'Try Another Look';
+    regenerateBtn.addEventListener('click', () => {
+      regenerateBtn.textContent = 'Generating...';
+      regenerateBtn.disabled = true;
+      regenerateBtn.classList.add('opacity-50');
+
+      const productIds = (uiData.products_shown || []).map(p => p.product_id);
+      const idsJson = JSON.stringify(productIds);
+      this.api.sendTextMessage(
+        `Please call visualize_room_with_products with customer_id="${this.getCurrentCustomerId()}", session_id="${this.currentSessionId}", product_ids=${idsJson}`
+      );
+    });
+    actions.appendChild(regenerateBtn);
+
+    bubble.appendChild(actions);
+
+    wrapper.appendChild(bubble);
+    this.output.appendChild(wrapper);
+    this.scrollToBottom();
   }
 
   /**
@@ -855,6 +1361,8 @@ export class HomeDecorRenderer {
     this.selectedStyles = [];
     this.selectedColors = [];
     this.renderedMoodboards.clear();
+    this._selectedDimensions = null;
+    this._vizSelectedProducts = [];
     this.photoUploadHandler.clearPhotos();
   }
 }

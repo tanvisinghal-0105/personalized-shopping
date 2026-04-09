@@ -32,7 +32,7 @@ Nova purchased 4 years ago:
 
 ---
 
-## Demo Script (7 minutes)
+## Demo Script (9 minutes)
 
 ### PHASE 1: Initial Request (30 seconds)
 
@@ -157,24 +157,32 @@ Nova purchased 4 years ago:
 
 ---
 
-### PHASE 4: Style Discovery (2 minutes)
+### PHASE 4: Style Discovery - Themed Style Finder (2 minutes)
 
-#### Step 1: Style Selection (1 minute)
+#### Step 1: Child-Themed Style Selection (1 minute)
 
 **Expected AI:**
-- **Shows Style Selector UI** with 8 visual cards:
-  - Modern, Minimalist, Bohemian, Coastal, Industrial, Scandinavian, Traditional, Rustic
-- Each card shows a bedroom image in that style
-- Says: *"Perfect! Now, what style speaks to you for your bedroom?"*
-- Subtitle: *"Choose one or more styles that resonate with you"*
+- Because the room is for a **school-age child**, the Style Finder shows **6 child-themed visual tiles** (not adult styles):
+  - **Underwater World** - Soft blues with dolphins, shells & ocean vibes
+  - **Forest Adventure** - Warm greens & browns, woodland creatures
+  - **Northern Lights** - Cool pastels, aurora colours & starry skies
+  - **Space Explorer** - Deep navy & silver, planets & rockets
+  - **Safari Wild** - Earthy tones, jungle animals & adventure
+  - **Rainbow Bright** - Bold primary colours, playful & cheerful
+- Each tile shows a themed room image generated with Imagen 3
+- Title: *"Style Finder: Which worlds do you love?"*
+- Subtitle: *"Everyone pick your favourites! Tap as many as you like."*
 
-**User Action:**
-1. Click "Modern" card (checkmark appears)
-2. Click "Scandinavian" card (checkmark appears)
+**Narration Point:**
+> "Notice the AI detected this is a child's room and switched to imaginative themed styles instead of standard adult styles like Modern or Scandinavian."
+
+**User Action (as Mila):**
+1. Click "Underwater World" tile (checkmark appears) - *"That one! With the dolphins!"*
+2. Click "Northern Lights" tile (checkmark appears) - *"And the bright one. But no baby pink."*
 3. Click "Continue"
 
 **Expected AI Response:**
-- Says: *"Great choices! Modern and Scandinavian styles create a clean, calm space perfect for studying and playing."*
+- Says: *"Great choices, Mila! Underwater World and Northern Lights combine beautifully -- ocean blues with cool aurora pastels. A dreamy room!"*
 
 ---
 
@@ -191,15 +199,36 @@ Nova purchased 4 years ago:
 3. Click "Continue" (or "Skip")
 
 **Expected AI Response:**
-- Says: *"Blue and white will complement the modern Scandinavian style beautifully!"*
+- Says: *"Blue and white will complement the underwater and northern lights themes perfectly!"*
 
 ---
 
-### PHASE 5: Moodboard Generation (1 minute)
+### PHASE 5: Room Dimensions (30 seconds)
+
+**Expected AI:**
+- **Shows Room Dimensions UI** with preset sizes and custom input
+- Says: *"One last thing before I create your moodboard -- how big is Mila's bedroom? This helps me ensure the products fit your space perfectly."*
+
+**UI Shows:**
+- **3 preset cards:** Small (3m x 2.5m, ~7.5 m2), Medium (4m x 3.5m, ~14 m2), Large (5m x 4m, ~20 m2)
+- **Custom input:** Length (m) x Width (m) number fields
+- Calculated area display
+
+**User Action:**
+1. Click "Medium" preset card (or enter custom dimensions)
+2. Click "Continue"
+
+**Expected AI Response:**
+- Records dimensions
+- Says: *"A 14 square metre room gives us plenty to work with!"*
+
+---
+
+### PHASE 6: Moodboard Generation (1 minute)
 
 **Expected AI Behavior (Behind the Scenes):**
 1. **Filters furniture** by age-appropriate tags (school-age only)
-2. **Matches style tags** (modern + scandinavian)
+2. **Matches style tags** via theme keywords (underwater_world -> coastal/nautical, northern_lights -> scandinavian/modern/pastel)
 3. **Coordinates colors** (blue + white palette)
 4. **Balances categories:** 40% furniture + 60% decor
 5. **Respects constraints:** No duplicate storage (cube shelf stays)
@@ -208,25 +237,51 @@ Nova purchased 4 years ago:
 
 **Expected AI Response:**
 - **Shows Moodboard UI** with product cards
-- Says: *"I've created a personalized moodboard for Mila's modern Scandinavian bedroom! Here are 10 carefully curated products that work perfectly together."*
+- **"Visualize in my room" button** at the bottom (gradient purple with sparkle icon)
+- Says: *"I've created a personalized moodboard for Mila's Underwater World and Northern Lights bedroom! Here are 10 carefully curated products that work perfectly together."*
 
-**Moodboard Contains:**
-- **Single Bed (White, School-age)** - €199
-- **Child's Desk (White)** - €199
-- **Study Chair (Blue)** - €79
-- **Wardrobe (White)** - €349
-- **Abstract Canvas Art 'Blue Dreams'** - €89
-- **Desk Lamp (Modern White)** - €45
-- **Area Rug (Blue/White)** - €129
-- **Velvet Cushions (Blue)** - €49
-- **Wall Shelves (White)** - €69
-- **Artificial Plant** - €39
+**Moodboard Contains (examples):**
+- **Single Bed (White, School-age)** - ocean-blue bedding
+- **Child's Desk (White)** - workspace ready
+- **Study Chair (Blue)** - matches underwater palette
+- **Coastal-themed Wall Art** - dolphins, ocean scene
+- **Desk Lamp (Modern White)** - clean Northern Lights style
+- **Area Rug (Blue/White)** - wave-pattern or aurora colours
+- **Velvet Cushions (Blue)** - ocean-themed
+- **Wall Shelves (White)** - for books and display
+- Plus additional decor items matching the combined themes
 
-**Total Value:** ~€1,246
+**Total Value:** ~€1,200-1,500
 
 ---
 
-### PHASE 6: Cart & Recommendations (1 minute)
+### PHASE 7: Room Visualization with Imagen 3 (1 minute)
+
+**User Action:**
+- Click **"Visualize in my room"** button on the moodboard
+
+**Expected AI Behavior (Behind the Scenes):**
+1. **Calls** `visualize_room_with_products()` tool
+2. **Builds prompt** from style preferences, room type, dimensions, and product names
+3. **If room photo was uploaded:** Uses Imagen 3 `edit_image` (inpainting) to render products into the actual room photo
+4. **If no room photo:** Uses Imagen 3 `generate_images` to create a fresh styled room rendering
+5. **Returns** base64 image for display
+
+**Expected AI Response:**
+- **Shows Room Visualization UI** with:
+  - Photorealistic rendering of Mila's bedroom with the selected products
+  - Room dimensions label (4m x 3.5m, ~14 m2)
+  - Product tags showing items in the visualization
+  - **"Add All to Cart"** button
+  - **"Try Another Look"** button for regeneration
+- Says: *"Here is how Mila's bedroom could look with the modern Scandinavian design! All the products fit beautifully in the 14 m2 space."*
+
+**Narration Point:**
+> "The AI just rendered all the moodboard products directly into the customer's actual room using Imagen 3 -- they can see exactly how the new bedroom will look before buying."
+
+---
+
+### PHASE 8: Cart & Recommendations (1 minute)
 
 #### Step 1: Add to Cart (30 seconds)
 
@@ -293,14 +348,29 @@ Nova purchased 4 years ago:
 - Balances furniture (40%) and decor (60%)
 - Respects constraints (no duplicate storage)
 
-### 6. Interactive Visual UI
+### 6. Room Size Collection
+- Preset size cards (Small / Medium / Large) tailored per room type
+- Custom dimension input (length x width in metres)
+- Calculated area display
+- Ensures product recommendations fit the space
+
+### 7. Room Visualization with Imagen 3
+- Generates photorealistic room renderings with selected products
+- Uses Imagen 3 inpainting when a customer room photo is available
+- Falls back to fresh generation when no photo exists
+- "Visualize in my room" button directly on the moodboard
+- "Add All to Cart" and "Try Another Look" actions
+
+### 8. Interactive Visual UI
 - Room selector cards
 - Style selector with bedroom images
 - Color palette chips
+- Room dimensions presets + custom input
 - Photo upload interface
-- Moodboard product grid
+- Moodboard product grid with visualize button
+- Room visualization display
 
-### 7. Seamless Cart Integration
+### 9. Seamless Cart Integration
 - Add items via voice or UI
 - Real-time cart updates
 - Proactive complementary suggestions
@@ -344,15 +414,19 @@ Nova purchased 4 years ago:
 - [ ] Order history cross-reference
 - [ ] Child interaction (addressing Mila)
 - [ ] Style selector UI
+- [ ] Room dimensions collection
 - [ ] Moodboard generation with 10 products
+- [ ] Room visualization with Imagen 3
 - [ ] Add to cart functionality
 
 ### Impressive Moments:
 1. **"I've identified the birch house bed from 4 years ago"** - Order history magic
 2. **"Mila, what do you like doing most in your room?"** - Child-centered approach
 3. **Instant photo analysis** - No "clearer photos" bug
-4. **Curated moodboard** - 10 perfectly matched products
-5. **Proactive suggestions** - "These would pair beautifully..."
+4. **Room dimensions UI** - Presets + custom input for spatial accuracy
+5. **Curated moodboard** - 10 perfectly matched products
+6. **"Visualize in my room"** - Imagen 3 renders products into the actual room
+7. **Proactive suggestions** - "These would pair beautifully..."
 
 ---
 
@@ -370,9 +444,9 @@ Nova purchased 4 years ago:
 - "All 10 products match the modern Scandinavian style"
 
 ### Timing
-- **Total:** 7 minutes
-- **Sweet spot:** 5 minutes (skip color selection)
-- **Quick demo:** 3 minutes (skip constraints and child interaction)
+- **Total:** 9 minutes
+- **Sweet spot:** 6 minutes (skip color selection and room dimensions)
+- **Quick demo:** 4 minutes (skip constraints, child interaction, and visualization)
 
 ---
 
