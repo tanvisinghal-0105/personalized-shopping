@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Service Blueprints — OTTO User Journeys</title>
+<style>
+  :root {
+    --bg: #f8f7f4;
+    --card-bg: #ffffff;
+    --border: #d6d3cd;
+    --text: #1a1a1a;
+    --text-muted: #6b6560;
+    --accent: #c05e2e;
+    --phase-header: #2c2825;
+    --lane-label-bg: #2c2825;
+    --lane-label-text: #f8f7f4;
+    --line-interaction: #c05e2e;
+    --line-visibility: #4a7c6f;
+    --line-internal: #6b6560;
+    --customer-bg: #fdf8f0;
+    --frontstage-bg: #f0f7f4;
+    --backstage-bg: #f4f0f7;
+    --support-bg: #f0f3f7;
+    --evidence-bg: #fefefe;
+    --col-width: 300px;
+    --label-width: 180px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.55;
+    padding: 0; margin: 0; height: 100vh;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  .page-header {
+    flex-shrink: 0; padding: 8px 24px 0;
+    display: flex; align-items: center; gap: 16px; flex-wrap: nowrap;
+  }
+  h1 { font-size: 16px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap; }
+
+  .tab-bar {
+    display: flex; gap: 4px; border-bottom: 2px solid var(--border);
+    flex-shrink: 0; padding: 0 4px;
+  }
+  .tab-btn {
+    padding: 10px 28px 8px; font-size: 13px; font-weight: 400;
+    color: var(--text-muted); background: var(--card-bg); border: 1.5px solid var(--border);
+    border-bottom: 3px solid transparent; border-radius: 8px 8px 0 0;
+    cursor: pointer; margin-bottom: -2px;
+    transition: all 0.2s ease; white-space: nowrap; line-height: 1.2;
+    box-shadow: 0 -1px 3px rgba(0,0,0,0.04);
+  }
+  .tab-btn .journey-name { font-weight: 700; color: var(--text); font-size: 17px; display: block; margin-bottom: 0; }
+  .tab-btn .need-state { font-size: 12px; color: var(--text-muted); font-weight: 400; font-style: italic; }
+  .tab-btn:hover { background: #f3f0ea; border-color: #b8b3aa; box-shadow: 0 -2px 6px rgba(0,0,0,0.06); }
+  .tab-btn.active { border-bottom-color: var(--accent); background: #fff; border-color: var(--accent); box-shadow: 0 -2px 8px rgba(192,94,46,0.12); }
+  .tab-btn.active .journey-name { color: var(--accent); }
+  .tab-btn.active .need-state { color: var(--accent); opacity: 0.75; }
+
+  .tab-panel { display: none; flex: 1; min-height: 0; flex-direction: column; }
+  .tab-panel.active { display: flex; }
+
+  .filter-bar {
+    display: flex; gap: 6px; flex-wrap: nowrap;
+    padding: 6px 12px; background: var(--card-bg); border-radius: 6px;
+    border: 1px solid var(--border); align-items: center;
+    margin-left: auto; flex-shrink: 0;
+  }
+  .filter-bar-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-right: 2px; }
+  .filter-toggle {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 4px; cursor: pointer;
+    font-size: 13px; font-weight: 500; border: 1.5px solid var(--border);
+    background: var(--card-bg); color: var(--text-muted);
+    transition: all 0.15s; user-select: none;
+  }
+  .filter-toggle:hover { border-color: var(--text-muted); }
+  .filter-toggle.active { border-color: transparent; color: #fff; font-weight: 600; }
+  .filter-toggle .swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .filter-toggle[data-lane="narrative"].active { background: #b8a67a; }
+  .filter-toggle[data-lane="evidence"].active { background: #8a8580; }
+  .filter-toggle[data-lane="emotion"].active { background: #4a7c6f; }
+  .filter-toggle[data-lane="customer"].active { background: #c09050; }
+  .filter-toggle[data-lane="frontstage"].active { background: #4a7c6f; }
+  .filter-toggle[data-lane="backstage"].active { background: #7a6590; }
+  .filter-toggle[data-lane="support"].active { background: #5a7090; }
+  .filter-toggle[data-lane="notes"].active { background: #b0a030; }
+
+  .blueprint-wrapper {
+    flex: 1; min-height: 0;
+    overflow-x: auto; overflow-y: auto;
+    padding: 0 24px 16px;
+    scrollbar-color: #a09890 #e8e4df; scrollbar-width: auto;
+  }
+  .blueprint-wrapper::-webkit-scrollbar { height: 14px; display: block; }
+  .blueprint-wrapper::-webkit-scrollbar-track { background: #e8e4df; border-radius: 7px; }
+  .blueprint-wrapper::-webkit-scrollbar-thumb { background: #a09890; border-radius: 7px; border: 2px solid #e8e4df; }
+  .blueprint-wrapper::-webkit-scrollbar-thumb:hover { background: #7a7068; }
+
+  .blueprint { display: grid; gap: 0; }
+
+  .phase-group {
+    grid-column: span 1; text-align: center; padding: 10px 6px;
+    font-size: 13px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: #fff; border-right: 1px solid rgba(255,255,255,0.2);
+    position: sticky; top: 0; z-index: 4;
+  }
+  .phase-group:last-child { border-right: none; }
+  .phase-group.grp-discover { background: #7b6b5d; }
+  .phase-group.grp-explore { background: #5e7a6e; }
+  .phase-group.grp-decide { background: #6b5e7a; }
+  .phase-group.grp-buy { background: #7a5e5e; }
+  .phase-group.grp-use { background: #5e6e7a; }
+  .phase-group-spacer { background: var(--bg); position: sticky; top: 0; z-index: 4; }
+
+  .phase-header {
+    background: var(--phase-header); color: #fff; padding: 10px 12px;
+    font-size: 13px; font-weight: 600; text-align: center;
+    border-right: 1px solid rgba(255,255,255,0.1);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    position: sticky; top: 37px; z-index: 4;
+  }
+  .phase-header .phase-num {
+    font-size: 11px; opacity: 0.55; font-weight: 400;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+
+  .lane-label {
+    background: var(--lane-label-bg); color: var(--lane-label-text);
+    padding: 14px 14px; font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    display: flex; align-items: center; flex-direction: column; justify-content: center;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    position: sticky; left: 0; z-index: 2;
+  }
+  .lane-label-sub {
+    display: block; font-size: 11px; font-weight: 400; opacity: 0.6;
+    text-transform: none; letter-spacing: 0; margin-top: 2px;
+    text-align: center;
+  }
+
+  .cell {
+    padding: 12px 14px; font-size: 14px;
+    border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    vertical-align: top; min-height: 60px;
+    display: flex; flex-direction: column; justify-content: flex-start; gap: 5px;
+    line-height: 1.55;
+  }
+  .cell:last-child { border-right: none; }
+  .cell.narrative {
+    background: #faf6ef; font-size: 14px; line-height: 1.6;
+    color: #3d3530; font-style: italic; border-bottom: 2px solid var(--border);
+  }
+  .cell.evidence { background: var(--evidence-bg); }
+  .cell.customer { background: var(--customer-bg); }
+  .cell.frontstage { background: var(--frontstage-bg); }
+  .cell.backstage { background: var(--backstage-bg); }
+  .cell.support { background: var(--support-bg); }
+  .cell-content { line-height: 1.55; font-size: 14px; }
+
+  .cell .tag {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 2px 7px; border-radius: 3px; margin-top: 4px; line-height: 1.3;
+  }
+  .tag.ci { background: #e8ddd0; color: #5a4a3a; }
+  .tag.comp { background: #d0e2db; color: #2e5245; }
+  .tag.id { background: #d0d8e8; color: #3a4a6a; }
+  .tag.sb { background: #e8d0d0; color: #6a3a3a; }
+  .tag.gui { background: #e0ddd0; color: #5a5a3a; }
+  .tag.sf { background: #d8e0d0; color: #3a5a3a; }
+  .tag.sv { background: #ddd0e0; color: #5a3a6a; }
+  .tag.mb { background: #e0d8d0; color: #5a4a3a; }
+
+  .cell.notes {
+    background: #fffef5; padding: 8px;
+    border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  }
+  .cell.notes textarea {
+    width: 100%; min-height: 60px; border: 1px solid #e0ddd5; border-radius: 4px;
+    padding: 8px; font-family: inherit; font-size: 12px; line-height: 1.5;
+    background: #fffef5; color: var(--text); resize: vertical;
+  }
+  .cell.notes textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(192,94,46,0.15); }
+  .notes-label-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .notes-save-indicator {
+    font-size: 9px; font-weight: 400; text-transform: none; letter-spacing: 0;
+    opacity: 0; transition: opacity 0.3s; color: #4a7c6f;
+  }
+  .notes-save-indicator.visible { opacity: 1; }
+
+  .separator {
+    grid-column: 1 / -1; display: flex; align-items: center;
+    padding: 0 12px; height: 28px; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.5px; gap: 12px;
+  }
+  .separator .sep-line { flex: 1; height: 0; border-top: 2.5px dashed; }
+  .separator.interaction { color: var(--line-interaction); }
+  .separator.interaction .sep-line { border-color: var(--line-interaction); }
+  .separator.visibility { color: var(--line-visibility); }
+  .separator.visibility .sep-line { border-color: var(--line-visibility); }
+  .separator.internal { color: var(--line-internal); }
+  .separator.internal .sep-line { border-color: var(--line-internal); }
+
+  .emotion {
+    font-size: 13px; font-style: italic; padding: 8px 14px;
+    border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    background: #fefdfb; display: flex; align-items: center; gap: 6px; min-height: 40px;
+    line-height: 1.5;
+  }
+  .emotion .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .dot.pos { background: #4a7c6f; }
+  .dot.neu { background: #b8a44c; }
+  .dot.neg { background: #a04040; }
+  .dot.pos-high { background: #2e8b57; }
+
+  .emotion.label-col {
+    background: var(--lane-label-bg); color: var(--lane-label-text);
+    font-style: normal; font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 8px 14px; position: sticky; left: 0; z-index: 3;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+
+  .blueprint > .lane-label,
+  .blueprint > .phase-group-spacer,
+  .blueprint > .emotion.label-col {
+    position: sticky; left: 0; z-index: 3;
+  }
+
+  .lane-row { display: contents; }
+  .lane-row.hidden { display: none; }
+
+  @media print {
+    body { padding: 12px; font-size: 10px; height: auto; overflow: visible; display: block; }
+    .page-header { padding: 0; }
+    .tab-panel { display: flex !important; }
+    .blueprint-wrapper { max-height: none; overflow: visible; padding: 0; }
+    .cell { padding: 8px; font-size: 10px; }
+    .lane-row.hidden { display: contents !important; }
+    :root { --col-width: 200px; --label-width: 130px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Service Blueprint</h1>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('tab-schulkind')"><span class="journey-name">Prototype child&rsquo;s room</span><br><span class="need-state">&ldquo;I want to complete a project and need multiple products&rdquo;</span></button>
+    <button class="tab-btn" onclick="switchTab('tab-sofa')"><span class="journey-name">Prototype sofa purchase</span><br><span class="need-state">&ldquo;I want to find the best product for me&rdquo;</span></button>
+    <button class="tab-btn" onclick="switchTab('tab-homedecor')"><span class="journey-name">Home Decor Refresh</span><br><span class="need-state">&ldquo;I want to refresh my space with style and personality&rdquo;</span></button>
+  </div>
+  <div class="filter-bar" id="global-filter-bar">
+    <span class="filter-bar-label">Show:</span>
+    <button class="filter-toggle active" data-lane="narrative" onclick="toggleLaneGlobal(this)"><span class="swatch" style="background:#faf6ef; border:1px solid #d6d3cd;"></span> Narrative</button>
+    <button class="filter-toggle active" data-lane="evidence" onclick="toggleLaneGlobal(this)"><span class="swatch" style="background:#eee; border:1px solid #ccc;"></span> Evidence</button>
+    <button class="filter-toggle active" data-lane="emotion" onclick="toggleLaneGlobal(this)"><span class="swatch" style="background:#fefdfb; border:1px solid #d6d3cd;"></span> Emotion</button>
+    <button class="filter-toggle active" data-lane="customer" onclick="toggleLaneGlobal(this)"><span class="swatch" style="background:#fdf8f0; border:1px solid #d6d3cd;"></span> Actions</button>
+    <button class="filter-toggle active" data-lane="frontstage" onclick="toggleLaneGlobal(this)"><span class="swatch" style="background:#f0f7f4; border:1px solid #d6d3cd;"></span> Frontstage</button>
+    <button class="filter-toggle active" data-lane="backstage" onclick="toggleLaneGlobal(this)"><span class="swatch" style="background:#f4f0f7; border:1px solid #d6d3cd;"></span> Backstage</button>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗ -->
+<!-- ║  TAB 1: SCHULKIND-UMBAU                                        ║ -->
+<!-- ╚══════════════════════════════════════════════════════════════════╝ -->
+<div id="tab-schulkind" class="tab-panel active">
+
+<div class="blueprint-wrapper">
+<div class="blueprint" style="grid-template-columns: var(--label-width) repeat(12, var(--col-width)); min-width: calc(var(--label-width) + 12 * var(--col-width));">
+
+  <div class="phase-group-spacer" style="background:var(--bg);"></div>
+  <div class="phase-group grp-discover" style="grid-column:span 4;">Discover &amp; Scope</div>
+  <div class="phase-group grp-explore" style="grid-column:span 2;">Explore &amp; Compose</div>
+  <div class="phase-group grp-decide" style="grid-column:span 3;">Decide &amp; Refine</div>
+  <div class="phase-group grp-buy" style="grid-column:span 2;">Purchase</div>
+  <div class="phase-group grp-use" style="grid-column:span 1;">Post-Purchase</div>
+
+  <div class="lane-label" style="background:var(--bg); color:var(--text); font-size:11px; text-transform:none; letter-spacing:0; top:37px; z-index:5;"><strong>Journey Phase &rarr;</strong></div>
+  <div class="phase-header"><span class="phase-num">Phase 1</span>App Entry &amp; Voice Input</div>
+  <div class="phase-header"><span class="phase-num">Phase 2</span>Project Recognition</div>
+  <div class="phase-header"><span class="phase-num">Phase 3</span>Context Gathering</div>
+  <div class="phase-header"><span class="phase-num">Phase 4</span>Style Exploration</div>
+  <div class="phase-header"><span class="phase-num">Phase 5</span>Project Canvas &amp; Checklist</div>
+  <div class="phase-header"><span class="phase-num">Phase 6</span>Concept Generation</div>
+  <div class="phase-header"><span class="phase-num">Phase 7</span>Collaborative Decision</div>
+  <div class="phase-header"><span class="phase-num">Phase 8</span>Concept Mixing</div>
+  <div class="phase-header"><span class="phase-num">Phase 9</span>Deep-Dive &amp; Customization</div>
+  <div class="phase-header"><span class="phase-num">Phase 10</span>Pause &amp; Return</div>
+  <div class="phase-header"><span class="phase-num">Phase 11</span>Project Review &amp; Checkout</div>
+  <div class="phase-header"><span class="phase-num">Phase 12</span>Post-Purchase &amp; Move-In</div>
+
+  <!-- ── Narrative ── -->
+  <div class="lane-row" data-lane="narrative">
+  <div class="lane-label" style="border-bottom:2px solid rgba(255,255,255,0.15);">Journey Narrative<span class="lane-label-sub">What is happening in this moment</span></div>
+  <div class="cell narrative">A weekend morning after breakfast. Nova sits with Mila on the couch; Tom tidies the kitchen. Mila is about to start school in a few months. Her room is still a toddler room &mdash; house bed, toy shelf, no desk. Nova opens OTTO and taps the microphone.</div>
+  <div class="cell narrative">Nova explains what they need: a desk, a proper workspace, a bigger bed, more storage. The cube shelf stays, everything else can change. &ldquo;And Mila is here and wants to help decide.&rdquo; OTTO recognises the pattern: a full room redesign where almost everything is rethought. It responds: &ldquo;That sounds like an exciting project. Hello Mila, your first big room upgrade!&rdquo;</div>
+  <div class="cell narrative">OTTO asks for photos. Nova takes two: entrance view showing bed and window, opposite wall with the cube shelf. OTTO turns to Mila: &ldquo;What do you like doing most in your room?&rdquo; Mila leans to the mic: &ldquo;Drawing! And listening to stories. And my fox pillow lives there.&rdquo; OTTO analyses the photos and cross-references Nova&rsquo;s order history, identifying the birch house bed and cube shelf from four years ago.</div>
+  <div class="cell narrative">The Stylefinder activates with large visual tiles: &ldquo;Underwater World&rdquo; in soft blues with dolphins and shells, &ldquo;Forest Adventure&rdquo; in warm greens and browns, &ldquo;Northern Lights&rdquo; in cool pastels. Mila taps &ldquo;Underwater World&rdquo; immediately: &ldquo;That one! With the dolphins!&rdquo; She adds &ldquo;Northern Lights&rdquo;: &ldquo;And the bright one. But no baby pink.&rdquo; Nova and Tom each add their picks. OTTO registers the family overlap: water themes + clean lines.</div>
+  <div class="cell narrative">The screen transforms into a project canvas: room photo divided into three zones (sleep, work/creative, play/reading). Below: a 16-item checklist covering furniture, textiles, workspace tools, learning toys, and d&eacute;cor. Tom reads it: &ldquo;The desk organiser and the pinboard &mdash; clever. She&rsquo;ll need those from day one.&rdquo; OTTO suggests a tablet for later; they defer it to the wishlist. Budget: &euro;1,800.</div>
+  <div class="cell narrative">Three complete room concepts rendered in Mila&rsquo;s actual room. &ldquo;Marine Explorer&rdquo;: mid-height bed with reading cave beneath, ocean-blue palette. &ldquo;Creative Coast&rdquo;: tilting desk and large pinboard, coastal warmth. &ldquo;Northern Light by the Sea&rdquo;: solid oak furniture, calm ice-blue tones, headboard bookshelf. All &euro;1,890&ndash;1,980, all integrate the existing cube shelf.</div>
+  <div class="cell narrative">OTTO shows Mila a child-friendly view: big images, heart buttons. Mila loves the reading cave from &ldquo;Marine Explorer&rdquo;, the pinboard from &ldquo;Creative Coast&rdquo;, and the headboard bookshelf from &ldquo;Northern Light.&rdquo; Tom worries: &ldquo;And when she&rsquo;s twelve? Will she still climb a ladder?&rdquo; OTTO mediates: the oak bed from Northern Light grows with Mila, plus a marine canopy in light blue gives the cave feeling without the constraints. &ldquo;When she&rsquo;s older, simply remove the canopy.&rdquo; Mila: &ldquo;Yes! Like sleeping underwater!&rdquo;</div>
+  <div class="cell narrative">OTTO builds the hybrid: oak bed with marine canopy, Northern Light desk, pinboard, blue bedding sets from the Coast concept. Fourteen items total. Rendered in Mila&rsquo;s room: bed on the left wall, canopy in light blue, fox pillow on the bed, desk by the window with pinboard above, cube shelf repurposed as book tower, wave-pattern wool rug. Mila points at the screen: &ldquo;There&rsquo;s my fox pillow!&rdquo; &mdash; the first thing she recognises in her new room.</div>
+  <div class="cell narrative">Nova taps the desk: OTTO shows dimensions and a height-adjustment video (six-year-old height &rarr; ten-year-old height). Cable channel keeps cords hidden. OTTO suggests a child-safe power strip with USB ports (&euro;19) for the cable channel. Tom activates it immediately. Mila taps the pinboard: &ldquo;Can I hang photos of my friends?&rdquo; &ldquo;Yes! Cork surface for pins, and magnetic strips for photos without holes.&rdquo; Mila beams.</div>
+  <div class="cell narrative">&ldquo;Let&rsquo;s sleep on it,&rdquo; says Nova. OTTO saves the complete project. A few days later: Mila tells her friend Lina about the new room. Lina has fairy lights over her bed. &ldquo;Mama, can I have those too?&rdquo; That evening Nova reopens OTTO. The project is exactly as they left it. She finds a warm-white micro-LED string perfect for the marine canopy and adds it.</div>
+  <div class="cell narrative">The following weekend. Nova and Tom review everything together. Project summary grouped by function: furniture, textiles, workspace, d&eacute;cor, plus the LED string. Fifteen new items + the existing cube shelf. Total after 5% bundle discount: &euro;1,793. Under budget. They check out: four monthly installments, coordinated delivery in three weeks. OTTO offers assembly for bed and desk. Tom books it before Nova can answer.</div>
+  <div class="cell narrative">Three weeks later, the room is ready. Mila climbs onto the bed, looks up into the marine canopy, and whispers: &ldquo;Like underwater.&rdquo; She puts her fox pillow at the headboard, sits at the desk, draws a dolphin with crayons, and pins it to the pinboard as the very first thing. On the first day of school, a timetable hangs next to it.</div>
+  </div>
+
+  <!-- ── Evidence ── -->
+  <div class="lane-row" data-lane="evidence">
+  <div class="lane-label">Physical Evidence<span class="lane-label-sub">What the customer sees &amp; touches</span></div>
+  <div class="cell evidence">App home screen; microphone button; voice waveform animation</div>
+  <div class="cell evidence">Conversational greeting addressing Nova and Mila by name; follow-up questions; scope confirmation</div>
+  <div class="cell evidence">Camera interface; room photos with spatial annotations; voice input</div>
+  <div class="cell evidence">Large visual style tiles (Underwater World, Forest Adventure, Northern Lights); swipe/tap; heart selection</div>
+  <div class="cell evidence">Project canvas: room photo with 3 zones; 16-item checklist; budget input; tablet-to-wishlist prompt</div>
+  <div class="cell evidence">3 concepts rendered in room; badges (height-adjustable, sustainable, reusable); pricing &euro;1,890&ndash;1,980</div>
+  <div class="cell evidence">Child-friendly view: big images, heart buttons; canopy solution with growth reasoning; cost comparison</div>
+  <div class="cell evidence">Custom hybrid rendered in room; fox pillow visible; 14 items; updated price</div>
+  <div class="cell evidence">Desk height-adjustment video; dimensions; power strip suggestion (&euro;19); pinboard detail (cork + magnetic)</div>
+  <div class="cell evidence">Saved project state; LED string product card; seamless project continuation after days</div>
+  <div class="cell evidence">Project summary by function; 15 items + 1 existing; total &euro;1,793; 4 installments; assembly service option</div>
+  <div class="cell evidence">Order confirmation with room rendering; fox pillow on bed; digital assembly instructions in app</div>
+  </div>
+
+  <!-- ── Emotion ── -->
+  <div class="lane-row" data-lane="emotion">
+  <div class="emotion label-col">Customer Emotion<span class="lane-label-sub">How they feel</span></div>
+  <div class="emotion"><div class="dot neu"></div> Excited but slightly overwhelmed; hopeful about doing this together as a family</div>
+  <div class="emotion"><div class="dot pos"></div> Delighted OTTO addresses Mila directly; feels collaborative and warm</div>
+  <div class="emotion"><div class="dot pos"></div> Surprised OTTO asks the right questions; Mila feels included and important</div>
+  <div class="emotion"><div class="dot pos-high"></div> Fun family activity; Mila asserts herself (&ldquo;No baby pink!&rdquo;); shared taste emerges</div>
+  <div class="emotion"><div class="dot pos"></div> Impressed: &ldquo;16 items &mdash; we thought of 5&rdquo;; budget transparency reduces anxiety</div>
+  <div class="emotion"><div class="dot pos-high"></div> Excitement: realistic renderings feel like the real room; product suggestions feel like advice</div>
+  <div class="emotion"><div class="dot pos-high"></div> Both parents feel heard; Mila thrilled about &ldquo;sleeping underwater&rdquo;; conflict resolved elegantly</div>
+  <div class="emotion"><div class="dot pos-high"></div> Joy: fox pillow recognition creates emotional anchor; &ldquo;That&rsquo;s her room now&rdquo;</div>
+  <div class="emotion"><div class="dot pos"></div> Tom: trust through engineering details; Mila: ownership through pinboard personalisation</div>
+  <div class="emotion"><div class="dot pos"></div> Confidence project is safe; Mila&rsquo;s social world (Lina) shapes the room naturally</div>
+  <div class="emotion"><div class="dot pos-high"></div> Satisfaction: everything accounted for, under budget; zero decision fatigue</div>
+  <div class="emotion"><div class="dot pos-high"></div> Pure joy: &ldquo;Like underwater&rdquo;; every detail confirmed by daily use; timetable = school readiness</div>
+  </div>
+
+  <!-- ── Customer Actions ── -->
+  <div class="lane-row" data-lane="customer">
+  <div class="lane-label">Customer Actions<span class="lane-label-sub">What the customer does</span></div>
+  <div class="cell customer">Opens OTTO app; taps microphone; describes the project by voice</div>
+  <div class="cell customer">Describes scope and constraints; confirms Mila co-decides</div>
+  <div class="cell customer">Takes room photos; Mila answers OTTO&rsquo;s questions via microphone</div>
+  <div class="cell customer">Family swipes through style tiles; each member selects favourites</div>
+  <div class="cell customer">Reviews checklist; adjusts items; enters budget; starts concept generation</div>
+  <div class="cell customer">Swipes through rendered concepts; inspects product badges; compares pricing</div>
+  <div class="cell customer">Mila picks favourites; family discusses trade-offs; selects preferred combination</div>
+  <div class="cell customer">Confirms hybrid selection; views rendering</div>
+  <div class="cell customer">Explores product details; watches short videos; adds suggested accessories</div>
+  <div class="cell customer">Returns to project days later; adds new item to existing project</div>
+  <div class="cell customer">Reviews project summary; selects payment plan; books assembly; places order</div>
+  <div class="cell customer">Receives delivery; Mila personalises her new room</div>
+  </div>
+
+  <!-- ── Line of Interaction ── -->
+  <div class="lane-row" data-lane="interaction-line">
+  <div class="separator interaction"><span class="sep-line"></span> Line of Interaction <span class="sep-line"></span></div>
+  </div>
+
+  <!-- ── Frontstage ── -->
+  <div class="lane-row" data-lane="frontstage">
+  <div class="lane-label">Frontstage Actions<span class="lane-label-sub">Visible to the customer</span></div>
+  <div class="cell frontstage"><div class="cell-content">Displays personalised greeting; accepts voice input</div><span class="tag ci">Conv. Interaction</span></div>
+  <div class="cell frontstage"><div class="cell-content">Receives project description; responds with follow-up questions; addresses Mila directly</div><span class="tag ci">Conv. Interaction</span></div>
+  <div class="cell frontstage"><div class="cell-content">Accepts room photos; asks Mila about her preferences; shows annotated room overview</div><span class="tag ci">Conv. Interaction</span></div>
+  <div class="cell frontstage"><div class="cell-content">Presents curated style tiles as large visual cards; registers each family member&rsquo;s selections</div><span class="tag sf">Style Finder</span><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell frontstage"><div class="cell-content">Displays project canvas with zones and checklist; accepts budget input; offers wishlist option</div><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell frontstage"><div class="cell-content">Presents 3 rendered room concepts; displays product badges and pricing</div><span class="tag id">Interior Designer</span><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell frontstage"><div class="cell-content">Shows child-friendly comparison view; presents canopy compromise with growth reasoning</div><span class="tag ci">Conv. Interaction</span><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell frontstage"><div class="cell-content">Displays recombined hybrid concept rendered in room</div><span class="tag id">Interior Designer</span><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell frontstage"><div class="cell-content">Shows product details, dimensions, and short videos; presents accessory suggestions</div><span class="tag sv">Short Videos</span><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell frontstage"><div class="cell-content">Restores saved project state; accepts new item additions</div><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell frontstage"><div class="cell-content">Displays summary grouped by function; shows bundle discount and total; presents payment and assembly options</div><span class="tag gui">Gen. UI View</span><span class="tag ci">Conv. Interaction</span></div>
+  <div class="cell frontstage"><div class="cell-content">Sends delivery confirmation with room rendering; provides assembly instructions in app</div><span class="tag ci">Conv. Interaction</span></div>
+  </div>
+
+  <!-- ── Line of Visibility ── -->
+  <div class="lane-row" data-lane="visibility-line">
+  <div class="separator visibility"><span class="sep-line"></span> Line of Visibility <span class="sep-line"></span></div>
+  </div>
+
+  <!-- ── Backstage ── -->
+  <div class="lane-row" data-lane="backstage">
+  <div class="lane-label">Backstage Actions<span class="lane-label-sub">Invisible to the customer</span></div>
+  <div class="cell backstage"><div class="cell-content">Loads profile; retrieves purchase history (house bed, cube shelf from 4 years ago); detects weekend-morning family context</div><span class="tag comp">Companion</span></div>
+  <div class="cell backstage"><div class="cell-content">Multi-product project classification; gap-filling signal detected; collaborative mode activated for child co-decision; Interior Designer initialised</div><span class="tag comp">Companion</span><span class="tag id">Interior Designer</span></div>
+  <div class="cell backstage"><div class="cell-content">Computer vision: room dimensions, radiator, existing furniture matched to order history; Mila&rsquo;s interests logged (drawing, stories, fox pillow); cube shelf flagged as modular &amp; reusable</div><span class="tag comp">Companion</span><span class="tag id">Interior Designer</span></div>
+  <div class="cell backstage"><div class="cell-content">Registers 3 family members&rsquo; style preferences; computes overlap (water + clean lines); filters for child-appropriate, non-&ldquo;baby&rdquo; themes</div><span class="tag sf">Style Finder</span><span class="tag id">Interior Designer</span><span class="tag comp">Companion</span></div>
+  <div class="cell backstage"><div class="cell-content">Project model: sleep + work/creative + play/reading zones; 16-item checklist from functional requirements; ergonomic desk flagged as priority; tablet deferred but tracked; budget validated</div><span class="tag id">Interior Designer</span><span class="tag comp">Companion</span></div>
+  <div class="cell backstage"><div class="cell-content">3 concepts from full constraint set; integrates existing cube shelf; 3D rendering pipeline; pricing within &euro;1,890&ndash;1,980</div><span class="tag id">Interior Designer</span><span class="tag sb">Smart Bundling</span></div>
+  <div class="cell backstage"><div class="cell-content">Child-development knowledge (cave instinct vs. longevity); surfaces canopy as compromise; validates structural safety; frames response for both parent and child perspectives</div><span class="tag comp">Companion</span><span class="tag id">Interior Designer</span></div>
+  <div class="cell backstage"><div class="cell-content">Cross-concept recombination; style coherence check; fox-pillow placement for emotional continuity; total recalculated</div><span class="tag id">Interior Designer</span><span class="tag sb">Smart Bundling</span></div>
+  <div class="cell backstage"><div class="cell-content">Desk specs + height-adjustment video generation; cable-management analysis; power strip compatibility check; pinboard material specs sourced</div><span class="tag sv">Short Videos</span><span class="tag comp">Companion</span><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell backstage"><div class="cell-content">Project state persistence across sessions; item addition tracked; rendering update queued</div><span class="tag comp">Companion</span></div>
+  <div class="cell backstage"><div class="cell-content">Per-item justification generated; 5% bundle discount calculation; coordinated delivery scheduling; assembly service booking</div><span class="tag comp">Companion</span><span class="tag sb">Smart Bundling</span></div>
+  <div class="cell backstage"><div class="cell-content">Delivery orchestration; assembly instructions digitised; lifecycle check-in scheduled; profile updated with school-child style evolution and growth milestones</div><span class="tag comp">Companion</span></div>
+  </div>
+
+
+</div>
+</div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗ -->
+<!-- ║  TAB 2: SOFA-KAUF                                              ║ -->
+<!-- ╚══════════════════════════════════════════════════════════════════╝ -->
+<div id="tab-sofa" class="tab-panel">
+
+<div class="blueprint-wrapper">
+<div class="blueprint" style="grid-template-columns: var(--label-width) repeat(12, var(--col-width)); min-width: calc(var(--label-width) + 12 * var(--col-width));">
+
+  <div class="phase-group-spacer" style="background:var(--bg);"></div>
+  <div class="phase-group grp-discover" style="grid-column:span 3;">Discover &amp; Scope</div>
+  <div class="phase-group grp-explore" style="grid-column:span 4;">Explore &amp; Compare</div>
+  <div class="phase-group grp-decide" style="grid-column:span 2;">Decide &amp; Validate</div>
+  <div class="phase-group grp-buy" style="grid-column:span 2;">Purchase</div>
+  <div class="phase-group grp-use" style="grid-column:span 1;">Post-Purchase</div>
+
+  <div class="lane-label" style="background:var(--bg); color:var(--text); font-size:11px; text-transform:none; letter-spacing:0; top:37px; z-index:5;"><strong>Journey Phase &rarr;</strong></div>
+  <div class="phase-header"><span class="phase-num">Phase 1</span>App Entry</div>
+  <div class="phase-header"><span class="phase-num">Phase 2</span>Moodboard Exploration</div>
+  <div class="phase-header"><span class="phase-num">Phase 3</span>Need Articulation</div>
+  <div class="phase-header"><span class="phase-num">Phase 4</span>Curated Shortlist</div>
+  <div class="phase-header"><span class="phase-num">Phase 5</span>Room Photos &amp; Rendering</div>
+  <div class="phase-header"><span class="phase-num">Phase 6</span>Feedback &amp; Refinement</div>
+  <div class="phase-header"><span class="phase-num">Phase 7</span>Product Selection</div>
+  <div class="phase-header"><span class="phase-num">Phase 8</span>Material Deep-Dive</div>
+  <div class="phase-header"><span class="phase-num">Phase 9</span>Sleeper Experience</div>
+  <div class="phase-header"><span class="phase-num">Phase 10</span>Accessory &amp; Summary</div>
+  <div class="phase-header"><span class="phase-num">Phase 11</span>Checkout</div>
+  <div class="phase-header"><span class="phase-num">Phase 12</span>Post-Purchase</div>
+
+  <!-- ── Narrative ── -->
+  <div class="lane-row" data-lane="narrative">
+  <div class="lane-label" style="border-bottom:2px solid rgba(255,255,255,0.15);">Journey Narrative<span class="lane-label-sub">What is happening in this moment</span></div>
+  <div class="cell narrative">Leonie&rsquo;s old two-seater is the last thing in her carefully curated flat that doesn&rsquo;t belong. She opens OTTO and types &ldquo;Sofa.&rdquo; OTTO presents curated options and an interactive moodboard built from her purchase history.</div>
+  <div class="cell narrative">She browses, saves favourites, swipes mismatches away. With each interaction the suggestions improve. It gets late; she goes to bed. Next day on the commute: OTTO greets her with the moodboard updated overnight.</div>
+  <div class="cell narrative">OTTO senses she&rsquo;s ready to narrow down and starts asking short questions between stops. &ldquo;How many people?&rdquo; &mdash; &ldquo;Usually just me, sometimes two or three.&rdquo; &ldquo;Firm or deep?&rdquo; &mdash; &ldquo;Deep. I like to curl up.&rdquo; &ldquo;Style?&rdquo; &mdash; &ldquo;Warm tones, round shapes, texture. No leather.&rdquo; &ldquo;It needs to work as a guest bed for my sister.&rdquo; Then: &ldquo;I noticed you ordered dog food, a harness, and a dog bed. Do you have a dog?&rdquo; She glances at Bruno, her two-year-old Labrador. &ldquo;He sits on the sofa more than I do.&rdquo; Budget: up to &euro;1,500.</div>
+  <div class="cell narrative">With each exchange the moodboard narrows. From dozens to a handful that truly fit: sleeper function, dog-friendly fabric, warm tones, round shapes, right budget. The Generative UI shows a curated selection with smart icons highlighting what matters to Leonie. Six results visible, &ldquo;Show more&rdquo; below. No FOMO, full control. She picks three favourites.</div>
+  <div class="cell narrative">OTTO suggests: &ldquo;Want to see them in your living room?&rdquo; She&rsquo;s on the go, so she waits. Later at home, OTTO picks up seamlessly. She takes two photos: entrance with sideboard and walnut table, window looking back into the room. OTTO renders all three sofas in her space &mdash; as OTTO-Up customer, in high resolution with her room&rsquo;s actual lighting. The sofas look like they&rsquo;re already there.</div>
+  <div class="cell narrative">She swipes between the three for a minute. &ldquo;The second &mdash; the grey and metal legs don&rsquo;t fit; everything here is wood. The third is beautiful but too small. The first is closest, but the backrest should be higher. Does it come with dark wood legs?&rdquo; OTTO searches the catalogue: two new options, each rendered. One refines the first (higher backrest, walnut legs). One goes in a different direction within her palette (softer feel, solid walnut legs). Both in budget.</div>
+  <div class="cell narrative">Side by side. The updated first sofa looks like it was designed for her space. Walnut legs ground it, higher backrest looks proportional. The alternative is appealing but less distinctive. She chooses the first. Decision made.</div>
+  <div class="cell narrative">She&rsquo;s never touched this fabric. She taps the swatch: a full-screen rotating close-up under studio lighting. Material profile below: &ldquo;Flat-woven structured cotton, dense binding. Firm and smooth, linen-like quality. Honey tone is yarn-dyed &mdash; won&rsquo;t fade from the courtyard window light. Pilling resistance 5/5.&rdquo; She imagines Bruno kneading the fabric and the dense weave holding up.</div>
+  <div class="cell narrative">The sleeper mechanism. A fifteen-second AI-generated clip: someone pulls the base forward in one motion, the integrated topper folds flat. No loose parts, no cushions to remove. Second clip: pushed back in under ten seconds. &ldquo;That&rsquo;s it? You just pull it out?&rdquo; She watches twice and pictures the evening before Jule arrives.</div>
+  <div class="cell narrative">OTTO suggests an amber throw (&euro;39): &ldquo;A washable layer for Bruno&rsquo;s favourite spot. Protects the upholstery, machine-washable at 40&thinsp;&deg;C.&rdquo; Added without hesitation. Product summary: sofa rendered in her room on top, details below &mdash; product, sleeper, throw, total price, a personal note about why this fits her daily life with Bruno and Jule.</div>
+  <div class="cell narrative">&ldquo;Want to redeem your OTTO-Up points?&rdquo; She redeems them. Checkout in under a minute: three installments, delivery with placement in a few days, old sofa disposal included. She puts the phone down and scratches Bruno behind the ears. &ldquo;You&rsquo;re getting an upgrade too.&rdquo;</div>
+  <div class="cell narrative">A few days later, the sofa arrives. That evening she sends Jule a photo of the unfolded guest bed: &ldquo;No more air mattress. Come whenever you want.&rdquo; Jule books a visit. The next morning: legs tucked up, coffee on the side table, courtyard light streaming in. Bruno curled on the amber throw at the other end, exactly where she knew he&rsquo;d be. The room looks like she imagined it.</div>
+  </div>
+
+  <!-- ── Evidence ── -->
+  <div class="lane-row" data-lane="evidence">
+  <div class="lane-label">Physical Evidence<span class="lane-label-sub">What the customer sees &amp; touches</span></div>
+  <div class="cell evidence">App home screen; search input; curated sofa selection</div>
+  <div class="cell evidence">Interactive moodboard; save/swipe interface; overnight-updated suggestions next day</div>
+  <div class="cell evidence">Conversational Q&amp;A; pet-ownership prompt from order history; budget input; moodboard filtering in real time</div>
+  <div class="cell evidence">Narrowed moodboard; smart-icon product cards (sleeper, fabric, pet-friendly); 6 visible results; &ldquo;Show more&rdquo; button</div>
+  <div class="cell evidence">Camera interface; 2 room photos; 3 sofas rendered in room (OTTO-Up high-res, realistic lighting)</div>
+  <div class="cell evidence">Updated Sofa&nbsp;1 + new Sofa&nbsp;4 rendered in room; per-option rationale; price comparison</div>
+  <div class="cell evidence">Side-by-side rendering of 2 finalists</div>
+  <div class="cell evidence">Full-screen rotating fabric close-up under studio lighting; material profile (weave, weight, dye, pilling 5/5)</div>
+  <div class="cell evidence">Two Explainer Videos: pull-out + fold-back mechanism in realistic apartment setting</div>
+  <div class="cell evidence">Amber throw on sofa; product summary; final in-room rendering; personal note on fit</div>
+  <div class="cell evidence">OTTO-Up points redemption; 3 payments; placement service; old sofa removal</div>
+  <div class="cell evidence">Guest bed photo to Jule; morning-after scene; Bruno on amber throw</div>
+  </div>
+
+  <!-- ── Emotion ── -->
+  <div class="lane-row" data-lane="emotion">
+  <div class="emotion label-col">Customer Emotion<span class="lane-label-sub">How they feel</span></div>
+  <div class="emotion"><div class="dot neu"></div> Frustrated with old sofa; determined &mdash; &ldquo;the last thing that doesn&rsquo;t belong&rdquo;</div>
+  <div class="emotion"><div class="dot pos"></div> Enjoys browsing; moodboard feels like curating, not searching</div>
+  <div class="emotion"><div class="dot pos"></div> Impressed OTTO remembers her dog from purchase history; feels personal and attentive</div>
+  <div class="emotion"><div class="dot pos"></div> Relief: overwhelming options narrowed to a manageable, relevant set; no FOMO</div>
+  <div class="emotion"><div class="dot pos-high"></div> Excitement: sofas in her actual room; spatial fit confirmed; &ldquo;like they&rsquo;re already there&rdquo;</div>
+  <div class="emotion"><div class="dot pos"></div> Empowered: precise feedback heard; refinements feel collaborative, not algorithmic</div>
+  <div class="emotion"><div class="dot pos-high"></div> Confidence: &ldquo;designed for my space&rdquo;; clear winner, no second-guessing</div>
+  <div class="emotion"><div class="dot pos-high"></div> Trust: fabric feels knowable despite never touching it; Bruno-kneading test passed mentally</div>
+  <div class="emotion"><div class="dot pos"></div> Reassurance: mechanism is simple; can picture the routine before Jule visits</div>
+  <div class="emotion"><div class="dot pos-high"></div> Satisfaction: throw solves Bruno&rsquo;s spot; rendering = the room she&rsquo;s been building for 8 months</div>
+  <div class="emotion"><div class="dot pos-high"></div> Ease and pride; old sofa removal erases the last trace of shared-flat life</div>
+  <div class="emotion"><div class="dot pos-high"></div> Joy: Jule books a visit; the morning after is exactly right; loyalty earned</div>
+  </div>
+
+  <!-- ── Customer Actions ── -->
+  <div class="lane-row" data-lane="customer">
+  <div class="lane-label">Customer Actions<span class="lane-label-sub">What the customer does</span></div>
+  <div class="cell customer">Opens OTTO; searches for sofas</div>
+  <div class="cell customer">Browses moodboard; saves favourites; swipes away mismatches; returns next day to review updates</div>
+  <div class="cell customer">Answers OTTO&rsquo;s questions about seating, style, and constraints</div>
+  <div class="cell customer">Reviews curated shortlist; narrows to favourites</div>
+  <div class="cell customer">Takes room photos; swipes between rendered options</div>
+  <div class="cell customer">Gives specific feedback on options; requests modifications</div>
+  <div class="cell customer">Compares finalists side by side; makes selection</div>
+  <div class="cell customer">Explores fabric details; reviews material profile</div>
+  <div class="cell customer">Watches mechanism videos to understand sleeper function</div>
+  <div class="cell customer">Adds suggested accessory; reviews product summary and final rendering</div>
+  <div class="cell customer">Redeems loyalty points; selects payment plan; adds services; places order</div>
+  <div class="cell customer">Receives delivery; uses guest-bed and sofa in daily life</div>
+  </div>
+
+  <!-- ── Line of Interaction ── -->
+  <div class="lane-row" data-lane="interaction-line">
+  <div class="separator interaction"><span class="sep-line"></span> Line of Interaction <span class="sep-line"></span></div>
+  </div>
+
+  <!-- ── Frontstage ── -->
+  <div class="lane-row" data-lane="frontstage">
+  <div class="lane-label">Frontstage Actions<span class="lane-label-sub">Visible to the customer</span></div>
+  <div class="cell frontstage"><div class="cell-content">Displays personalised home; shows curated sofas on search</div><span class="tag ci">Conv. Interaction</span><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell frontstage"><div class="cell-content">Presents interactive moodboard; registers saves and swipes; updates suggestions overnight; preserves session across devices</div><span class="tag mb">Personal Mood Boards</span><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell frontstage"><div class="cell-content">Asks contextual questions; collects budget; updates moodboard in real time with each answer</div><span class="tag ci">Conv. Interaction</span></div>
+  <div class="cell frontstage"><div class="cell-content">Presents curated shortlist with smart icons; shows 6 results with option to expand</div><span class="tag mb">Personal Mood Boards</span><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell frontstage"><div class="cell-content">Accepts room photos; presents 3 sofas rendered in user&rsquo;s room with realistic lighting</div><span class="tag id">Interior Designer</span><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell frontstage"><div class="cell-content">Presents modified option and new alternative; displays both rendered with rationale</div><span class="tag id">Interior Designer</span><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell frontstage"><div class="cell-content">Presents side-by-side comparison layout</div><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell frontstage"><div class="cell-content">Shows rotating fabric close-up; displays material profile</div><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell frontstage"><div class="cell-content">Plays short videos demonstrating sleeper mechanism</div><span class="tag sv">Short Videos</span><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell frontstage"><div class="cell-content">Presents accessory suggestion; displays product summary, final rendering, and personalised fit note</div><span class="tag gui">Gen. UI View</span><span class="tag ci">Conv. Interaction</span></div>
+  <div class="cell frontstage"><div class="cell-content">Offers loyalty points redemption; presents payment plan, placement, and old-sofa removal options</div><span class="tag ci">Conv. Interaction</span><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell frontstage"><div class="cell-content">Sends delivery notification; presents post-delivery check-in</div><span class="tag ci">Conv. Interaction</span></div>
+  </div>
+
+  <!-- ── Line of Visibility ── -->
+  <div class="lane-row" data-lane="visibility-line">
+  <div class="separator visibility"><span class="sep-line"></span> Line of Visibility <span class="sep-line"></span></div>
+  </div>
+
+  <!-- ── Backstage ── -->
+  <div class="lane-row" data-lane="backstage">
+  <div class="lane-label">Backstage Actions<span class="lane-label-sub">Invisible to the customer</span></div>
+  <div class="cell backstage"><div class="cell-content">Loads profile; retrieves purchase history (sideboard, rug, walnut table, dog supplies); behaviour-based curation</div><span class="tag comp">Companion</span></div>
+  <div class="cell backstage"><div class="cell-content">Moodboard engine combines purchase history + style signals + trends; learns from saves and swipes; overnight model refinement; cross-session state persistence</div><span class="tag mb">Personal Mood Boards</span><span class="tag comp">Companion</span><span class="tag id">Interior Designer</span></div>
+  <div class="cell backstage"><div class="cell-content">Single-product + dual constraint classification (sleeper + pet); pet inference from order history; claw-resistant fabric filter activated; real-time moodboard re-ranking</div><span class="tag comp">Companion</span><span class="tag id">Interior Designer</span></div>
+  <div class="cell backstage"><div class="cell-content">Constraint-based filtering: sleeper + pet-friendly + warm tones + round shapes + budget; smart icon generation per product; progressive disclosure logic (6 visible)</div><span class="tag mb">Personal Mood Boards</span><span class="tag comp">Companion</span></div>
+  <div class="cell backstage"><div class="cell-content">Computer vision: 18&thinsp;m&sup2;, oak parquet, walnut table as style anchor; OTTO-Up tier &rarr; high-res rendering; lighting simulation from window position; sleeper clearance validated</div><span class="tag comp">Companion</span><span class="tag id">Interior Designer</span></div>
+  <div class="cell backstage"><div class="cell-content">Processes rejections (grey/metal = style mismatch, too small = dimension fail); applies mods (backrest height, leg finish); queries product graph for alternative; re-renders both</div><span class="tag comp">Companion</span><span class="tag id">Interior Designer</span></div>
+  <div class="cell backstage"><div class="cell-content">Side-by-side layout generation; no algorithmic bias toward either option</div><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell backstage"><div class="cell-content">Fabric specs from supplier data; rotating 3D close-up generation; material profile text composition; pilling + dye data sourced</div><span class="tag comp">Companion</span><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell backstage"><div class="cell-content">AI-rendered mechanism videos from product engineering data; apartment-setting generation (not showroom); mobile-optimised encoding</div><span class="tag sv">Short Videos</span><span class="tag comp">Companion</span><span class="tag gui">Gen. UI View</span></div>
+  <div class="cell backstage"><div class="cell-content">Accessory gap: pet household &rarr; throw; palette matching (amber + honey); final rendering composited; personalised fit-note generation from conversation context</div><span class="tag sb">Smart Bundling</span><span class="tag comp">Companion</span></div>
+  <div class="cell backstage"><div class="cell-content">OTTO-Up points calculation; order creation: sofa + throw + placement; installment processing; coordinated delivery + old-sofa disposal scheduling</div><span class="tag comp">Companion</span></div>
+  <div class="cell backstage"><div class="cell-content">Shipment tracking; lifecycle check-in triggered; profile updated with style preferences + sofa purchase; loyalty loop activated</div><span class="tag comp">Companion</span></div>
+  </div>
+
+
+</div>
+</div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗ -->
+<!-- ║  TAB 3: HOME DECOR REFRESH                                     ║ -->
+<!-- ╚══════════════════════════════════════════════════════════════════╝ -->
+<div id="tab-homedecor" class="tab-panel">
+
+<div class="blueprint-wrapper">
+<div class="blueprint" style="grid-template-columns: var(--label-width) repeat(12, var(--col-width)); min-width: calc(var(--label-width) + 12 * var(--col-width));">
+
+  <!-- Content will be added here -->
+
+</div>
+</div>
+</div>
+
+<script>
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+const STORAGE_PREFIX = 'blueprint-note-';
+let saveTimers = {};
+
+function saveNote(textarea) {
+  const key = STORAGE_PREFIX + textarea.dataset.key;
+  clearTimeout(saveTimers[key]);
+  saveTimers[key] = setTimeout(() => {
+    localStorage.setItem(key, textarea.value);
+    const panel = textarea.closest('.tab-panel');
+    const ind = panel.querySelector('.notes-save-indicator');
+    if (ind) { ind.classList.add('visible'); setTimeout(() => ind.classList.remove('visible'), 1500); }
+  }, 400);
+}
+
+function loadNotes() {
+  document.querySelectorAll('.cell.notes textarea').forEach(ta => {
+    const saved = localStorage.getItem(STORAGE_PREFIX + ta.dataset.key);
+    if (saved) ta.value = saved;
+  });
+}
+
+document.addEventListener('DOMContentLoaded', loadNotes);
+
+function toggleLaneGlobal(btn) {
+  btn.classList.toggle('active');
+  const lane = btn.dataset.lane;
+  const visible = btn.classList.contains('active');
+  const bar = document.getElementById('global-filter-bar');
+
+  document.querySelectorAll('.tab-panel').forEach(panel => {
+    panel.querySelectorAll('.lane-row[data-lane="' + lane + '"]').forEach(row => {
+      row.classList.toggle('hidden', !visible);
+    });
+
+    const frontstageOn = bar.querySelector('.filter-toggle[data-lane="frontstage"]').classList.contains('active');
+    const backstageOn = bar.querySelector('.filter-toggle[data-lane="backstage"]').classList.contains('active');
+
+    panel.querySelectorAll('.lane-row[data-lane="interaction-line"]').forEach(r => {
+      r.classList.toggle('hidden', !frontstageOn);
+    });
+    panel.querySelectorAll('.lane-row[data-lane="visibility-line"]').forEach(r => {
+      r.classList.toggle('hidden', !(frontstageOn && backstageOn));
+    });
+  });
+}
+</script>
+
+</body>
+</html>

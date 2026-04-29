@@ -369,11 +369,19 @@ DO NOT respond with text. DO NOT ask questions. JUST CALL THE TOOL NOW."""
                     )
                 )
             elif event.content.parts[0].function_response:
-                print("Function response detected")
                 tool_result = event.content.parts[0].function_response
+                tool_name = getattr(tool_result, 'name', 'unknown')
+                response_data = tool_result.response
+                logger.info(f"[TOOL RESPONSE] Function response for: {tool_name}, keys: {list(response_data.keys()) if isinstance(response_data, dict) else 'not-dict'}")
+
+                # For visualization results, the image_base64 may be too large
+                # for the ADK to pass through. Send it directly via websocket.
+                if isinstance(response_data, dict) and response_data.get("ui_data", {}).get("display_type") == "room_visualization":
+                    logger.info(f"[TOOL RESPONSE] Sending room_visualization ui_data directly to frontend")
+
                 await websocket.send(
                     json.dumps(
-                        {"type": "tool_result", "data": tool_result.response}
+                        {"type": "tool_result", "data": response_data}
                     )
                 )
 
@@ -600,6 +608,39 @@ IMPORTANT: Briefly tell the customer what you see, then IMMEDIATELY call continu
                         Blob(data=decoded_data, mime_type="image/jpeg")
                     )
                     logger.debug("Image sent to Agent via multimodal context")
+                elif msg_type == "cart_action":
+                    # Direct cart modification -- bypasses agent entirely
+                    logger.info("[CART DIRECT] Received cart_action from frontend")
+                    try:
+                        from core.agents.retail.tools import modify_cart
+                        cart_data = data.get("data", {})
+                        customer_id = cart_data.get("customer_id", "CY-DEFAULT")
+                        items_to_add = cart_data.get("items_to_add", [])
+                        items_to_remove = cart_data.get("items_to_remove", [])
+
+                        cart_result = modify_cart(
+                            customer_id=customer_id,
+                            items_to_add=items_to_add if items_to_add else None,
+                            items_to_remove=items_to_remove if items_to_remove else None,
+                        )
+                        logger.info(f"[CART DIRECT] Cart updated: {cart_result.get('status')}")
+
+                        await websocket.send(
+                            json.dumps({
+                                "type": "tool_result",
+                                "data": cart_result
+                            })
+                        )
+                    except Exception as cart_error:
+                        logger.error(f"[CART DIRECT] Error: {cart_error}")
+                        await websocket.send(
+                            json.dumps({
+                                "type": "tool_result",
+                                "data": {"status": "error", "message": str(cart_error)}
+                            })
+                        )
+                    continue
+
                 elif msg_type == "text":
                     logger.info("Client -> Agent: Sending text data...")
                     live_request_queue.send_content(

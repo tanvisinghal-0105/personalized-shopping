@@ -70,13 +70,13 @@ export class HomeDecorRenderer {
 
     // Title section
     const title = document.createElement('h3');
-    title.className = 'text-lg font-bold mb-2';
+    title.className = 'text-lg font-bold mb-2 text-[#e4e4f0]';
     title.textContent = uiData.title || 'Select a room';
     bubble.appendChild(title);
 
     if (uiData.subtitle) {
       const subtitle = document.createElement('p');
-      subtitle.className = 'text-sm text-gray-600 mb-4';
+      subtitle.className = 'text-sm text-[#8888a8] mb-4';
       subtitle.textContent = uiData.subtitle;
       bubble.appendChild(subtitle);
     }
@@ -94,7 +94,7 @@ export class HomeDecorRenderer {
 
     // Instructions
     const instructions = document.createElement('p');
-    instructions.className = 'text-xs text-gray-500 mt-3 text-center';
+    instructions.className = 'text-xs text-[#555570] mt-3 text-center';
     instructions.textContent = 'Click a room or say it by voice';
     bubble.appendChild(instructions);
 
@@ -108,7 +108,7 @@ export class HomeDecorRenderer {
    */
   createRoomCard(room) {
     const card = document.createElement('div');
-    card.className = 'room-card bg-gray-100 border-2 border-transparent rounded-xl p-4 cursor-pointer hover:bg-gray-200 transition-all text-center';
+    card.className = 'room-card border-2 border-transparent rounded-xl p-4 cursor-pointer transition-all text-center';
     card.dataset.roomId = room.id;
 
     // Icon
@@ -144,13 +144,13 @@ export class HomeDecorRenderer {
 
     // Title
     const title = document.createElement('h3');
-    title.className = 'text-lg font-bold mb-2';
+    title.className = 'text-lg font-bold mb-2 text-[#e4e4f0]';
     title.textContent = uiData.title || 'Choose your style';
     bubble.appendChild(title);
 
     if (uiData.subtitle) {
       const subtitle = document.createElement('p');
-      subtitle.className = 'text-sm text-gray-600 mb-4';
+      subtitle.className = 'text-sm text-[#8888a8] mb-4';
       subtitle.textContent = uiData.subtitle;
       bubble.appendChild(subtitle);
     }
@@ -168,7 +168,7 @@ export class HomeDecorRenderer {
 
     // Continue button
     const continueBtn = document.createElement('button');
-    continueBtn.className = 'w-full bg-black text-white py-3 rounded-lg font-semibold mt-4 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed';
+    continueBtn.className = 'w-full btn-neon-fill py-3 rounded-lg font-semibold mt-4 disabled:opacity-50 disabled:cursor-not-allowed';
     continueBtn.textContent = 'Continue';
     continueBtn.disabled = true;
     continueBtn.id = 'stylesContinueBtn';
@@ -179,7 +179,7 @@ export class HomeDecorRenderer {
 
     // Instructions
     const instructions = document.createElement('p');
-    instructions.className = 'text-xs text-gray-500 mt-3 text-center';
+    instructions.className = 'text-xs text-[#555570] mt-3 text-center';
     instructions.textContent = 'Select one or more styles, or say them by voice';
     bubble.appendChild(instructions);
 
@@ -193,12 +193,12 @@ export class HomeDecorRenderer {
    */
   createStyleCard(style) {
     const card = document.createElement('div');
-    card.className = 'style-card relative bg-gray-100 border-3 border-transparent rounded-xl overflow-hidden cursor-pointer hover:shadow-lg transition-all';
+    card.className = 'style-card relative border-3 border-transparent rounded-xl overflow-hidden cursor-pointer transition-all';
     card.dataset.styleId = style.id;
 
     // Image container
     const imageContainer = document.createElement('div');
-    imageContainer.className = 'w-full h-32 bg-gray-100 overflow-hidden';
+    imageContainer.className = 'w-full h-32 bg-[rgba(255,255,255,0.03)] overflow-hidden';
 
     // Use image_url from backend if provided, otherwise use a style-based placeholder
     const img = document.createElement('img');
@@ -209,7 +209,7 @@ export class HomeDecorRenderer {
     img.onerror = () => {
       img.style.display = 'none';
       const placeholder = document.createElement('div');
-      placeholder.className = 'w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-gray-300 to-gray-400';
+      placeholder.className = 'w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-[rgba(255,255,255,0.05)] to-[rgba(255,255,255,0.02)]';
       placeholder.textContent = '🏠';
       imageContainer.appendChild(placeholder);
     };
@@ -236,7 +236,7 @@ export class HomeDecorRenderer {
 
     // Checkmark overlay
     const checkmark = document.createElement('div');
-    checkmark.className = 'absolute top-2 right-2 w-8 h-8 bg-black text-white rounded-full hidden items-center justify-center';
+    checkmark.className = 'absolute top-2 right-2 w-8 h-8 bg-[#00f0ff] text-[#05060f] rounded-full hidden items-center justify-center';
     checkmark.innerHTML = '<span class="material-symbols-outlined text-lg">check</span>';
     card.appendChild(checkmark);
 
@@ -256,12 +256,12 @@ export class HomeDecorRenderer {
     const checkmark = card.querySelector('.absolute');
 
     if (isSelected) {
-      card.classList.add('border-black', 'shadow-xl');
+      card.classList.add('border-[#00f0ff]', 'shadow-xl');
       checkmark.classList.remove('hidden');
       checkmark.classList.add('flex');
       this.selectedStyles.push(styleId);
     } else {
-      card.classList.remove('border-black', 'shadow-xl');
+      card.classList.remove('border-[#00f0ff]', 'shadow-xl');
       checkmark.classList.add('hidden');
       checkmark.classList.remove('flex');
       this.selectedStyles = this.selectedStyles.filter(id => id !== styleId);
@@ -285,13 +285,13 @@ export class HomeDecorRenderer {
 
     // Title
     const title = document.createElement('h3');
-    title.className = 'text-lg font-bold mb-2';
+    title.className = 'text-lg font-bold mb-2 text-[#e4e4f0]';
     title.textContent = uiData.title || 'Choose colors';
     bubble.appendChild(title);
 
     if (uiData.subtitle) {
       const subtitle = document.createElement('p');
-      subtitle.className = 'text-sm text-gray-600 mb-4';
+      subtitle.className = 'text-sm text-[#8888a8] mb-4';
       subtitle.textContent = uiData.subtitle;
       bubble.appendChild(subtitle);
     }
@@ -313,7 +313,7 @@ export class HomeDecorRenderer {
 
     if (uiData.skip_allowed) {
       const skipBtn = document.createElement('button');
-      skipBtn.className = 'flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors';
+      skipBtn.className = 'flex-1 decor-btn-secondary py-3 rounded-lg font-semibold';
       skipBtn.textContent = 'Skip';
       skipBtn.addEventListener('click', () => {
         this.handleColorSelection(true); // skip=true
@@ -322,7 +322,7 @@ export class HomeDecorRenderer {
     }
 
     const continueBtn = document.createElement('button');
-    continueBtn.className = 'flex-1 bg-black text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity';
+    continueBtn.className = 'flex-1 btn-neon-fill py-3 rounded-lg font-semibold';
     continueBtn.textContent = 'Continue';
     continueBtn.id = 'colorsContinueBtn';
     continueBtn.addEventListener('click', () => {
@@ -334,7 +334,7 @@ export class HomeDecorRenderer {
 
     // Instructions
     const instructions = document.createElement('p');
-    instructions.className = 'text-xs text-gray-500 mt-3 text-center';
+    instructions.className = 'text-xs text-[#555570] mt-3 text-center';
     instructions.textContent = 'Select colors, skip, or say them by voice';
     bubble.appendChild(instructions);
 
@@ -370,7 +370,7 @@ export class HomeDecorRenderer {
 
     // Label below
     const label = document.createElement('div');
-    label.className = 'text-xs text-center mt-1 text-gray-600';
+    label.className = 'text-xs text-center mt-1 text-[#8888a8]';
     label.textContent = color.label;
 
     chip.appendChild(button);
@@ -387,11 +387,11 @@ export class HomeDecorRenderer {
     const checkmark = button.querySelector('.material-symbols-outlined');
 
     if (isSelected) {
-      button.classList.add('border-black', 'ring-4', 'ring-black', 'ring-opacity-30');
+      button.classList.add('border-[#00f0ff]', 'ring-4', 'ring-[#00f0ff]', 'ring-opacity-30');
       checkmark.classList.remove('hidden');
       this.selectedColors.push(colorId);
     } else {
-      button.classList.remove('border-black', 'ring-4', 'ring-black', 'ring-opacity-30');
+      button.classList.remove('border-[#00f0ff]', 'ring-4', 'ring-[#00f0ff]', 'ring-opacity-30');
       checkmark.classList.add('hidden');
       this.selectedColors = this.selectedColors.filter(id => id !== colorId);
     }
@@ -407,13 +407,13 @@ export class HomeDecorRenderer {
 
     // Title
     const title = document.createElement('h3');
-    title.className = 'text-lg font-bold mb-2';
+    title.className = 'text-lg font-bold mb-2 text-[#e4e4f0]';
     title.textContent = uiData.title || 'Room dimensions';
     bubble.appendChild(title);
 
     if (uiData.subtitle) {
       const subtitle = document.createElement('p');
-      subtitle.className = 'text-sm text-gray-600 mb-4';
+      subtitle.className = 'text-sm text-[#8888a8] mb-4';
       subtitle.textContent = uiData.subtitle;
       bubble.appendChild(subtitle);
     }
@@ -425,7 +425,7 @@ export class HomeDecorRenderer {
 
       uiData.presets.forEach(preset => {
         const card = document.createElement('div');
-        card.className = 'room-size-card bg-gray-100 border-2 border-transparent rounded-xl p-4 cursor-pointer hover:bg-gray-200 transition-all text-center';
+        card.className = 'room-size-card border-2 border-transparent rounded-xl p-4 cursor-pointer transition-all text-center';
         card.dataset.presetId = preset.id;
 
         const icon = document.createElement('div');
@@ -439,22 +439,22 @@ export class HomeDecorRenderer {
         card.appendChild(label);
 
         const dims = document.createElement('div');
-        dims.className = 'text-xs text-gray-500 mt-1';
+        dims.className = 'text-xs text-[#555570] mt-1';
         dims.textContent = `${preset.length}m x ${preset.width}m`;
         card.appendChild(dims);
 
         const area = document.createElement('div');
-        area.className = 'text-xs text-gray-400 mt-0.5';
+        area.className = 'text-xs text-[#555570] mt-0.5';
         area.textContent = preset.description;
         card.appendChild(area);
 
         card.addEventListener('click', () => {
           // Deselect all
           presetGrid.querySelectorAll('.room-size-card').forEach(c => {
-            c.classList.remove('selected', 'border-black', 'bg-white', 'shadow-xl');
+            c.classList.remove('selected', 'border-[#00f0ff]', 'bg-[rgba(0,240,255,0.08)]', 'shadow-xl');
           });
           // Select this one
-          card.classList.add('selected', 'border-black', 'bg-white', 'shadow-xl');
+          card.classList.add('selected', 'border-[#00f0ff]', 'bg-[rgba(0,240,255,0.08)]', 'shadow-xl');
           // Clear custom inputs
           const lengthInput = bubble.querySelector('#dimLengthInput');
           const widthInput = bubble.querySelector('#dimWidthInput');
@@ -475,7 +475,7 @@ export class HomeDecorRenderer {
     // Divider
     const divider = document.createElement('div');
     divider.className = 'flex items-center gap-3 my-4';
-    divider.innerHTML = '<div class="flex-1 h-px bg-gray-300"></div><span class="text-xs text-gray-400">or enter custom</span><div class="flex-1 h-px bg-gray-300"></div>';
+    divider.innerHTML = '<div class="flex-1 h-px bg-[rgba(255,255,255,0.08)]"></div><span class="text-xs text-[#555570]">or enter custom</span><div class="flex-1 h-px bg-[rgba(255,255,255,0.08)]"></div>';
     bubble.appendChild(divider);
 
     // Custom dimension inputs
@@ -488,13 +488,13 @@ export class HomeDecorRenderer {
     const lengthGroup = document.createElement('div');
     lengthGroup.className = 'flex-1';
     const lengthLabel = document.createElement('label');
-    lengthLabel.className = 'text-xs text-gray-500 block mb-1';
+    lengthLabel.className = 'text-xs text-[#8888a8] block mb-1';
     lengthLabel.textContent = customConfig.length_label || 'Length (m)';
     lengthGroup.appendChild(lengthLabel);
     const lengthInput = document.createElement('input');
     lengthInput.type = 'number';
     lengthInput.id = 'dimLengthInput';
-    lengthInput.className = 'w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-black focus:outline-none';
+    lengthInput.className = 'input-glass w-full text-sm';
     lengthInput.min = customConfig.length_min || 1.5;
     lengthInput.max = customConfig.length_max || 12.0;
     lengthInput.step = customConfig.step || 0.5;
@@ -504,7 +504,7 @@ export class HomeDecorRenderer {
 
     // x label
     const xLabel = document.createElement('div');
-    xLabel.className = 'text-gray-400 pb-2 font-bold';
+    xLabel.className = 'text-[#555570] pb-2 font-bold';
     xLabel.textContent = 'x';
     customContainer.appendChild(xLabel);
 
@@ -512,13 +512,13 @@ export class HomeDecorRenderer {
     const widthGroup = document.createElement('div');
     widthGroup.className = 'flex-1';
     const widthLabel = document.createElement('label');
-    widthLabel.className = 'text-xs text-gray-500 block mb-1';
+    widthLabel.className = 'text-xs text-[#8888a8] block mb-1';
     widthLabel.textContent = customConfig.width_label || 'Width (m)';
     widthGroup.appendChild(widthLabel);
     const widthInput = document.createElement('input');
     widthInput.type = 'number';
     widthInput.id = 'dimWidthInput';
-    widthInput.className = 'w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-black focus:outline-none';
+    widthInput.className = 'input-glass w-full text-sm';
     widthInput.min = customConfig.width_min || 1.5;
     widthInput.max = customConfig.width_max || 12.0;
     widthInput.step = customConfig.step || 0.5;
@@ -535,7 +535,7 @@ export class HomeDecorRenderer {
       if (l > 0 && w > 0) {
         // Deselect preset cards
         bubble.querySelectorAll('.room-size-card').forEach(c => {
-          c.classList.remove('selected', 'border-black', 'bg-white', 'shadow-xl');
+          c.classList.remove('selected', 'border-[#00f0ff]', 'bg-[rgba(0,240,255,0.08)]', 'shadow-xl');
         });
         this._selectedDimensions = { length: l, width: w };
         const submitBtn = bubble.querySelector('#dimSubmitBtn');
@@ -547,7 +547,7 @@ export class HomeDecorRenderer {
 
     // Area display
     const areaDisplay = document.createElement('div');
-    areaDisplay.className = 'text-xs text-gray-400 mt-2 text-center';
+    areaDisplay.className = 'text-xs text-[#555570] mt-2 text-center';
     areaDisplay.id = 'dimAreaDisplay';
     areaDisplay.textContent = '';
     bubble.appendChild(areaDisplay);
@@ -565,7 +565,7 @@ export class HomeDecorRenderer {
     // Submit button
     const submitBtn = document.createElement('button');
     submitBtn.id = 'dimSubmitBtn';
-    submitBtn.className = 'w-full bg-black text-white py-3 rounded-lg font-semibold mt-4 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed';
+    submitBtn.className = 'w-full btn-neon-fill py-3 rounded-lg font-semibold mt-4 disabled:opacity-50 disabled:cursor-not-allowed';
     submitBtn.textContent = 'Continue';
     submitBtn.disabled = true;
     submitBtn.addEventListener('click', () => {
@@ -577,7 +577,7 @@ export class HomeDecorRenderer {
 
     // Instructions
     const instructions = document.createElement('p');
-    instructions.className = 'text-xs text-gray-500 mt-3 text-center';
+    instructions.className = 'text-xs text-[#555570] mt-3 text-center';
     instructions.textContent = 'Pick a size or type your own measurements';
     bubble.appendChild(instructions);
 
@@ -607,9 +607,9 @@ export class HomeDecorRenderer {
     const allCards = this.output.querySelectorAll('.room-card');
     allCards.forEach(card => {
       if (card.dataset.roomId === roomId) {
-        card.classList.add('selected', 'border-black', 'bg-white', 'shadow-xl');
+        card.classList.add('selected', 'border-[#00f0ff]', 'bg-[rgba(0,240,255,0.08)]', 'shadow-xl');
       } else {
-        card.classList.remove('selected', 'border-black', 'bg-white', 'shadow-xl');
+        card.classList.remove('selected', 'border-[#00f0ff]', 'bg-[rgba(0,240,255,0.08)]', 'shadow-xl');
       }
     });
 
@@ -710,17 +710,17 @@ export class HomeDecorRenderer {
     header.className = 'moodboard-header mb-4';
 
     const title = document.createElement('h3');
-    title.className = 'text-xl font-bold mb-2';
+    title.className = 'text-xl font-bold mb-2 text-[#e4e4f0]';
     title.textContent = 'Your Personalized Moodboard';
     header.appendChild(title);
 
     const subtitle = document.createElement('p');
-    subtitle.className = 'text-sm text-gray-600 mb-2';
+    subtitle.className = 'text-sm text-[#8888a8] mb-2';
     subtitle.textContent = moodboardData.message || `Curated ${moodboardData.selected_styles?.join(' & ')} style for your ${moodboardData.room_type || 'space'}`;
     header.appendChild(subtitle);
 
     const productCount = document.createElement('p');
-    productCount.className = 'text-xs text-gray-500';
+    productCount.className = 'text-xs text-[#555570]';
     productCount.textContent = `${moodboardData.product_count || moodboardData.products.length} curated products`;
     header.appendChild(productCount);
 
@@ -737,7 +737,7 @@ export class HomeDecorRenderer {
     bubble.appendChild(productsGrid);
 
     const footer = document.createElement('div');
-    footer.className = 'moodboard-footer mt-4 pt-4 border-t border-gray-200';
+    footer.className = 'moodboard-footer mt-4 pt-4 border-t border-[rgba(255,255,255,0.08)]';
 
     // --- Visualization selection panel (always present, collapsed initially) ---
     const vizPanel = document.createElement('div');
@@ -746,17 +746,17 @@ export class HomeDecorRenderer {
 
     // Expand button
     const vizExpandBtn = document.createElement('button');
-    vizExpandBtn.className = 'w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-semibold mb-2 hover:opacity-90 transition-opacity flex items-center justify-center gap-2';
+    vizExpandBtn.className = 'w-full btn-violet-fill py-3 rounded-lg font-semibold mb-2 flex items-center justify-center gap-2';
     vizExpandBtn.innerHTML = '<span class="material-symbols-outlined text-lg">auto_awesome</span> Visualize in my room';
     vizPanel.appendChild(vizExpandBtn);
 
     // Selection controls (hidden until expanded)
     const vizControls = document.createElement('div');
-    vizControls.className = 'viz-controls p-3 bg-indigo-50 rounded-lg border border-indigo-200 mb-2';
+    vizControls.className = 'viz-controls p-3 bg-[rgba(168,85,247,0.05)] rounded-lg border border-[rgba(168,85,247,0.2)] mb-2';
     vizControls.style.display = 'none';
 
     const vizLabel = document.createElement('p');
-    vizLabel.className = 'text-sm text-indigo-700 text-center mb-2 font-medium';
+    vizLabel.className = 'text-sm text-[#c084fc] text-center mb-2 font-medium';
     vizLabel.textContent = 'Tap products above to select them';
     vizControls.appendChild(vizLabel);
 
@@ -764,12 +764,12 @@ export class HomeDecorRenderer {
     vizActions.className = 'flex gap-2';
 
     const selectAllBtn = document.createElement('button');
-    selectAllBtn.className = 'flex-1 bg-white text-indigo-600 border border-indigo-300 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-50 transition-colors';
+    selectAllBtn.className = 'flex-1 decor-btn-secondary py-2 rounded-lg text-sm font-semibold';
     selectAllBtn.textContent = 'Select All';
     vizActions.appendChild(selectAllBtn);
 
     const generateBtn = document.createElement('button');
-    generateBtn.className = 'flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed';
+    generateBtn.className = 'flex-1 btn-violet-fill py-2 rounded-lg text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed';
     generateBtn.textContent = 'Generate';
     generateBtn.disabled = true;
     vizActions.appendChild(generateBtn);
@@ -794,17 +794,17 @@ export class HomeDecorRenderer {
     const setCardSelected = (card, selected) => {
       const indicator = card.querySelector('.viz-indicator');
       if (selected) {
-        card.style.outline = '3px solid #6366f1';
+        card.style.outline = '3px solid #a855f7';
         card.style.outlineOffset = '-1px';
         if (indicator) {
-          indicator.style.background = '#6366f1';
+          indicator.style.background = '#a855f7';
           indicator.innerHTML = '<span class="material-symbols-outlined" style="color:#fff;font-size:16px">check</span>';
         }
       } else {
         card.style.outline = '';
         card.style.outlineOffset = '';
         if (indicator) {
-          indicator.style.background = '#fff';
+          indicator.style.background = 'rgba(10,14,39,0.8)';
           indicator.innerHTML = '';
         }
       }
@@ -816,7 +816,7 @@ export class HomeDecorRenderer {
       card.style.position = 'relative';
       const indicator = document.createElement('div');
       indicator.className = 'viz-indicator';
-      indicator.style.cssText = 'position:absolute;top:8px;left:8px;width:28px;height:28px;border-radius:50%;border:2px solid #6366f1;background:#fff;display:none;align-items:center;justify-content:center;z-index:20;pointer-events:none;transition:all 0.15s;';
+      indicator.style.cssText = 'position:absolute;top:8px;left:8px;width:28px;height:28px;border-radius:50%;border:2px solid #a855f7;background:rgba(10,14,39,0.8);display:none;align-items:center;justify-content:center;z-index:20;pointer-events:none;transition:all 0.15s;';
       card.appendChild(indicator);
     });
 
@@ -826,7 +826,7 @@ export class HomeDecorRenderer {
       if (vizState.active) {
         vizControls.style.display = 'block';
         vizExpandBtn.innerHTML = '<span class="material-symbols-outlined text-lg">close</span> Cancel selection';
-        vizExpandBtn.className = 'w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold mb-2 hover:bg-gray-300 transition-colors flex items-center justify-center gap-2';
+        vizExpandBtn.className = 'w-full decor-btn-secondary py-3 rounded-lg font-semibold mb-2 flex items-center justify-center gap-2';
         // Show indicators
         allCards.forEach(card => {
           const ind = card.querySelector('.viz-indicator');
@@ -835,7 +835,7 @@ export class HomeDecorRenderer {
       } else {
         vizControls.style.display = 'none';
         vizExpandBtn.innerHTML = '<span class="material-symbols-outlined text-lg">auto_awesome</span> Visualize in my room';
-        vizExpandBtn.className = 'w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-semibold mb-2 hover:opacity-90 transition-opacity flex items-center justify-center gap-2';
+        vizExpandBtn.className = 'w-full btn-violet-fill py-3 rounded-lg font-semibold mb-2 flex items-center justify-center gap-2';
         // Hide indicators and clear selection
         vizState.selectedIds = [];
         allCards.forEach(card => {
@@ -885,6 +885,15 @@ export class HomeDecorRenderer {
       generateBtn.disabled = true;
       generateBtn.classList.add('opacity-50');
 
+      // Safety reset after 60s
+      setTimeout(() => {
+        if (generateBtn.textContent === 'Generating...') {
+          generateBtn.textContent = 'Generate';
+          generateBtn.disabled = false;
+          generateBtn.classList.remove('opacity-50');
+        }
+      }, 60000);
+
       const idsJson = JSON.stringify(vizState.selectedIds);
       this.api.sendTextMessage(
         `Please call visualize_room_with_products with customer_id="${this.getCurrentCustomerId()}", session_id="${this.currentSessionId}", product_ids=${idsJson}`
@@ -892,7 +901,7 @@ export class HomeDecorRenderer {
     });
 
     const instructions = document.createElement('p');
-    instructions.className = 'text-xs text-gray-500 text-center';
+    instructions.className = 'text-xs text-[#555570] text-center';
     instructions.textContent = 'Click on any product to add it to your cart';
     footer.appendChild(instructions);
 
@@ -908,11 +917,11 @@ export class HomeDecorRenderer {
    */
   createMoodboardProductCard(product) {
     const card = document.createElement('div');
-    card.className = 'moodboard-product-card bg-white border-2 border-gray-200 rounded-xl overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105';
+    card.className = 'moodboard-product-card rounded-xl overflow-hidden cursor-pointer transition-all duration-300';
     card.dataset.productId = product.product_id;
 
     const imageContainer = document.createElement('div');
-    imageContainer.className = 'relative w-full h-40 bg-gray-100';
+    imageContainer.className = 'relative w-full h-40 bg-[rgba(255,255,255,0.03)]';
 
     if (product.image_url) {
       const img = document.createElement('img');
@@ -941,22 +950,22 @@ export class HomeDecorRenderer {
     content.className = 'p-3';
 
     const name = document.createElement('div');
-    name.className = 'text-sm font-semibold mb-1 line-clamp-2';
+    name.className = 'text-sm font-semibold mb-1 line-clamp-2 text-[#e4e4f0]';
     name.textContent = product.name;
     content.appendChild(name);
 
     const category = document.createElement('div');
-    category.className = 'text-xs text-gray-500 mb-2';
+    category.className = 'text-xs text-[#555570] mb-2';
     category.textContent = product.category;
     content.appendChild(category);
 
     const price = document.createElement('div');
-    price.className = 'text-lg font-bold text-black mb-2';
+    price.className = 'text-lg font-bold text-[#00f0ff] mb-2';
     price.textContent = `${product.price.toFixed(2)}`;
     content.appendChild(price);
 
     const addButton = document.createElement('button');
-    addButton.className = 'w-full bg-black text-white py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity';
+    addButton.className = 'w-full btn-neon-fill py-2 rounded-lg text-sm font-semibold';
     addButton.textContent = 'Add to Cart';
     addButton.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -981,6 +990,53 @@ export class HomeDecorRenderer {
       return;
     }
     this.renderedMoodboards.add(vizId);
+    console.log(`[HomeDecor] Rendering visualization ${vizId}`, uiData);
+
+    // Check if we can update an existing visualization card in place
+    const existingViz = this.output.querySelector('.decor-visualization-message');
+    if (existingViz) {
+      // Update the image
+      const img = existingViz.querySelector('img');
+      if (img && uiData.image_base64) {
+        img.src = `data:image/jpeg;base64,${uiData.image_base64}`;
+      }
+      // Update subtitle
+      const subtitle = existingViz.querySelector('.viz-subtitle');
+      if (subtitle) {
+        subtitle.textContent = uiData.message || '';
+      }
+      // Reset buttons
+      existingViz.querySelectorAll('button').forEach(btn => {
+        if (btn.textContent === 'Generating...') {
+          btn.textContent = 'Try Another Look';
+          btn.disabled = false;
+          btn.classList.remove('opacity-50');
+        }
+      });
+      // Reset moodboard Generate buttons too
+      this.output.querySelectorAll('.viz-controls button').forEach(btn => {
+        if (btn.textContent === 'Generating...') {
+          btn.textContent = 'Generate';
+          btn.disabled = false;
+          btn.classList.remove('opacity-50');
+        }
+      });
+      this.scrollToBottom();
+      return;
+    }
+
+    // Reset ALL "Generating..." buttons across the entire UI
+    this.output.querySelectorAll('button').forEach(btn => {
+      if (btn.textContent === 'Generating...') {
+        if (btn.closest('.viz-controls')) {
+          btn.textContent = 'Generate';
+        } else {
+          btn.textContent = 'Try Another Look';
+        }
+        btn.disabled = false;
+        btn.classList.remove('opacity-50');
+      }
+    });
 
     const wrapper = this.createMessageWrapper('decor-visualization');
     const bubble = document.createElement('div');
@@ -991,12 +1047,12 @@ export class HomeDecorRenderer {
     header.className = 'mb-4';
 
     const title = document.createElement('h3');
-    title.className = 'text-xl font-bold mb-2';
+    title.className = 'text-xl font-bold mb-2 text-[#e4e4f0]';
     title.textContent = 'Your Room, Reimagined';
     header.appendChild(title);
 
     const subtitle = document.createElement('p');
-    subtitle.className = 'text-sm text-gray-600 mb-2';
+    subtitle.className = 'viz-subtitle text-sm text-[#8888a8] mb-2';
     subtitle.textContent = uiData.message || 'See how your selected products look in your space';
     header.appendChild(subtitle);
 
@@ -1004,7 +1060,7 @@ export class HomeDecorRenderer {
       const dims = uiData.room_dimensions;
       const area = (dims.length * dims.width).toFixed(1);
       const dimLabel = document.createElement('p');
-      dimLabel.className = 'text-xs text-gray-400';
+      dimLabel.className = 'text-xs text-[#555570]';
       dimLabel.textContent = `Room: ${dims.length}m x ${dims.width}m (~${area} m2)`;
       header.appendChild(dimLabel);
     }
@@ -1025,7 +1081,7 @@ export class HomeDecorRenderer {
     } else {
       // Fallback: show a styled description card
       const fallback = document.createElement('div');
-      fallback.className = 'w-full bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 text-center';
+      fallback.className = 'w-full bg-gradient-to-br from-[rgba(168,85,247,0.05)] to-[rgba(0,240,255,0.05)] rounded-xl p-6 text-center';
 
       const icon = document.createElement('div');
       icon.className = 'text-5xl mb-3';
@@ -1033,7 +1089,7 @@ export class HomeDecorRenderer {
       fallback.appendChild(icon);
 
       const desc = document.createElement('p');
-      desc.className = 'text-sm text-gray-600';
+      desc.className = 'text-sm text-[#8888a8]';
       desc.textContent = uiData.fallback_description
         ? uiData.fallback_description.substring(0, 200) + '...'
         : 'Room visualization is being prepared...';
@@ -1050,7 +1106,7 @@ export class HomeDecorRenderer {
       productsSection.className = 'mb-4';
 
       const productsLabel = document.createElement('div');
-      productsLabel.className = 'text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2';
+      productsLabel.className = 'text-xs font-semibold text-[#8888a8] uppercase tracking-wide mb-2';
       productsLabel.textContent = 'Products in this visualization';
       productsSection.appendChild(productsLabel);
 
@@ -1059,7 +1115,7 @@ export class HomeDecorRenderer {
 
       uiData.products_shown.forEach(product => {
         const tag = document.createElement('div');
-        tag.className = 'bg-gray-100 rounded-full px-3 py-1 text-xs text-gray-700';
+        tag.className = 'bg-[rgba(255,255,255,0.05)] rounded-full px-3 py-1 text-xs text-[#c0c0d8] border border-[rgba(255,255,255,0.08)]';
         tag.textContent = `${product.name} - ${product.price.toFixed(2)}`;
         productsList.appendChild(tag);
       });
@@ -1073,29 +1129,41 @@ export class HomeDecorRenderer {
     actions.className = 'flex gap-3 mt-4';
 
     const addAllBtn = document.createElement('button');
-    addAllBtn.className = 'flex-1 bg-black text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity';
+    addAllBtn.className = 'flex-1 btn-neon-fill py-3 rounded-lg font-semibold';
     addAllBtn.textContent = 'Add All to Cart';
     addAllBtn.addEventListener('click', () => {
-      if (uiData.products_shown) {
-        uiData.products_shown.forEach(product => {
-          this.api.sendTextMessage(
-            `add_to_cart(product_id="${product.product_id}", customer_id="${this.getCurrentCustomerId()}", quantity=1)`
-          );
-        });
-        addAllBtn.textContent = 'Added!';
+      if (uiData.products_shown && uiData.products_shown.length > 0) {
+        addAllBtn.textContent = 'Adding...';
         addAllBtn.disabled = true;
-        addAllBtn.classList.add('opacity-50');
+        const items = uiData.products_shown.map(p => ({
+          product_id: p.product_id,
+          quantity: 1,
+        }));
+        this.api.sendCartAction(this.getCurrentCustomerId(), items);
+        setTimeout(() => {
+          addAllBtn.textContent = 'Added!';
+          addAllBtn.classList.add('opacity-50');
+        }, 1500);
       }
     });
     actions.appendChild(addAllBtn);
 
     const regenerateBtn = document.createElement('button');
-    regenerateBtn.className = 'flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors';
+    regenerateBtn.className = 'flex-1 decor-btn-secondary py-3 rounded-lg font-semibold';
     regenerateBtn.textContent = 'Try Another Look';
     regenerateBtn.addEventListener('click', () => {
       regenerateBtn.textContent = 'Generating...';
       regenerateBtn.disabled = true;
       regenerateBtn.classList.add('opacity-50');
+
+      // Safety reset after 60s in case render doesn't trigger
+      setTimeout(() => {
+        if (regenerateBtn.textContent === 'Generating...') {
+          regenerateBtn.textContent = 'Try Another Look';
+          regenerateBtn.disabled = false;
+          regenerateBtn.classList.remove('opacity-50');
+        }
+      }, 60000);
 
       const productIds = (uiData.products_shown || []).map(p => p.product_id);
       const idsJson = JSON.stringify(productIds);
@@ -1118,8 +1186,9 @@ export class HomeDecorRenderer {
   handleAddToCart(product, e) {
     console.log(`[HomeDecor] Adding product to cart:`, product);
 
-    this.api.sendTextMessage(
-      `add_to_cart(product_id="${product.product_id}", customer_id="${this.getCurrentCustomerId()}", quantity=1)`
+    this.api.sendCartAction(
+      this.getCurrentCustomerId(),
+      [{ product_id: product.product_id, quantity: 1 }]
     );
 
     const button = e.target;
@@ -1145,13 +1214,13 @@ export class HomeDecorRenderer {
 
     // Title
     const title = document.createElement('h3');
-    title.className = 'text-lg font-bold mb-2';
+    title.className = 'text-lg font-bold mb-2 text-[#e4e4f0]';
     title.textContent = uiData.title || 'Show me your space';
     bubble.appendChild(title);
 
     if (uiData.subtitle) {
       const subtitle = document.createElement('p');
-      subtitle.className = 'text-sm text-gray-600 mb-4';
+      subtitle.className = 'text-sm text-[#8888a8] mb-4';
       subtitle.textContent = uiData.subtitle;
       bubble.appendChild(subtitle);
     }
@@ -1217,7 +1286,7 @@ export class HomeDecorRenderer {
 
     // Instructions
     const instructions = document.createElement('p');
-    instructions.className = 'text-xs text-gray-500 mt-3 text-center';
+    instructions.className = 'text-xs text-[#555570] mt-3 text-center';
     instructions.textContent = 'Choose your preferred method to show the room';
     bubble.appendChild(instructions);
 
@@ -1304,8 +1373,8 @@ export class HomeDecorRenderer {
       // Add upload more button if not at max
       if (!this.photoUploadHandler.isMaxReached()) {
         const addMoreBtn = document.createElement('div');
-        addMoreBtn.className = 'photo-preview-item flex items-center justify-center cursor-pointer bg-gray-100 hover:bg-gray-200 border-2 border-dashed border-gray-300';
-        addMoreBtn.innerHTML = '<span class="material-symbols-outlined text-4xl text-gray-400">add_photo_alternate</span>';
+        addMoreBtn.className = 'photo-preview-item flex items-center justify-center cursor-pointer bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.06)] border-2 border-dashed border-[rgba(255,255,255,0.1)]';
+        addMoreBtn.innerHTML = '<span class="material-symbols-outlined text-4xl text-[#555570]">add_photo_alternate</span>';
         addMoreBtn.addEventListener('click', () => this.handlePhotoUploadClick());
         previewGrid.appendChild(addMoreBtn);
       }

@@ -182,6 +182,18 @@ export class GeminiAPI {
         });
     }
 
+    sendCartAction(customerId, itemsToAdd = [], itemsToRemove = []) {
+        console.log('Sending cart action:', { customerId, itemsToAdd, itemsToRemove });
+        this.sendMessage({
+            type: 'cart_action',
+            data: {
+                customer_id: customerId,
+                items_to_add: itemsToAdd,
+                items_to_remove: itemsToRemove,
+            }
+        });
+    }
+
     sendMessage(message) {
         if (this.ws.readyState === WebSocket.OPEN) {
             console.log('Sending message:', {

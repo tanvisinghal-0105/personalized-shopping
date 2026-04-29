@@ -2678,12 +2678,30 @@ def visualize_room_with_products(
         else:
             product_placement.append(f"a {name}")
 
+    # Randomize camera angle and time of day for variety on regeneration
+    camera_angles = [
+        "Shot with a wide-angle lens from the doorway perspective",
+        "Viewed from the corner of the room looking diagonally across the space",
+        "Photographed from a low angle near floor level for a dramatic perspective",
+        "Captured from the window side looking back into the room",
+        "Shot from a slightly elevated angle as if standing in the doorway",
+    ]
+    time_moods = [
+        "Natural morning daylight streaming through windows with warm golden tones",
+        "Soft afternoon light filtering through sheer curtains creating gentle shadows",
+        "Bright midday natural light filling the room evenly",
+        "Warm evening light with cosy interior lamps switched on",
+        "Overcast day providing soft diffused light throughout the space",
+    ]
+    angle = random.choice(camera_angles)
+    mood = random.choice(time_moods)
+
     prompt = (
         f"Ultra-realistic interior design photograph of a {room_label} "
         f"styled with {style_text}.{dim_text} "
         f"The room contains these specific items: {'; '.join(product_placement)}. "
-        f"Shot with a wide-angle lens from the doorway perspective. "
-        f"Natural daylight streaming through windows complemented by warm interior lighting. "
+        f"{angle}. "
+        f"{mood}, complemented by interior lighting. "
         f"Realistic textures on all surfaces -- visible wood grain, fabric weave, ceramic glaze. "
         f"Styled like a real lived-in home, not a showroom. "
         f"Professional architectural photography, 4K resolution, depth of field, "
@@ -2706,10 +2724,21 @@ def visualize_room_with_products(
             # --- Inpainting: edit the customer's uploaded room photo ---
             logger.info("[ROOM VIZ] Using customer's room photo as base for Imagen 3 Capability editing")
 
+            # Vary the edit instruction slightly for different results on regeneration
+            arrangement_hints = [
+                "Place items to create a balanced, symmetrical arrangement",
+                "Arrange items in a cosy, layered composition",
+                "Position items to maximise open floor space",
+                "Group items to create distinct functional zones",
+                "Arrange items to draw the eye towards the window",
+            ]
+            arrangement = random.choice(arrangement_hints)
+
             edit_prompt = (
                 f"Keep this exact room layout, walls, floor, windows, and lighting. "
                 f"Place the following new furniture and decor items naturally into the existing space: "
                 f"{'; '.join(product_placement[:6])}. "
+                f"{arrangement}. "
                 f"Style the room with {style_text}. "
                 f"The new items must look like they physically belong in this room -- "
                 f"correct perspective, matching shadows, realistic scale relative to the room. "

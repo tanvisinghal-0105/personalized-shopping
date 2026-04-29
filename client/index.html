@@ -3,556 +3,935 @@
 <head>
   <title>Cymbal - Online Shopping</title>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style type="text/tailwindcss">
     @tailwind base;
     @tailwind components;
     @tailwind utilities;
 
     @theme {
-      --color-bg: #ffffff;
-      --color-chat-bg: #ffffff;
-      --color-input-bg: #f5f5f5;
-      --color-user-bubble-bg: #000000;
-      --color-gemini-bubble-bg: #eef0f2;
-      --color-bubble-border: transparent;
-      --color-text-primary: #1a1a1a;
-      --color-text-secondary: #666666;
-      --color-accent: #000000;
-      --color-border: #E6E6E6;
-      --color-icon: #1a1a1a;
+      --color-bg: #05060f;
+      --color-bg-deep: #0a0e27;
+      --color-chat-bg: rgba(10, 14, 39, 0.85);
+      --color-input-bg: rgba(255, 255, 255, 0.05);
+      --color-user-bubble-bg: rgba(0, 240, 255, 0.1);
+      --color-gemini-bubble-bg: rgba(168, 85, 247, 0.1);
+      --color-bubble-border: rgba(255, 255, 255, 0.08);
+      --color-text-primary: #e4e4f0;
+      --color-text-secondary: #8888a8;
+      --color-accent: #00f0ff;
+      --color-accent-violet: #a855f7;
+      --color-border: rgba(255, 255, 255, 0.08);
+      --color-icon: #c0c0d8;
+      --color-glass: rgba(255, 255, 255, 0.04);
+      --color-glass-border: rgba(255, 255, 255, 0.1);
+      --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
     }
-
+  </style>
+  <style>
+    /* ===== BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; }
     body {
-      font-family: 'Roboto', sans-serif;
-      @apply bg-[var(--color-bg)] text-[var(--color-text-primary)];
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(145deg, #05060f 0%, #0a0e27 50%, #0d0826 100%);
+      color: #e4e4f0;
+      min-height: 100vh;
+      overflow-x: hidden;
     }
 
-    /* Cymbal E-commerce page styles */
+    /* ===== AMBIENT AURORA BACKGROUND ===== */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 80%, rgba(0,240,255,0.06) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 80% 20%, rgba(168,85,247,0.06) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 60% at 50% 50%, rgba(0,120,255,0.03) 0%, transparent 50%);
+      animation: aurora 20s ease-in-out infinite alternate;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 70% 50% at 70% 70%, rgba(168,85,247,0.05) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 40% at 30% 30%, rgba(0,240,255,0.04) 0%, transparent 50%);
+      animation: aurora2 25s ease-in-out infinite alternate;
+    }
+
+    @keyframes aurora {
+      0% { transform: translate(0, 0) scale(1); opacity: 0.7; }
+      33% { transform: translate(3%, -2%) scale(1.05); opacity: 1; }
+      66% { transform: translate(-2%, 3%) scale(0.98); opacity: 0.8; }
+      100% { transform: translate(1%, -1%) scale(1.02); opacity: 0.9; }
+    }
+    @keyframes aurora2 {
+      0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 0.6; }
+      50% { transform: translate(-3%, 2%) scale(1.03) rotate(1deg); opacity: 1; }
+      100% { transform: translate(2%, -2%) scale(0.97) rotate(-1deg); opacity: 0.7; }
+    }
+
+    /* ===== GLASS UTILITY ===== */
+    .glass {
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .glass-strong {
+      background: rgba(10,14,39,0.85);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    /* ===== GLOW UTILITIES ===== */
+    .glow-cyan { box-shadow: 0 0 20px rgba(0,240,255,0.15), 0 0 60px rgba(0,240,255,0.05); }
+    .glow-violet { box-shadow: 0 0 20px rgba(168,85,247,0.15), 0 0 60px rgba(168,85,247,0.05); }
+    .glow-cyan-strong { box-shadow: 0 0 30px rgba(0,240,255,0.3), 0 0 80px rgba(0,240,255,0.1); }
+    .text-glow-cyan { text-shadow: 0 0 20px rgba(0,240,255,0.5); }
+    .text-glow-violet { text-shadow: 0 0 20px rgba(168,85,247,0.5); }
+
+    /* ===== NEON BUTTON ===== */
+    .btn-neon {
+      position: relative;
+      border: 1px solid rgba(0,240,255,0.4);
+      color: #00f0ff;
+      background: transparent;
+      overflow: hidden;
+      transition: all 400ms cubic-bezier(0.16,1,0.3,1);
+    }
+    .btn-neon::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(0,240,255,0.2), rgba(0,240,255,0.05));
+      opacity: 0;
+      transition: opacity 400ms cubic-bezier(0.16,1,0.3,1);
+    }
+    .btn-neon:hover { border-color: rgba(0,240,255,0.8); box-shadow: 0 0 20px rgba(0,240,255,0.2); }
+    .btn-neon:hover::before { opacity: 1; }
+    .btn-neon:active { transform: scale(0.95); }
+
+    .btn-neon-fill {
+      border: 1px solid rgba(0,240,255,0.6);
+      color: #05060f;
+      background: linear-gradient(135deg, #00f0ff, #00c4cc);
+      font-weight: 600;
+      transition: all 400ms cubic-bezier(0.16,1,0.3,1);
+      box-shadow: 0 0 20px rgba(0,240,255,0.2);
+    }
+    .btn-neon-fill:hover { box-shadow: 0 0 30px rgba(0,240,255,0.4); transform: translateY(-1px); }
+    .btn-neon-fill:active { transform: scale(0.95); }
+
+    .btn-violet-fill {
+      border: 1px solid rgba(168,85,247,0.6);
+      color: white;
+      background: linear-gradient(135deg, #a855f7, #7c3aed);
+      font-weight: 600;
+      transition: all 400ms cubic-bezier(0.16,1,0.3,1);
+      box-shadow: 0 0 20px rgba(168,85,247,0.2);
+    }
+    .btn-violet-fill:hover { box-shadow: 0 0 30px rgba(168,85,247,0.4); }
+    .btn-violet-fill:active { transform: scale(0.95); }
+
+    /* ===== HEADER ===== */
     .header-icon {
-        @apply flex flex-col items-center text-[var(--color-text-primary)] hover:text-[var(--color-accent)] transition-colors;
+      display: flex; flex-direction: column; align-items: center;
+      color: #c0c0d8; transition: all 300ms cubic-bezier(0.16,1,0.3,1);
+      font-size: 12px; gap: 2px; cursor: pointer;
     }
-    .header-icon .material-symbols-outlined {
-        @apply text-2xl;
-    }
-    .header-icon span {
-        @apply text-xs mt-1;
-    }
+    .header-icon:hover { color: #00f0ff; text-shadow: 0 0 10px rgba(0,240,255,0.4); }
+    .header-icon .material-symbols-outlined { font-size: 24px; }
+
     .category-nav a {
-        @apply text-sm text-[var(--color-text-primary)] font-medium pb-2 border-b-2 border-transparent hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-all;
+      font-size: 13px; color: #8888a8; font-weight: 500; padding-bottom: 8px;
+      border-bottom: 2px solid transparent;
+      transition: all 300ms cubic-bezier(0.16,1,0.3,1);
+    }
+    .category-nav a:hover {
+      color: #00f0ff; border-bottom-color: #00f0ff;
+      text-shadow: 0 0 10px rgba(0,240,255,0.3);
     }
 
-    /* --- Chatbot Base Styles --- */
-    .chat-container { @apply flex flex-col h-screen max-w-4xl mx-auto bg-[var(--color-chat-bg)] shadow-md border border-[var(--color-border)]; }
-    .chat-header { @apply p-4 text-lg font-semibold text-[var(--color-accent)] flex-shrink-0 rounded-t-xl flex justify-between items-center border-b border-[var(--color-border)] bg-white; }
-    .chat-output-area { @apply flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-gray-100; }
-    .message-wrapper { @apply flex mb-3; }
-    .message-bubble { @apply px-4 py-3 max-w-[85%] md:max-w-[75%] break-words; word-wrap: break-word; }
-    
-    /* Message bubble types */
-    .user-message { @apply justify-end; }
-    .user-message .message-bubble { @apply bg-[var(--color-user-bubble-bg)] text-white rounded-2xl rounded-br-lg; }
-    .gemini-message { @apply justify-start; }
-    .gemini-message .message-bubble { @apply bg-[var(--color-gemini-bubble-bg)] text-[var(--color-text-primary)] rounded-2xl rounded-bl-lg; }
-    .system-message { @apply justify-center text-xs text-[var(--color-text-secondary)] italic; }
-    .system-message .message-bubble { @apply bg-transparent text-center px-2 py-1; }
-    
-    /* Markdown content inside bubbles */
-    .message-bubble p, .message-bubble ul, .message-bubble ol, .message-bubble pre, .message-bubble blockquote, .message-bubble table { @apply my-1; }
-    .message-bubble a { @apply text-blue-500 hover:underline; } /* Use a distinct link color */
-    .message-bubble code:not(pre code) { @apply bg-gray-200 text-[var(--color-accent)] px-1 py-0.5 rounded text-xs font-mono border border-gray-300; }
-    .message-bubble pre { @apply bg-gray-800 text-gray-100 p-3 rounded-lg text-xs my-2 overflow-x-auto font-mono shadow-inner; }
-    .message-bubble ul { @apply list-disc list-inside pl-2 space-y-1; }
-    .message-bubble ol { @apply list-decimal list-inside pl-2 space-y-1; }
-    .message-bubble blockquote { @apply border-l-4 border-gray-300 pl-3 italic text-gray-600 my-2; }
+    /* ===== PRODUCT CARDS ===== */
+    .product-card {
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 12px;
+      display: flex; flex-direction: column;
+      transition: all 500ms cubic-bezier(0.16,1,0.3,1);
+      opacity: 0; transform: translateY(20px);
+      will-change: transform, opacity;
+    }
+    .product-card.visible {
+      opacity: 1; transform: translateY(0);
+    }
+    .product-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(0,240,255,0.2);
+      box-shadow: 0 8px 40px rgba(0,240,255,0.08), 0 0 20px rgba(0,240,255,0.05);
+    }
+    .product-card .img-wrap {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      background: rgba(255,255,255,0.06);
+    }
+    .product-card .img-wrap::after {
+      content: '';
+      position: absolute; inset: 0;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+      pointer-events: none;
+      background: linear-gradient(180deg, transparent 60%, rgba(5,6,15,0.4) 100%);
+    }
+    .product-card img {
+      border-radius: 12px;
+      width: 100%; height: 160px; object-fit: cover;
+      display: block;
+    }
+    .product-card .img-wrap-light {
+      background: rgba(240,240,245,0.92);
+    }
+    .product-card .img-wrap-light img {
+      object-fit: contain;
+      padding: 8px;
+      mix-blend-mode: multiply;
+    }
+    .product-card .img-wrap-light::after {
+      background: linear-gradient(180deg, transparent 50%, rgba(5,6,15,0.12) 100%);
+    }
+    .product-card .price {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700; font-size: 18px;
+      color: #00f0ff;
+      text-shadow: 0 0 10px rgba(0,240,255,0.3);
+    }
 
-    /* --- Agent/Tool Message Styles (Restored from old code) --- */
+    /* ===== PROMO BANNERS ===== */
+    .promo-card {
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 16px;
+      transition: all 400ms cubic-bezier(0.16,1,0.3,1);
+      position: relative;
+      overflow: hidden;
+    }
+    .promo-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(0,240,255,0.03), rgba(168,85,247,0.03));
+      animation: shimmer 4s ease-in-out infinite;
+    }
+    @keyframes shimmer {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+    .promo-card:hover { border-color: rgba(0,240,255,0.2); }
+
+    /* ===== HERO BANNER ===== */
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(0,240,255,0.1) 0%, rgba(168,85,247,0.15) 50%, rgba(0,120,255,0.1) 100%);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-banner::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+      animation: hero-shimmer 6s ease-in-out infinite;
+    }
+    @keyframes hero-shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    /* ===== CHAT PANEL ===== */
+    .chat-container {
+      display: flex; flex-direction: column;
+      background: rgba(10,14,39,0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      box-shadow: 0 20px 80px rgba(0,0,0,0.5), 0 0 40px rgba(0,240,255,0.05);
+    }
+    .chat-header {
+      padding: 12px 16px;
+      font-size: 16px; font-weight: 600;
+      color: #e4e4f0;
+      flex-shrink: 0;
+      border-radius: 0;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+    }
+    .chat-output-area {
+      flex: 1; overflow-y: auto;
+      padding: 16px;
+      space-y: 12px;
+      background: transparent;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.1) transparent;
+    }
+    .chat-output-area::-webkit-scrollbar { width: 6px; }
+    .chat-output-area::-webkit-scrollbar-track { background: transparent; }
+    .chat-output-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+    /* ===== MESSAGE BUBBLES ===== */
+    .message-wrapper { display: flex; margin-bottom: 12px; opacity: 0; transform: translateY(10px); animation: msgSlideIn 400ms cubic-bezier(0.16,1,0.3,1) forwards; }
+    @keyframes msgSlideIn { to { opacity: 1; transform: translateY(0); } }
+
+    .message-bubble {
+      padding: 12px 16px; max-width: 85%; word-wrap: break-word;
+      border-radius: 16px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .user-message { justify-content: flex-end; }
+    .user-message .message-bubble {
+      background: rgba(0,240,255,0.1);
+      border: 1px solid rgba(0,240,255,0.2);
+      border-radius: 16px 16px 4px 16px;
+      color: #e4e4f0;
+    }
+    .gemini-message { justify-content: flex-start; }
+    .gemini-message .message-bubble {
+      background: rgba(168,85,247,0.08);
+      border: 1px solid rgba(168,85,247,0.15);
+      border-radius: 16px 16px 16px 4px;
+      color: #e4e4f0;
+    }
+    .system-message { justify-content: center; }
+    .system-message .message-bubble {
+      background: transparent; border: none;
+      color: #8888a8; font-size: 12px; text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Markdown content */
+    .message-bubble p, .message-bubble ul, .message-bubble ol, .message-bubble pre, .message-bubble blockquote, .message-bubble table { margin: 4px 0; }
+    .message-bubble a { color: #00f0ff; text-decoration: underline; text-underline-offset: 2px; }
+    .message-bubble a:hover { text-shadow: 0 0 10px rgba(0,240,255,0.4); }
+    .message-bubble code:not(pre code) {
+      background: rgba(255,255,255,0.08); color: #00f0ff;
+      padding: 2px 6px; border-radius: 4px; font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .message-bubble pre {
+      background: rgba(0,0,0,0.4); color: #e4e4f0;
+      padding: 12px; border-radius: 12px; font-size: 12px;
+      margin: 8px 0; overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .message-bubble ul { list-style: disc; padding-left: 16px; }
+    .message-bubble ol { list-style: decimal; padding-left: 16px; }
+    .message-bubble blockquote { border-left: 3px solid rgba(0,240,255,0.3); padding-left: 12px; color: #8888a8; margin: 8px 0; }
+
+    /* Agent/Tool messages */
     .function-call .message-bubble,
     .function-response .message-bubble {
-        @apply bg-gray-50 text-[var(--color-text-primary)] border border-[var(--color-border)] rounded-lg p-0 text-sm w-full max-w-full overflow-hidden;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; padding: 0; font-size: 13px;
+      width: 100%; max-width: 100%; overflow: hidden;
     }
     .function-call .tool-header,
     .function-response .tool-header {
-        @apply bg-[var(--color-accent)] text-white p-3 flex justify-between items-center cursor-pointer;
+      background: linear-gradient(135deg, rgba(0,240,255,0.15), rgba(168,85,247,0.15));
+      color: #e4e4f0; padding: 10px 14px;
+      display: flex; justify-content: space-between; align-items: center;
+      cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.08);
     }
     .function-call .tool-toggle,
-    .function-response .tool-toggle {
-        @apply text-white;
-    }
+    .function-response .tool-toggle { color: #8888a8; }
     .function-call .tool-details,
     .function-response .tool-details {
-        @apply p-3 bg-white text-xs font-mono overflow-x-auto;
+      padding: 12px; background: rgba(0,0,0,0.2);
+      font-size: 12px; font-family: 'JetBrains Mono', monospace;
+      overflow-x: auto; color: #c0c0d8;
     }
     .function-call .function-icon,
-    .function-response .function-icon {
-        @apply text-base mr-2 align-middle text-white;
-    }
+    .function-response .function-icon { font-size: 16px; margin-right: 8px; color: #00f0ff; }
     .function-call .message-bubble pre,
     .function-response .message-bubble pre {
-        @apply bg-transparent text-inherit p-0 rounded-none mt-0 text-xs overflow-x-auto font-mono shadow-none;
+      background: transparent; padding: 0; border-radius: 0;
+      margin: 0; font-size: 12px; overflow-x: auto; border: none;
+      box-shadow: none;
     }
-    
-    /* Business-Friendly JSON Form Styles */
-    .json-form-label { @apply w-full sm:w-1/3 font-medium text-gray-700 text-xs mb-1 sm:mb-0 flex-shrink-0; }
-    .json-form-value-container { @apply w-full sm:w-2/3 text-xs text-gray-800; }
-    .json-form-toggle-header { @apply flex items-center cursor-pointer text-xs text-blue-600 hover:text-blue-800 mt-1; }
-    .json-form-collapsible-content { @apply border border-gray-200 rounded p-2 mt-1 ml-4 space-y-1 bg-gray-50; }
-    .json-form-object-content-toplevel { @apply space-y-2 mt-1; }
-    .json-form-row { @apply flex flex-col sm:flex-row sm:items-start py-1 border-t border-gray-100; }
-    .json-form-row:first-child { @apply border-t-0; }
 
-    /* --- Input Area & Controls --- */
-    .loading-indicator { @apply items-center justify-center p-4 text-[var(--color-text-secondary)] space-x-2; }
-    .spinner { @apply w-5 h-5 border-t-2 border-r-2 border-[var(--color-accent)] border-solid rounded-full animate-spin; }
-    .input-area-container { @apply p-3 md:p-4 flex-shrink-0 rounded-b-xl bg-white border-t border-[var(--color-border)]; }
-    .input-area { @apply flex items-center space-x-2 bg-gray-100 rounded-full p-1 shadow-sm; }
-    .input-action-button { @apply flex items-center justify-center w-10 h-10 rounded-full text-gray-600 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/50 transition-colors disabled:opacity-50 disabled:hover:bg-transparent flex-shrink-0; }
-    
-    .mic-button.recording { @apply bg-[var(--color-accent)] text-white hover:opacity-90; }
-    .camera-button.recording { @apply bg-[var(--color-accent)] text-white hover:opacity-90; }
-    .send-button:not(:disabled) { @apply bg-[var(--color-accent)] text-white hover:opacity-90; }
+    /* JSON form styling */
+    .json-form-label { width: 33%; font-weight: 500; color: #8888a8; font-size: 12px; flex-shrink: 0; }
+    .json-form-value-container { width: 67%; font-size: 12px; color: #c0c0d8; }
+    .json-form-toggle-header { display: flex; align-items: center; cursor: pointer; font-size: 12px; color: #00f0ff; margin-top: 4px; }
+    .json-form-toggle-header:hover { text-shadow: 0 0 10px rgba(0,240,255,0.3); }
+    .json-form-collapsible-content { border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 8px; margin-top: 4px; margin-left: 16px; background: rgba(0,0,0,0.15); }
+    .json-form-object-content-toplevel { margin-top: 4px; }
+    .json-form-row { display: flex; flex-direction: row; align-items: flex-start; padding: 4px 0; border-top: 1px solid rgba(255,255,255,0.04); }
+    .json-form-row:first-child { border-top: none; }
 
-    .text-input-field { @apply flex-1 bg-transparent border-none resize-none outline-none px-2 py-2 placeholder-[var(--color-text-secondary)] text-[var(--color-text-primary)]; max-height: 160px; overflow-y: auto; }
-    
-    /* Toggle Switch */
-    .toggle-checkbox:checked { transform: translateX(100%); right: 0; left: auto; border-color: var(--color-accent); }
-    .toggle-checkbox:checked + .toggle-label { background-color: var(--color-accent); }
+    /* ===== INPUT AREA ===== */
+    .loading-indicator {
+      display: flex; align-items: center; justify-content: center;
+      padding: 12px; color: #8888a8;
+    }
+    /* Sci-fi shimmer bar */
+    .spinner {
+      width: 40px; height: 4px; border-radius: 2px;
+      background: linear-gradient(90deg, transparent, #00f0ff, #a855f7, transparent);
+      background-size: 200% 100%;
+      animation: shimmerBar 1.5s ease-in-out infinite;
+    }
+    @keyframes shimmerBar {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
 
-    /* Home Decor Modal Styles */
-    .decor-modal {
+    .input-area-container {
+      padding: 16px 24px; flex-shrink: 0;
+      border-radius: 0;
+      background: rgba(255,255,255,0.03);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .input-area {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 28px; padding: 8px 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: border-color 400ms cubic-bezier(0.16,1,0.3,1);
+      width: 100%; max-width: 700px;
+      min-height: 56px;
+    }
+    .input-area:focus-within { border-color: rgba(0,240,255,0.3); box-shadow: 0 0 20px rgba(0,240,255,0.05); }
+
+    .input-action-button {
+      display: flex; align-items: center; justify-content: center;
+      width: 38px; height: 38px; border-radius: 50%;
+      color: #8888a8; background: transparent;
+      border: none; cursor: pointer;
+      transition: all 300ms cubic-bezier(0.16,1,0.3,1);
+      flex-shrink: 0;
+    }
+    .input-action-button:hover:not(:disabled) { color: #00f0ff; background: rgba(0,240,255,0.1); }
+    .input-action-button:active:not(:disabled) { transform: scale(0.92); }
+    .input-action-button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .mic-button.recording {
+      background: rgba(0,240,255,0.2);
+      color: #00f0ff;
+      box-shadow: 0 0 20px rgba(0,240,255,0.3);
+      animation: micPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes micPulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(0,240,255,0.3); }
+      50% { box-shadow: 0 0 30px rgba(0,240,255,0.5); }
+    }
+    .camera-button.recording {
+      background: rgba(0,240,255,0.2);
+      color: #00f0ff;
+      box-shadow: 0 0 15px rgba(0,240,255,0.3);
+    }
+    .send-button:not(:disabled) {
+      background: linear-gradient(135deg, #00f0ff, #00c4cc);
+      color: #05060f;
+      box-shadow: 0 0 15px rgba(0,240,255,0.2);
+    }
+    .send-button:not(:disabled):hover {
+      box-shadow: 0 0 25px rgba(0,240,255,0.4);
+    }
+
+    .text-input-field {
+      flex: 1; background: transparent; border: none;
+      resize: none; outline: none;
+      padding: 0 8px; color: #e4e4f0;
+      font-family: 'Inter', sans-serif; font-size: 15px;
+      max-height: 160px; overflow-y: auto;
+      line-height: 38px; height: 38px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .text-input-field::placeholder { color: #7a7a9a; opacity: 1; }
+    .text-input-field:disabled::placeholder { color: #5a5a78; opacity: 1; }
+
+    /* ===== TOGGLE SWITCH (futuristic) ===== */
+    .toggle-track {
+      width: 40px; height: 22px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 11px;
+      position: relative; cursor: pointer;
+      transition: all 300ms cubic-bezier(0.16,1,0.3,1);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .toggle-track.active {
+      background: rgba(0,240,255,0.2);
+      border-color: rgba(0,240,255,0.4);
+      box-shadow: 0 0 12px rgba(0,240,255,0.2);
+    }
+    .toggle-thumb {
+      position: absolute; top: 2px; left: 2px;
+      width: 16px; height: 16px;
+      background: #555570; border-radius: 50%;
+      transition: all 300ms cubic-bezier(0.16,1,0.3,1);
+    }
+    .toggle-track.active .toggle-thumb {
+      left: 20px; background: #00f0ff;
+      box-shadow: 0 0 8px rgba(0,240,255,0.5);
+    }
+
+    /* ===== VOICE ORB ===== */
+    #voiceOrbContainer {
       position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(4px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 70;
-      padding: 20px;
+      bottom: 32px; left: 50%;
+      transform: translateX(-50%);
+      width: 160px; height: 160px;
+      z-index: 35; cursor: pointer;
+      transition: all 600ms cubic-bezier(0.16,1,0.3,1);
     }
-    .decor-modal.active { display: flex; }
-
-    .decor-modal-content {
-      background: white;
-      border-radius: 16px;
-      max-width: 900px;
-      width: 100%;
-      max-height: 90vh;
-      overflow-y: auto;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    #voiceOrbContainer.docked {
       position: relative;
+      bottom: auto; left: auto;
+      transform: none;
+      width: 48px; height: 48px;
+    }
+    #voiceOrbContainer canvas,
+    #voiceOrbContainer .css-orb {
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .orb-label {
+      position: absolute;
+      bottom: -28px; left: 50%;
+      transform: translateX(-50%);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: #8888a8;
+      white-space: nowrap;
+      transition: opacity 400ms cubic-bezier(0.16,1,0.3,1);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    #voiceOrbContainer.docked .orb-label { display: none; }
+
+    /* CSS fallback orb */
+    .css-orb {
+      position: relative; width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .css-orb-core {
+      width: 60%; height: 60%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #00f0ff, #006688);
+      animation: cssOrbIdle 3s ease-in-out infinite;
+      box-shadow: 0 0 30px rgba(0,240,255,0.3), inset 0 0 20px rgba(0,240,255,0.2);
+    }
+    .css-orb-glow {
+      position: absolute; inset: 10%; border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,240,255,0.15), transparent 70%);
+      animation: cssOrbGlow 3s ease-in-out infinite;
+    }
+    .css-orb-ring {
+      position: absolute; inset: 5%; border-radius: 50%;
+      border: 2px solid rgba(0,240,255,0.2);
+      opacity: 0;
+      transition: opacity 400ms;
+    }
+    .css-orb-ripple {
+      position: absolute; inset: 20%; border-radius: 50%;
+      border: 1px solid rgba(168,85,247,0.3);
+      opacity: 0; transform: scale(1);
+    }
+    @keyframes cssOrbIdle {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    @keyframes cssOrbGlow {
+      0%, 100% { opacity: 0.5; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.1); }
     }
 
-    .decor-modal-header {
-      padding: 24px;
-      border-bottom: 1px solid #E6E6E6;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      background: white;
-      z-index: 1;
+    /* CSS orb states */
+    .css-orb-listening .css-orb-core {
+      animation: cssOrbListening 0.8s ease-in-out infinite;
+      box-shadow: 0 0 40px rgba(0,240,255,0.5), inset 0 0 20px rgba(0,240,255,0.3);
+    }
+    .css-orb-listening .css-orb-ring { opacity: 1; animation: cssRingPulse 1s ease-in-out infinite; }
+    @keyframes cssOrbListening {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    @keyframes cssRingPulse {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.15); opacity: 1; }
     }
 
-    .decor-modal-close {
-      background: none;
-      border: none;
-      font-size: 28px;
-      cursor: pointer;
-      color: #666;
-      line-height: 1;
-      padding: 0;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .css-orb-thinking .css-orb-core {
+      background: radial-gradient(circle at 35% 35%, #a855f7, #6d28d9);
+      animation: cssOrbThinking 1s linear infinite;
+      box-shadow: 0 0 40px rgba(168,85,247,0.4), inset 0 0 20px rgba(168,85,247,0.2);
+    }
+    @keyframes cssOrbThinking {
+      0% { transform: scale(1) rotate(0deg); }
+      100% { transform: scale(1) rotate(360deg); }
     }
 
-    .decor-modal-body {
-      padding: 24px;
+    .css-orb-speaking .css-orb-core {
+      background: radial-gradient(circle at 35% 35%, #a855f7, #7c3aed);
+      animation: cssOrbSpeaking 1.5s ease-in-out infinite;
+      box-shadow: 0 0 30px rgba(168,85,247,0.4);
+    }
+    .css-orb-speaking .css-orb-ripple { animation: cssRipple 2s ease-out infinite; }
+    .css-orb-speaking .css-orb-ripple-2 { animation-delay: 0.66s; }
+    .css-orb-speaking .css-orb-ripple-3 { animation-delay: 1.33s; }
+    @keyframes cssOrbSpeaking {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+    @keyframes cssRipple {
+      0% { transform: scale(1); opacity: 0.5; }
+      100% { transform: scale(2); opacity: 0; }
     }
 
-    .decor-phase-title {
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 8px;
+    /* ===== SIGN IN MODAL ===== */
+    .modal-glass {
+      background: rgba(10,14,39,0.95);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 24px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 40px rgba(0,240,255,0.05);
+    }
+    .input-glass {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      color: #e4e4f0;
+      padding: 10px 16px;
+      outline: none;
+      font-family: 'Inter', sans-serif;
+      transition: all 300ms cubic-bezier(0.16,1,0.3,1);
+    }
+    .input-glass::placeholder { color: #555570; }
+    .input-glass:focus {
+      border-color: rgba(0,240,255,0.4);
+      box-shadow: 0 0 20px rgba(0,240,255,0.1);
     }
 
-    .decor-phase-subtitle {
-      font-size: 14px;
-      color: #666;
-      margin-bottom: 24px;
+    /* ===== HOME DECOR RENDERER OVERRIDES ===== */
+    .decor-ui-message .message-bubble {
+      max-width: 95% !important;
+      background: rgba(255,255,255,0.04) !important;
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.1) !important;
+      border-radius: 16px !important;
+      padding: 16px !important;
+    }
+    .decor-selector-bubble {
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+    .decor-moodboard-bubble {
+      background: rgba(255,255,255,0.04) !important;
+      border: 1px solid rgba(255,255,255,0.1) !important;
     }
 
-    .room-selector {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 12px;
-      margin-bottom: 32px;
-    }
-
+    /* Room cards in decor renderer */
     .room-card {
-      background: #f5f5f5;
+      background: rgba(255,255,255,0.05);
       border: 2px solid transparent;
       border-radius: 12px;
       padding: 20px;
       text-align: center;
       cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
+      transition: all 400ms cubic-bezier(0.16,1,0.3,1);
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      color: #e4e4f0;
     }
-
-    .room-card:hover {
-      background: #eee;
-      transform: translateY(-2px);
-    }
-
+    .room-card:hover { background: rgba(0,240,255,0.05); transform: translateY(-2px); }
     .room-card.selected {
-      border-color: var(--color-accent);
-      background: #fff;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-color: #00f0ff;
+      background: rgba(0,240,255,0.08);
+      box-shadow: 0 4px 20px rgba(0,240,255,0.1);
     }
 
-    .room-card .material-symbols-outlined {
-      font-size: 40px;
-      color: var(--color-accent);
-    }
-
-    .room-card-label {
-      font-size: 14px;
-      font-weight: 600;
-    }
-
-    .style-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
+    /* Style cards */
     .style-card {
-      position: relative;
-      background: #f5f5f5;
+      position: relative; background: rgba(255,255,255,0.04);
       border: 3px solid transparent;
-      border-radius: 12px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: all 0.2s;
+      border-radius: 12px; overflow: hidden; cursor: pointer;
+      transition: all 400ms cubic-bezier(0.16,1,0.3,1);
       aspect-ratio: 3/4;
     }
-
-    .style-card:hover {
-      transform: scale(1.02);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    }
-
-    .style-card.selected {
-      border-color: var(--color-accent);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-    }
-
-    .style-card-image {
-      width: 100%;
-      height: 70%;
-      object-fit: cover;
-    }
-
-    .style-card-content {
-      padding: 12px;
-      background: white;
-      height: 30%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .style-card-name {
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .style-card-desc {
-      font-size: 12px;
-      color: #666;
-    }
-
+    .style-card:hover { transform: scale(1.02); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+    .style-card.selected { border-color: #00f0ff; box-shadow: 0 8px 30px rgba(0,240,255,0.15); }
+    .style-card-image { width: 100%; height: 70%; object-fit: cover; }
+    .style-card-content { padding: 12px; background: rgba(10,14,39,0.8); height: 30%; display: flex; flex-direction: column; justify-content: center; }
+    .style-card-name { font-size: 14px; font-weight: 700; color: #e4e4f0; margin-bottom: 4px; }
+    .style-card-desc { font-size: 11px; color: #8888a8; }
     .style-card-check {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      background: var(--color-accent);
-      color: white;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      position: absolute; top: 12px; right: 12px;
+      background: #00f0ff; color: #05060f;
+      width: 32px; height: 32px; border-radius: 50%;
+      display: none; align-items: center; justify-content: center;
+      box-shadow: 0 2px 12px rgba(0,240,255,0.3);
     }
+    .style-card.selected .style-card-check { display: flex; }
 
-    .style-card.selected .style-card-check {
-      display: flex;
-    }
-
-    .decor-action-bar {
-      display: flex;
-      gap: 12px;
-      justify-content: flex-end;
-      padding: 24px;
-      border-top: 1px solid #E6E6E6;
-      position: sticky;
-      bottom: 0;
-      background: white;
-    }
-
-    .decor-btn {
-      padding: 12px 32px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      border: none;
-      font-size: 16px;
-    }
-
-    .decor-btn-secondary {
-      background: #f5f5f5;
-      color: #333;
-    }
-
-    .decor-btn-secondary:hover {
-      background: #eee;
-    }
-
-    .decor-btn-primary {
-      background: var(--color-accent);
-      color: white;
-    }
-
-    .decor-btn-primary:hover {
-      opacity: 0.9;
-    }
-
-    .decor-btn-primary:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-
-    .color-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-
+    /* Color chips */
     .color-chip {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      cursor: pointer;
+      width: 60px; height: 60px; border-radius: 50%; cursor: pointer;
       border: 3px solid transparent;
-      transition: all 0.2s;
+      transition: all 300ms cubic-bezier(0.16,1,0.3,1);
       position: relative;
     }
-
-    .color-chip:hover {
-      transform: scale(1.1);
-    }
-
-    .color-chip.selected {
-      border-color: var(--color-accent);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-
+    .color-chip:hover { transform: scale(1.1); }
+    .color-chip.selected { border-color: #00f0ff; box-shadow: 0 4px 16px rgba(0,240,255,0.2); }
     .color-chip .material-symbols-outlined {
-      position: absolute;
-      top: 50%;
-      left: 50%;
+      position: absolute; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      color: white;
-      font-size: 24px;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      color: white; font-size: 24px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
       display: none;
     }
+    .color-chip.selected .material-symbols-outlined { display: block; }
 
-    .color-chip.selected .material-symbols-outlined {
-      display: block;
+    /* Moodboard product cards */
+    .moodboard-product-card {
+      background: rgba(255,255,255,0.04);
+      border: 2px solid rgba(255,255,255,0.08);
+      border-radius: 12px; overflow: hidden; cursor: pointer;
+      transition: all 400ms cubic-bezier(0.16,1,0.3,1);
+    }
+    .moodboard-product-card:hover {
+      transform: scale(1.03);
+      border-color: rgba(0,240,255,0.2);
+      box-shadow: 0 8px 30px rgba(0,240,255,0.08);
     }
 
-    /* Decor Selector Bubble (wider than normal messages) */
-    .decor-ui-message .message-bubble {
-      max-width: 95% !important;
-      @apply bg-white border border-gray-200 rounded-2xl p-4;
-    }
-
-    .decor-selector-bubble {
-      @apply shadow-lg;
-    }
-
-    /* Photo Upload Styles */
+    /* Photo upload */
     .photo-upload-container {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+      display: flex; flex-direction: column; gap: 16px;
       padding: 16px;
-      background: #f9fafb;
+      background: rgba(255,255,255,0.03);
       border-radius: 12px;
-      border: 2px dashed #d1d5db;
+      border: 2px dashed rgba(255,255,255,0.1);
     }
-
-    .photo-upload-options {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
     .photo-upload-btn {
-      flex: 1;
-      min-width: 140px;
+      flex: 1; min-width: 140px;
       padding: 12px 20px;
-      background: var(--color-accent);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: all 0.2s;
+      border: 1px solid rgba(0,240,255,0.4); color: #00f0ff;
+      background: rgba(0,240,255,0.05);
+      border-radius: 10px; cursor: pointer; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: all 300ms cubic-bezier(0.16,1,0.3,1);
     }
-
-    .photo-upload-btn:hover {
-      opacity: 0.9;
-      transform: translateY(-1px);
-    }
-
-    .photo-upload-btn.secondary {
-      background: #6366f1;
-    }
-
-    .photo-preview-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-      gap: 12px;
-      margin-top: 12px;
-    }
-
-    .photo-preview-item {
-      position: relative;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 2px solid #e5e7eb;
-      aspect-ratio: 1;
-    }
-
-    .photo-preview-item img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
+    .photo-upload-btn:hover { background: rgba(0,240,255,0.1); box-shadow: 0 0 20px rgba(0,240,255,0.15); }
+    .photo-upload-btn.secondary { border-color: rgba(168,85,247,0.4); color: #a855f7; background: rgba(168,85,247,0.05); }
+    .photo-upload-btn.secondary:hover { background: rgba(168,85,247,0.1); }
+    .photo-upload-options { display: flex; gap: 12px; flex-wrap: wrap; }
+    .photo-preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; margin-top: 12px; }
+    .photo-preview-item { position: relative; border-radius: 10px; overflow: hidden; border: 2px solid rgba(255,255,255,0.08); aspect-ratio: 1; }
+    .photo-preview-item img { width: 100%; height: 100%; object-fit: cover; }
     .photo-preview-remove {
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      background: rgba(0, 0, 0, 0.7);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 24px;
-      height: 24px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      line-height: 1;
+      position: absolute; top: 4px; right: 4px;
+      background: rgba(0,0,0,0.7); color: white;
+      border: none; border-radius: 50%;
+      width: 24px; height: 24px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; line-height: 1;
     }
-
-    .photo-preview-remove:hover {
-      background: rgba(0, 0, 0, 0.9);
-    }
-
     .photo-upload-submit {
       padding: 12px 24px;
-      background: var(--color-accent);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
+      background: linear-gradient(135deg, #00f0ff, #00c4cc);
+      color: #05060f; border: none; border-radius: 10px;
+      font-weight: 600; cursor: pointer;
+      transition: all 300ms cubic-bezier(0.16,1,0.3,1);
     }
-
-    .photo-upload-submit:disabled {
-      background: #9ca3af;
-      cursor: not-allowed;
-    }
-
-    .photo-upload-submit:hover:not(:disabled) {
-      opacity: 0.9;
-    }
-
+    .photo-upload-submit:disabled { background: rgba(255,255,255,0.1); color: #555570; cursor: not-allowed; }
+    .photo-upload-submit:hover:not(:disabled) { box-shadow: 0 0 20px rgba(0,240,255,0.2); }
     .photo-upload-guidelines {
-      font-size: 12px;
-      color: #6b7280;
-      padding: 8px 12px;
-      background: white;
-      border-radius: 8px;
-      border-left: 3px solid var(--color-accent);
+      font-size: 12px; color: #8888a8;
+      padding: 8px 12px; background: rgba(255,255,255,0.03);
+      border-radius: 8px; border-left: 3px solid #00f0ff;
     }
 
-    .photo-upload-guidelines ul {
-      margin: 8px 0 0 0;
-      padding-left: 20px;
+    /* Room dimensions */
+    .room-size-card {
+      background: rgba(255,255,255,0.05);
+      border: 2px solid transparent; border-radius: 12px;
+      padding: 16px; cursor: pointer; text-align: center;
+      transition: all 400ms cubic-bezier(0.16,1,0.3,1);
+      color: #e4e4f0;
+    }
+    .room-size-card:hover { background: rgba(0,240,255,0.05); }
+    .room-size-card.selected {
+      border-color: #00f0ff; background: rgba(0,240,255,0.08);
+      box-shadow: 0 4px 20px rgba(0,240,255,0.1);
     }
 
-    .photo-upload-guidelines li {
-      margin: 4px 0;
+    /* Decor action buttons */
+    .decor-btn { padding: 12px 32px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 300ms cubic-bezier(0.16,1,0.3,1); border: none; font-size: 14px; }
+    .decor-btn-secondary { background: rgba(255,255,255,0.08); color: #c0c0d8; }
+    .decor-btn-secondary:hover { background: rgba(255,255,255,0.12); }
+    .decor-btn-primary { background: linear-gradient(135deg, #00f0ff, #00c4cc); color: #05060f; }
+    .decor-btn-primary:hover { box-shadow: 0 0 20px rgba(0,240,255,0.2); }
+    .decor-btn-primary:disabled { background: rgba(255,255,255,0.08); color: #555570; cursor: not-allowed; }
+
+    /* Decor modal */
+    .decor-modal {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+      display: none; align-items: center; justify-content: center;
+      z-index: 70; padding: 20px;
     }
+    .decor-modal.active { display: flex; }
+    .decor-modal-content {
+      background: rgba(10,14,39,0.95);
+      backdrop-filter: blur(30px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px; max-width: 900px; width: 100%;
+      max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .decor-modal-header {
+      padding: 24px; border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; background: rgba(10,14,39,0.95); z-index: 1;
+    }
+    .decor-modal-close { background: none; border: none; font-size: 28px; cursor: pointer; color: #8888a8; }
+    .decor-modal-body { padding: 24px; }
+
+    /* ===== TYPING CARET ===== */
+    .typing-caret {
+      display: inline-block;
+      width: 2px; height: 1em;
+      background: #a855f7;
+      margin-left: 2px;
+      animation: caretBlink 0.8s step-end infinite;
+      vertical-align: text-bottom;
+    }
+    @keyframes caretBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* ===== SPEAKING INDICATOR ===== */
+    .speaking-indicator {
+      display: inline-flex; align-items: flex-end; gap: 2px;
+      height: 16px; margin-right: 6px; vertical-align: middle;
+    }
+    .speaking-indicator .bar {
+      display: inline-block; width: 3px;
+      background: #a855f7; border-radius: 2px;
+      animation: speakBar 0.8s ease-in-out infinite;
+    }
+    .speaking-indicator .bar:nth-child(1) { animation-delay: 0s; height: 8px; }
+    .speaking-indicator .bar:nth-child(2) { animation-delay: 0.15s; height: 12px; }
+    .speaking-indicator .bar:nth-child(3) { animation-delay: 0.3s; height: 6px; }
+    @keyframes speakBar {
+      0%, 100% { transform: scaleY(0.5); }
+      50% { transform: scaleY(1.2); }
+    }
+
+    /* ===== ORCHESTRATED PAGE LOAD ===== */
+    .load-fade { opacity: 0; transition: opacity 800ms cubic-bezier(0.16,1,0.3,1); }
+    .load-fade.loaded { opacity: 1; }
+    .load-slide-down { opacity: 0; transform: translateY(-20px); transition: all 600ms cubic-bezier(0.16,1,0.3,1); }
+    .load-slide-down.loaded { opacity: 1; transform: translateY(0); }
+    .load-slide-up { opacity: 0; transform: translateY(20px); transition: all 600ms cubic-bezier(0.16,1,0.3,1); }
+    .load-slide-up.loaded { opacity: 1; transform: translateY(0); }
+    .load-scale { opacity: 0; transform: scale(0.5); transition: all 800ms cubic-bezier(0.16,1,0.3,1); }
+    .load-scale.loaded { opacity: 1; transform: scale(1); }
+
+    /* Modal entrance */
+    .modal-enter {
+      animation: modalIn 500ms cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.9) translateY(20px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Sign-in dissolve */
+    .modal-dissolve {
+      animation: dissolveOut 600ms cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+    @keyframes dissolveOut {
+      0% { opacity: 1; transform: scale(1); filter: blur(0); }
+      100% { opacity: 0; transform: scale(1.05); filter: blur(10px); }
+    }
+
+    /* ===== SALE BADGE ===== */
+    .sale-badge {
+      background: linear-gradient(135deg, #00f0ff, #a855f7);
+      color: white; font-weight: 700;
+      padding: 6px 16px; border-radius: 999px;
+      font-size: 13px;
+      box-shadow: 0 0 15px rgba(0,240,255,0.2);
+      transition: all 300ms cubic-bezier(0.16,1,0.3,1);
+    }
+    .sale-badge:hover { box-shadow: 0 0 25px rgba(0,240,255,0.4); }
+
+    /* scrollbar for main page */
+    .main-scroll::-webkit-scrollbar { width: 6px; }
+    .main-scroll::-webkit-scrollbar-track { background: transparent; }
+    .main-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
   </style>
 </head>
-<body class="bg-[var(--color-bg)] text-[var(--color-text-primary)] flex flex-col h-screen">
+<body class="flex flex-col h-screen">
 
-<!-- Floating Chat Button -->
-<button id="floatingChatBtn" class="fixed bottom-6 right-6 w-16 h-16 bg-[var(--color-accent)] text-white rounded-full shadow-lg hover:opacity-90 transition-opacity flex items-center justify-center z-30">
-  <span class="material-symbols-outlined text-3xl">chat</span>
-</button>
+<!-- Ambient overlay handled by body::before/::after -->
+
+<!-- Voice Orb (centerpiece, replaces floating chat button) -->
+<div id="voiceOrbContainer" class="load-scale" data-orb-state="idle">
+  <div id="orbLabel" class="orb-label">Click to chat</div>
+</div>
+
+<!-- Hidden original floating chat button (kept for JS compatibility, hidden) -->
+<button id="floatingChatBtn" style="display:none !important;"></button>
 
 <!-- Sign In Modal -->
-<div id="signInModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]" style="display: flex;">
-  <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
-    <div class="text-center mb-6">
-      <img src="./assets/cymbal_logo.png" alt="Cymbal" class="h-12 mx-auto mb-3">
-      <p class="text-gray-600">Welcome! Please sign in to continue</p>
+<div id="signInModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:60;">
+  <div class="modal-glass modal-enter" style="padding:40px;width:100%;max-width:420px;">
+    <div style="text-align:center;margin-bottom:28px;">
+      <img src="./assets/cymbal_logo.png" alt="Cymbal" style="height:48px;margin:0 auto 16px;display:block;filter:invert(1) drop-shadow(0 0 10px rgba(0,240,255,0.3));">
+      <p style="color:#8888a8;font-size:14px;">Welcome. Please sign in to continue.</p>
     </div>
-    <form id="signInForm" class="space-y-4">
+    <form id="signInForm" style="display:flex;flex-direction:column;gap:16px;">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-        <input type="text" id="firstName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent outline-none" placeholder="Enter your first name">
+        <label style="display:block;font-size:11px;font-weight:500;color:#8888a8;margin-bottom:6px;letter-spacing:1px;text-transform:uppercase;">First Name</label>
+        <input type="text" id="firstName" required class="input-glass" style="width:100%;display:block;" placeholder="Enter your first name">
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-        <input type="text" id="lastName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent outline-none" placeholder="Enter your last name">
+        <label style="display:block;font-size:11px;font-weight:500;color:#8888a8;margin-bottom:6px;letter-spacing:1px;text-transform:uppercase;">Last Name</label>
+        <input type="text" id="lastName" required class="input-glass" style="width:100%;display:block;" placeholder="Enter your last name">
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-        <input type="email" id="email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent outline-none" placeholder="your.email@example.com">
+        <label style="display:block;font-size:11px;font-weight:500;color:#8888a8;margin-bottom:6px;letter-spacing:1px;text-transform:uppercase;">Email</label>
+        <input type="email" id="email" required class="input-glass" style="width:100%;display:block;" placeholder="your.email@example.com">
       </div>
-      <button type="submit" class="w-full bg-[var(--color-accent)] text-white py-3 rounded-lg font-medium hover:opacity-90 transition-opacity">
+      <button type="submit" class="btn-neon-fill" style="width:100%;padding:14px;border-radius:12px;font-size:14px;margin-top:8px;cursor:pointer;">
         Sign In
       </button>
     </form>
@@ -560,42 +939,42 @@
 </div>
 
 <!-- Cart Modal -->
-<div id="cartModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]" style="display: none;">
-  <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+<div id="cartModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60]" style="display: none;">
+  <div class="modal-glass p-8 w-full max-w-2xl max-h-[80vh] overflow-y-auto modal-enter">
     <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold">Shopping Cart</h2>
-      <button id="closeCartBtn" class="text-gray-500 hover:text-gray-700 text-3xl leading-none">&times;</button>
+      <h2 class="text-2xl font-bold text-[#e4e4f0]">Shopping Cart</h2>
+      <button id="closeCartBtn" class="text-[#8888a8] hover:text-[#00f0ff] text-3xl leading-none transition-colors duration-300">&times;</button>
     </div>
     <div id="cartItemsContainer" class="space-y-4">
-      <!-- Cart items will be dynamically inserted here -->
     </div>
-    <div id="emptyCartMessage" class="text-center text-gray-500 py-8">
+    <div id="emptyCartMessage" class="text-center text-[#8888a8] py-8 font-family-['JetBrains_Mono']">
       Your cart is empty
     </div>
-    <div id="cartTotal" class="mt-6 pt-4 border-t border-gray-200">
+    <div id="cartTotal" class="mt-6 pt-4 border-t border-[rgba(255,255,255,0.08)]">
       <div class="flex justify-between items-center text-xl font-bold mb-4">
-        <span>Total:</span>
-        <span id="cartTotalAmount">€0.00</span>
+        <span class="text-[#e4e4f0]">Total:</span>
+        <span id="cartTotalAmount" class="text-[#00f0ff]" style="font-family:'JetBrains Mono',monospace; text-shadow: 0 0 10px rgba(0,240,255,0.3);">&#8364;0.00</span>
       </div>
-      <button id="clearCartBtn" class="w-full bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 transition-colors" style="display: none;">
+      <button id="clearCartBtn" class="w-full py-2 rounded-xl font-medium transition-all duration-300 border border-red-500/30 text-red-400 hover:bg-red-500/10" style="display: none;">
         Clear Cart
       </button>
     </div>
   </div>
 </div>
 
-<header class="bg-white w-full flex-shrink-0 border-b border-[var(--color-border)]">
+<!-- HEADER -->
+<header class="glass w-full flex-shrink-0 relative z-10 load-slide-down">
     <div class="container mx-auto px-4">
-        <div class="flex items-center justify-between h-20">
+        <div class="flex items-center justify-between h-16">
             <div class="flex-shrink-0">
                 <a href="#" class="flex items-center">
-                    <img src="./assets/cymbal_logo.png" alt="Cymbal" class="h-10">
+                    <img src="./assets/cymbal_logo.png" alt="Cymbal" class="h-9" style="filter: invert(1) drop-shadow(0 0 8px rgba(0,240,255,0.3));">
                 </a>
             </div>
             <div class="flex-grow mx-8 max-w-2xl">
                 <div class="relative">
-                    <input type="text" placeholder="What are you looking for?" class="w-full px-4 py-2.5 text-sm border-none rounded-full bg-[var(--color-input-bg)] focus:ring-2 focus:ring-[var(--color-accent)]/50 outline-none">
-                    <span class="material-symbols-outlined absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500">search</span>
+                    <input type="text" placeholder="What are you looking for?" class="w-full px-4 py-2.5 text-sm border-none rounded-full bg-[rgba(255,255,255,0.05)] text-[#e4e4f0] placeholder-[#555570] outline-none focus:ring-2 focus:ring-[#00f0ff]/30 transition-all duration-300" style="backdrop-filter: blur(8px);">
+                    <span class="material-symbols-outlined absolute right-4 top-1/2 transform -translate-y-1/2 text-[#555570]">search</span>
                 </div>
             </div>
             <div class="flex items-center space-x-6">
@@ -618,299 +997,310 @@
                 <button id="cartBtn" class="header-icon relative">
                     <span class="material-symbols-outlined">shopping_cart</span>
                     <span>Shopping cart</span>
-                    <span id="cartCount" class="absolute -top-1 right-2 bg-[var(--color-accent)] text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">0</span>
+                    <span id="cartCount" class="absolute -top-1 right-2 bg-[#00f0ff] text-[#05060f] text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center" style="font-family:'JetBrains Mono',monospace;">0</span>
                 </button>
             </div>
         </div>
     </div>
 </header>
 
-<nav class="bg-white w-full flex-shrink-0 border-b border-[var(--color-border)] shadow-sm">
-    <div class="container mx-auto px-4 flex justify-center items-center h-12 space-x-8">
-        <a href="#" class="category-nav">Inspiration</a>
-        <a href="#" class="category-nav">Multimedia</a>
-        <a href="#" class="category-nav">Women's fashion</a>
-        <a href="#" class="category-nav">Men's fashion</a>
-        <a href="#" class="category-nav">Household</a>
-        <a href="#" class="category-nav">Kitchen</a>
-        <a href="#" class="category-nav">Furniture</a>
-        <a href="#" class="category-nav">Hardware store</a>
-        <a href="#" class="category-nav">Sport</a>
-        <a href="#" class="category-nav">Brands</a>
-        <a href="#" class="text-sm font-bold bg-[var(--color-accent)] text-white px-4 py-1.5 rounded-full hover:opacity-90">%Sale%</a>
+<!-- NAV -->
+<nav class="glass w-full flex-shrink-0 relative z-10 load-slide-down" style="transition-delay: 100ms;">
+    <div class="container mx-auto px-4 flex justify-center items-center h-11 space-x-8 category-nav">
+        <a href="#">Inspiration</a>
+        <a href="#">Multimedia</a>
+        <a href="#">Women's fashion</a>
+        <a href="#">Men's fashion</a>
+        <a href="#">Household</a>
+        <a href="#">Kitchen</a>
+        <a href="#">Furniture</a>
+        <a href="#">Hardware store</a>
+        <a href="#">Sport</a>
+        <a href="#">Brands</a>
+        <a href="#" class="sale-badge">%Sale%</a>
     </div>
 </nav>
 
-<div class="flex-1 overflow-y-auto p-6">
-  <div class="container mx-auto">
+<!-- MAIN CONTENT -->
+<div class="flex-1 overflow-y-auto p-6 relative z-[1] main-scroll load-fade" style="transition-delay: 300ms;">
+  <div class="container mx-auto" style="padding-bottom: 200px;">
+
+    <!-- Promo Cards -->
     <section class="mb-8">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="border border-[var(--color-border)] rounded-md p-4 flex items-center justify-between">
-                <div>
-                    <div class="relative inline-block bg-[var(--color-accent)] text-white text-xs font-bold py-1 px-2 rounded-md mb-2">
-                        20€
-                        <div class="absolute -top-1 -left-1 w-3 h-3 bg-white transform rotate-45"></div>
-                    </div>
-                    <p class="font-bold">Only for new customers</p>
-                    <p class="text-sm text-[var(--color-text-secondary)]">Voucher for your first order</p>
-                    <p class="text-xs text-gray-400 mt-2">Valid until: Monday, June 30th</p>
-                </div>
-                <a href="#" class="bg-[var(--color-accent)] text-white text-sm font-bold px-4 py-2 rounded-full hover:opacity-90">To activate ›</a>
-            </div>
-            <div class="border border-[var(--color-border)] rounded-md p-4 flex items-center justify-between">
-                <div>
-                    <div class="bg-[var(--color-accent)] text-white text-xs font-bold py-1 px-2 inline-block rounded-md mb-2">20% Extra</div>
-                    <p class="font-bold">On selected furniture</p>
-                    <p class="text-xs text-gray-400 mt-2">Only: 12h 9m 24s</p>
-                </div>
-                 <a href="#" class="bg-[var(--color-accent)] text-white text-sm font-bold px-4 py-2 rounded-full hover:opacity-90">To activate ›</a>
-            </div>
-            <div class="border border-[var(--color-border)] rounded-md p-4 flex items-center justify-between">
-                <div>
-                    <div class="bg-[var(--color-accent)] text-white text-xs font-bold py-1 px-2 inline-block rounded-md mb-2">10% Extra</div>
-                    <p class="font-bold">On selected GAMEMAX PCs</p>
-                    <p class="text-xs text-gray-400 mt-2">Valid until: Sunday, June 29th</p>
-                </div>
-                 <a href="#" class="bg-[var(--color-accent)] text-white text-sm font-bold px-4 py-2 rounded-full hover:opacity-90">To activate ›</a>
-            </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="promo-card flex items-center justify-between">
+          <div class="relative z-[1]">
+            <div class="inline-block bg-gradient-to-r from-[#00f0ff] to-[#00c4cc] text-[#05060f] text-xs font-bold py-1 px-3 rounded-md mb-2" style="font-family:'JetBrains Mono',monospace;">20&#8364;</div>
+            <p class="font-bold text-[#e4e4f0]">Only for new customers</p>
+            <p class="text-sm text-[#8888a8]">Voucher for your first order</p>
+            <p class="text-xs text-[#555570] mt-2" style="font-family:'JetBrains Mono',monospace;">Valid until: Monday, June 30th</p>
+          </div>
+          <a href="#" class="btn-neon-fill text-xs font-bold px-4 py-2 rounded-full relative z-[1]">To activate</a>
         </div>
+        <div class="promo-card flex items-center justify-between">
+          <div class="relative z-[1]">
+            <div class="inline-block bg-gradient-to-r from-[#a855f7] to-[#7c3aed] text-white text-xs font-bold py-1 px-3 rounded-md mb-2" style="font-family:'JetBrains Mono',monospace;">20% Extra</div>
+            <p class="font-bold text-[#e4e4f0]">On selected furniture</p>
+            <p class="text-xs text-[#555570] mt-2" style="font-family:'JetBrains Mono',monospace;">Only: 12h 9m 24s</p>
+          </div>
+          <a href="#" class="btn-violet-fill text-xs font-bold px-4 py-2 rounded-full relative z-[1]">To activate</a>
+        </div>
+        <div class="promo-card flex items-center justify-between">
+          <div class="relative z-[1]">
+            <div class="inline-block bg-gradient-to-r from-[#00f0ff] to-[#a855f7] text-white text-xs font-bold py-1 px-3 rounded-md mb-2" style="font-family:'JetBrains Mono',monospace;">10% Extra</div>
+            <p class="font-bold text-[#e4e4f0]">On selected GAMEMAX PCs</p>
+            <p class="text-xs text-[#555570] mt-2" style="font-family:'JetBrains Mono',monospace;">Valid until: Sunday, June 29th</p>
+          </div>
+          <a href="#" class="btn-neon-fill text-xs font-bold px-4 py-2 rounded-full relative z-[1]">To activate</a>
+        </div>
+      </div>
     </section>
 
-    <section class="mb-8 p-8 rounded-md" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-        <h2 class="text-4xl font-bold text-white">Cymbal Days - Home Decor Collection</h2>
-        <p class="text-lg text-white mt-1">Transform your space | Only until June 18, 2026</p>
-        <h3 class="text-2xl font-bold text-white mt-4">Curated Home & Decoration</h3>
-        <p class="text-sm text-white mt-2 opacity-90">Wall art, lighting, textiles, plants & more</p>
+    <!-- Hero Banner -->
+    <section class="mb-8">
+      <div class="hero-banner">
+        <h2 class="text-4xl font-bold text-[#e4e4f0] relative z-[1]" style="text-shadow: 0 0 30px rgba(0,240,255,0.2);">Cymbal Days - Home Decor Collection</h2>
+        <p class="text-lg text-[#c0c0d8] mt-1 relative z-[1]">Transform your space | Only until June 18, 2026</p>
+        <h3 class="text-2xl font-bold text-[#00f0ff] mt-4 relative z-[1] text-glow-cyan">Curated Home &amp; Decoration</h3>
+        <p class="text-sm text-[#8888a8] mt-2 relative z-[1]">Wall art, lighting, textiles, plants &amp; more</p>
+      </div>
     </section>
 
+    <!-- Product Grid -->
     <main class="flex-1 min-w-0">
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-        <!-- Home Decor Products -->
-        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
-          <img src="./assets/abstract_canvas_art.jpg" alt="Abstract Canvas Art" class="w-full h-40 object-cover rounded-md mb-3">
-          <span class="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full self-start mb-2">Wall Art</span>
-          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">Abstract Canvas Art 'Sunset Dreams'</h3>
-          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">120x80cm modern abstract canvas</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6" id="productGrid">
+
+        <div class="product-card text-sm">
+          <div class="img-wrap"><img src="./assets/abstract_canvas_art.jpg" alt="Abstract Canvas Art"></div>
+          <span class="text-xs px-2 py-1 bg-[rgba(168,85,247,0.15)] text-[#c084fc] rounded-full self-start mb-2 border border-[rgba(168,85,247,0.2)]">Wall Art</span>
+          <h3 class="font-bold text-base text-[#e4e4f0] mb-1 leading-tight">Abstract Canvas Art 'Sunset Dreams'</h3>
+          <p class="text-xs text-[#8888a8] leading-snug mb-2">120x80cm modern abstract canvas</p>
           <div class="mt-auto flex justify-between items-center pt-2">
-            <p class="font-bold text-lg text-[var(--color-accent)]">€129,-</p>
-            <button class="bg-[var(--color-accent)] text-white p-2 rounded-full hover:opacity-90 transition-opacity flex items-center">
+            <p class="price">&#8364;129,-</p>
+            <button class="btn-neon p-2 rounded-full flex items-center">
               <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
             </button>
           </div>
         </div>
 
-        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
-          <img src="./assets/arc_floor_lamp.jpg" alt="Arc Floor Lamp" class="w-full h-40 object-cover rounded-md mb-3">
-          <span class="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full self-start mb-2">Lighting</span>
-          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">Arc Floor Lamp 'Modern Gold'</h3>
-          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">With marble base, elegant design</p>
+        <div class="product-card text-sm">
+          <div class="img-wrap"><img src="./assets/arc_floor_lamp.jpg" alt="Arc Floor Lamp"></div>
+          <span class="text-xs px-2 py-1 bg-[rgba(245,158,11,0.1)] text-[#fbbf24] rounded-full self-start mb-2 border border-[rgba(245,158,11,0.2)]">Lighting</span>
+          <h3 class="font-bold text-base text-[#e4e4f0] mb-1 leading-tight">Arc Floor Lamp 'Modern Gold'</h3>
+          <p class="text-xs text-[#8888a8] leading-snug mb-2">With marble base, elegant design</p>
           <div class="mt-auto flex justify-between items-center pt-2">
-            <p class="font-bold text-lg text-[var(--color-accent)]">€249,-</p>
-            <button class="bg-[var(--color-accent)] text-white p-2 rounded-full hover:opacity-90 transition-opacity flex items-center">
+            <p class="price">&#8364;249,-</p>
+            <button class="btn-neon p-2 rounded-full flex items-center">
               <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
             </button>
           </div>
         </div>
 
-        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
-          <img src="./assets/monstera_plant.jpg" alt="Artificial Monstera Plant" class="w-full h-40 object-cover rounded-md mb-3">
-          <span class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full self-start mb-2">Plants</span>
-          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">Artificial Monstera Plant</h3>
-          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">120cm with pot, no maintenance needed</p>
+        <div class="product-card text-sm">
+          <div class="img-wrap"><img src="./assets/monstera_plant.jpg" alt="Artificial Monstera Plant"></div>
+          <span class="text-xs px-2 py-1 bg-[rgba(34,197,94,0.1)] text-[#4ade80] rounded-full self-start mb-2 border border-[rgba(34,197,94,0.2)]">Plants</span>
+          <h3 class="font-bold text-base text-[#e4e4f0] mb-1 leading-tight">Artificial Monstera Plant</h3>
+          <p class="text-xs text-[#8888a8] leading-snug mb-2">120cm with pot, no maintenance needed</p>
           <div class="mt-auto flex justify-between items-center pt-2">
-            <p class="font-bold text-lg text-[var(--color-accent)]">€89,-</p>
-            <button class="bg-[var(--color-accent)] text-white p-2 rounded-full hover:opacity-90 transition-opacity flex items-center">
+            <p class="price">&#8364;89,-</p>
+            <button class="btn-neon p-2 rounded-full flex items-center">
               <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
             </button>
           </div>
         </div>
 
-        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
-          <img src="./assets/chunky_knit_blanket.jpg" alt="Chunky Knit Throw Blanket" class="w-full h-40 object-cover rounded-md mb-3">
-          <span class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full self-start mb-2">Textiles</span>
-          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">Chunky Knit Throw Blanket</h3>
-          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">Cozy Cloud Cream 150x180cm</p>
+        <div class="product-card text-sm">
+          <div class="img-wrap"><img src="./assets/chunky_knit_blanket.jpg" alt="Chunky Knit Throw Blanket"></div>
+          <span class="text-xs px-2 py-1 bg-[rgba(59,130,246,0.1)] text-[#60a5fa] rounded-full self-start mb-2 border border-[rgba(59,130,246,0.2)]">Textiles</span>
+          <h3 class="font-bold text-base text-[#e4e4f0] mb-1 leading-tight">Chunky Knit Throw Blanket</h3>
+          <p class="text-xs text-[#8888a8] leading-snug mb-2">Cozy Cloud Cream 150x180cm</p>
           <div class="mt-auto flex justify-between items-center pt-2">
-            <p class="font-bold text-lg text-[var(--color-accent)]">€79,-</p>
-            <button class="bg-[var(--color-accent)] text-white p-2 rounded-full hover:opacity-90 transition-opacity flex items-center">
+            <p class="price">&#8364;79,-</p>
+            <button class="btn-neon p-2 rounded-full flex items-center">
               <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
             </button>
           </div>
         </div>
 
-        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
-          <img src="./assets/velvet_cushions.jpg" alt="Velvet Cushion Set" class="w-full h-40 object-cover rounded-md mb-3">
-          <span class="text-xs px-2 py-1 bg-pink-100 text-pink-700 rounded-full self-start mb-2">Decor</span>
-          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">Velvet Cushion Set 'Jewel Tones'</h3>
-          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">4 pieces 45x45cm, luxury velvet</p>
+        <div class="product-card text-sm">
+          <div class="img-wrap"><img src="./assets/velvet_cushions.jpg" alt="Velvet Cushion Set"></div>
+          <span class="text-xs px-2 py-1 bg-[rgba(236,72,153,0.1)] text-[#f472b6] rounded-full self-start mb-2 border border-[rgba(236,72,153,0.2)]">Decor</span>
+          <h3 class="font-bold text-base text-[#e4e4f0] mb-1 leading-tight">Velvet Cushion Set 'Jewel Tones'</h3>
+          <p class="text-xs text-[#8888a8] leading-snug mb-2">4 pieces 45x45cm, luxury velvet</p>
           <div class="mt-auto flex justify-between items-center pt-2">
-            <p class="font-bold text-lg text-[var(--color-accent)]">€69,-</p>
-            <button class="bg-[var(--color-accent)] text-white p-2 rounded-full hover:opacity-90 transition-opacity flex items-center">
+            <p class="price">&#8364;69,-</p>
+            <button class="btn-neon p-2 rounded-full flex items-center">
               <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
             </button>
           </div>
         </div>
 
-        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
-          <img src="./assets/gold_mirror.jpg" alt="Round Gold Frame Mirror" class="w-full h-40 object-cover rounded-md mb-3">
-          <span class="text-xs px-2 py-1 bg-slate-100 text-slate-700 rounded-full self-start mb-2">Mirrors</span>
-          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">Round Gold Frame Mirror</h3>
-          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">Sunburst design, 80cm diameter</p>
+        <div class="product-card text-sm">
+          <div class="img-wrap"><img src="./assets/gold_mirror.jpg" alt="Round Gold Frame Mirror"></div>
+          <span class="text-xs px-2 py-1 bg-[rgba(148,163,184,0.1)] text-[#94a3b8] rounded-full self-start mb-2 border border-[rgba(148,163,184,0.2)]">Mirrors</span>
+          <h3 class="font-bold text-base text-[#e4e4f0] mb-1 leading-tight">Round Gold Frame Mirror</h3>
+          <p class="text-xs text-[#8888a8] leading-snug mb-2">Sunburst design, 80cm diameter</p>
           <div class="mt-auto flex justify-between items-center pt-2">
-            <p class="font-bold text-lg text-[var(--color-accent)]">€189,-</p>
-            <button class="bg-[var(--color-accent)] text-white p-2 rounded-full hover:opacity-90 transition-opacity flex items-center">
+            <p class="price">&#8364;189,-</p>
+            <button class="btn-neon p-2 rounded-full flex items-center">
               <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
             </button>
           </div>
         </div>
 
-        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
-          <img src="./assets/botanical_prints.jpg" alt="Botanical Print Set" class="w-full h-40 object-cover rounded-md mb-3">
-          <span class="text-xs px-2 py-1 bg-lime-100 text-lime-700 rounded-full self-start mb-2">Wall Art</span>
-          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">Botanical Print Set 'Tropical'</h3>
-          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">3 pieces, lush tropical leaves</p>
+        <div class="product-card text-sm">
+          <div class="img-wrap"><img src="./assets/botanical_prints.jpg" alt="Botanical Print Set"></div>
+          <span class="text-xs px-2 py-1 bg-[rgba(132,204,22,0.1)] text-[#a3e635] rounded-full self-start mb-2 border border-[rgba(132,204,22,0.2)]">Wall Art</span>
+          <h3 class="font-bold text-base text-[#e4e4f0] mb-1 leading-tight">Botanical Print Set 'Tropical'</h3>
+          <p class="text-xs text-[#8888a8] leading-snug mb-2">3 pieces, lush tropical leaves</p>
           <div class="mt-auto flex justify-between items-center pt-2">
-            <p class="font-bold text-lg text-[var(--color-accent)]">€79,-</p>
-            <button class="bg-[var(--color-accent)] text-white p-2 rounded-full hover:opacity-90 transition-opacity flex items-center">
+            <p class="price">&#8364;79,-</p>
+            <button class="btn-neon p-2 rounded-full flex items-center">
               <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
             </button>
           </div>
         </div>
 
-        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
-          <img src="./assets/moroccan_rug.jpg" alt="Moroccan Style Area Rug" class="w-full h-40 object-cover rounded-md mb-3">
-          <span class="text-xs px-2 py-1 bg-rose-100 text-rose-700 rounded-full self-start mb-2">Textiles</span>
-          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">Moroccan Style Area Rug</h3>
-          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">Berber 200x300cm beige</p>
+        <div class="product-card text-sm">
+          <div class="img-wrap"><img src="./assets/moroccan_rug.jpg" alt="Moroccan Style Area Rug"></div>
+          <span class="text-xs px-2 py-1 bg-[rgba(244,63,94,0.1)] text-[#fb7185] rounded-full self-start mb-2 border border-[rgba(244,63,94,0.2)]">Textiles</span>
+          <h3 class="font-bold text-base text-[#e4e4f0] mb-1 leading-tight">Moroccan Style Area Rug</h3>
+          <p class="text-xs text-[#8888a8] leading-snug mb-2">Berber 200x300cm beige</p>
           <div class="mt-auto flex justify-between items-center pt-2">
-            <p class="font-bold text-lg text-[var(--color-accent)]">€299,-</p>
-            <button class="bg-[var(--color-accent)] text-white p-2 rounded-full hover:opacity-90 transition-opacity flex items-center">
+            <p class="price">&#8364;299,-</p>
+            <button class="btn-neon p-2 rounded-full flex items-center">
               <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
             </button>
           </div>
         </div>
 
-        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
-          <img src="./assets/candle_holders.jpg" alt="Brass Candle Holder Set" class="w-full h-40 object-cover rounded-md mb-3">
-          <span class="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full self-start mb-2">Decorative</span>
-          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">Brass Candle Holder Set</h3>
-          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">3 heights, modern classic style</p>
+        <div class="product-card text-sm">
+          <div class="img-wrap"><img src="./assets/candle_holders.jpg" alt="Brass Candle Holder Set"></div>
+          <span class="text-xs px-2 py-1 bg-[rgba(245,158,11,0.1)] text-[#fbbf24] rounded-full self-start mb-2 border border-[rgba(245,158,11,0.2)]">Decorative</span>
+          <h3 class="font-bold text-base text-[#e4e4f0] mb-1 leading-tight">Brass Candle Holder Set</h3>
+          <p class="text-xs text-[#8888a8] leading-snug mb-2">3 heights, modern classic style</p>
           <div class="mt-auto flex justify-between items-center pt-2">
-            <p class="font-bold text-lg text-[var(--color-accent)]">€59,-</p>
-            <button class="bg-[var(--color-accent)] text-white p-2 rounded-full hover:opacity-90 transition-opacity flex items-center">
+            <p class="price">&#8364;59,-</p>
+            <button class="btn-neon p-2 rounded-full flex items-center">
               <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
             </button>
           </div>
         </div>
 
-        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
-          <img src="./assets/floating_shelves.jpg" alt="Floating Shelf Set" class="w-full h-40 object-cover rounded-md mb-3">
-          <span class="text-xs px-2 py-1 bg-teal-100 text-teal-700 rounded-full self-start mb-2">Storage</span>
-          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">Floating Shelf Set Walnut</h3>
-          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">3 pieces, clean lines design</p>
+        <div class="product-card text-sm">
+          <div class="img-wrap"><img src="./assets/floating_shelves.jpg" alt="Floating Shelf Set"></div>
+          <span class="text-xs px-2 py-1 bg-[rgba(20,184,166,0.1)] text-[#2dd4bf] rounded-full self-start mb-2 border border-[rgba(20,184,166,0.2)]">Storage</span>
+          <h3 class="font-bold text-base text-[#e4e4f0] mb-1 leading-tight">Floating Shelf Set Walnut</h3>
+          <p class="text-xs text-[#8888a8] leading-snug mb-2">3 pieces, clean lines design</p>
           <div class="mt-auto flex justify-between items-center pt-2">
-            <p class="font-bold text-lg text-[var(--color-accent)]">€89,-</p>
-            <button class="bg-[var(--color-accent)] text-white p-2 rounded-full hover:opacity-90 transition-opacity flex items-center">
+            <p class="price">&#8364;89,-</p>
+            <button class="btn-neon p-2 rounded-full flex items-center">
               <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
             </button>
           </div>
         </div>
 
-        <!-- Keep some existing products -->
-        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
-          <img src="./assets/adidas_sneaker.png" alt="Adidas Originals Sneaker" class="w-full h-40 object-contain rounded-md mb-3">
-          <span class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full self-start mb-2">Footwear</span>
-          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">Adidas Originals Sneaker</h3>
-          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">Classic sneaker for everyday wear</p>
+        <div class="product-card text-sm">
+          <div class="img-wrap img-wrap-light"><img src="./assets/adidas_sneaker.png" alt="Adidas Originals Sneaker"></div>
+          <span class="text-xs px-2 py-1 bg-[rgba(255,255,255,0.06)] text-[#94a3b8] rounded-full self-start mb-2 border border-[rgba(255,255,255,0.1)]">Footwear</span>
+          <h3 class="font-bold text-base text-[#e4e4f0] mb-1 leading-tight">Adidas Originals Sneaker</h3>
+          <p class="text-xs text-[#8888a8] leading-snug mb-2">Classic sneaker for everyday wear</p>
           <div class="mt-auto flex justify-between items-center pt-2">
-            <p class="font-bold text-lg text-[var(--color-accent)]">€99,-</p>
-            <button class="bg-[var(--color-accent)] text-white p-2 rounded-full hover:opacity-90 transition-opacity flex items-center">
+            <p class="price">&#8364;99,-</p>
+            <button class="btn-neon p-2 rounded-full flex items-center">
               <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
             </button>
           </div>
         </div>
 
-        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
-          <img src="./assets/samsung_tv.png" alt="SAMSUNG QLED 4K TV" class="w-full h-40 object-contain rounded-md mb-3">
-          <span class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full self-start mb-2">Electronics</span>
-          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">SAMSUNG QLED 4K TV</h3>
-          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">65-inch Smart TV with brilliant colors</p>
+        <div class="product-card text-sm">
+          <div class="img-wrap img-wrap-light"><img src="./assets/samsung_tv.png" alt="SAMSUNG QLED 4K TV"></div>
+          <span class="text-xs px-2 py-1 bg-[rgba(255,255,255,0.06)] text-[#94a3b8] rounded-full self-start mb-2 border border-[rgba(255,255,255,0.1)]">Electronics</span>
+          <h3 class="font-bold text-base text-[#e4e4f0] mb-1 leading-tight">SAMSUNG QLED 4K TV</h3>
+          <p class="text-xs text-[#8888a8] leading-snug mb-2">65-inch Smart TV with brilliant colors</p>
           <div class="mt-auto flex justify-between items-center pt-2">
-            <p class="font-bold text-lg text-[var(--color-accent)]">€1199,-</p>
-            <button class="bg-[var(--color-accent)] text-white p-2 rounded-full hover:opacity-90 transition-opacity flex items-center">
+            <p class="price">&#8364;1199,-</p>
+            <button class="btn-neon p-2 rounded-full flex items-center">
               <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
             </button>
           </div>
         </div>
 
-        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
-          <img src="./assets/iphone_16.png" alt="Apple iPhone 16" class="w-full h-40 object-contain rounded-md mb-3">
-          <span class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full self-start mb-2">Smartphones</span>
-          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">Apple iPhone 16</h3>
-          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">Latest iPhone with Pro camera system</p>
+        <div class="product-card text-sm">
+          <div class="img-wrap img-wrap-light"><img src="./assets/iphone_16.png" alt="Apple iPhone 16"></div>
+          <span class="text-xs px-2 py-1 bg-[rgba(255,255,255,0.06)] text-[#94a3b8] rounded-full self-start mb-2 border border-[rgba(255,255,255,0.1)]">Smartphones</span>
+          <h3 class="font-bold text-base text-[#e4e4f0] mb-1 leading-tight">Apple iPhone 16</h3>
+          <p class="text-xs text-[#8888a8] leading-snug mb-2">Latest iPhone with Pro camera system</p>
           <div class="mt-auto flex justify-between items-center pt-2">
-            <p class="font-bold text-lg text-[var(--color-accent)]">€999,-</p>
-            <button class="bg-[var(--color-accent)] text-white p-2 rounded-full hover:opacity-90 transition-opacity flex items-center">
+            <p class="price">&#8364;999,-</p>
+            <button class="btn-neon p-2 rounded-full flex items-center">
               <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
             </button>
           </div>
         </div>
 
-        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
-          <img src="./assets/wmf_coffeemachine.png" alt="WMF Coffee Machine" class="w-full h-40 object-contain rounded-md mb-3">
-          <span class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full self-start mb-2">Kitchen</span>
-          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">WMF Coffee Machine</h3>
-          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">Fully automatic bean-to-cup machine</p>
+        <div class="product-card text-sm">
+          <div class="img-wrap img-wrap-light"><img src="./assets/wmf_coffeemachine.png" alt="WMF Coffee Machine"></div>
+          <span class="text-xs px-2 py-1 bg-[rgba(255,255,255,0.06)] text-[#94a3b8] rounded-full self-start mb-2 border border-[rgba(255,255,255,0.1)]">Kitchen</span>
+          <h3 class="font-bold text-base text-[#e4e4f0] mb-1 leading-tight">WMF Coffee Machine</h3>
+          <p class="text-xs text-[#8888a8] leading-snug mb-2">Fully automatic bean-to-cup machine</p>
           <div class="mt-auto flex justify-between items-center pt-2">
-            <p class="font-bold text-lg text-[var(--color-accent)]">€749,-</p>
-            <button class="bg-[var(--color-accent)] text-white p-2 rounded-full hover:opacity-90 transition-opacity flex items-center">
+            <p class="price">&#8364;749,-</p>
+            <button class="btn-neon p-2 rounded-full flex items-center">
               <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
             </button>
           </div>
         </div>
 
-        <div class="border border-[var(--color-border)] rounded-lg p-3 bg-white shadow-sm hover:shadow-xl transition-shadow duration-200 flex flex-col text-sm">
-          <img src="./assets/levis_jeans.png" alt="LEVI'S 501 Original Jeans" class="w-full h-40 object-contain rounded-md mb-3">
-          <span class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full self-start mb-2">Clothing</span>
-          <h3 class="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-tight">LEVI'S 501 Original Jeans</h3>
-          <p class="text-xs text-[var(--color-text-secondary)] leading-snug mb-2">The iconic straight-leg jeans</p>
+        <div class="product-card text-sm">
+          <div class="img-wrap img-wrap-light"><img src="./assets/levis_jeans.png" alt="LEVI'S 501 Original Jeans"></div>
+          <span class="text-xs px-2 py-1 bg-[rgba(255,255,255,0.06)] text-[#94a3b8] rounded-full self-start mb-2 border border-[rgba(255,255,255,0.1)]">Clothing</span>
+          <h3 class="font-bold text-base text-[#e4e4f0] mb-1 leading-tight">LEVI'S 501 Original Jeans</h3>
+          <p class="text-xs text-[#8888a8] leading-snug mb-2">The iconic straight-leg jeans</p>
           <div class="mt-auto flex justify-between items-center pt-2">
-            <p class="font-bold text-lg text-[var(--color-accent)]">€89,-</p>
-            <button class="bg-gray-300 text-gray-500 p-2 rounded-full cursor-not-allowed flex items-center" disabled>
+            <p class="price">&#8364;89,-</p>
+            <button class="btn-neon p-2 rounded-full flex items-center opacity-30 cursor-not-allowed" disabled>
               <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
             </button>
           </div>
         </div>
+
       </div>
     </main>
   </div>
 </div>
 
-<div id="chatContainer" class="chat-container fixed bottom-6 right-6 w-[750px] min-w-[600px] max-h-[calc(100vh-theme(space.20))] flex flex-col bg-[var(--color-chat-bg)] rounded-xl shadow-xl border-2 z-40" style="border-color: var(--color-accent); display: none;">
-  <div class="chat-header p-4 text-lg font-semibold text-[var(--color-accent)] flex-shrink-0 rounded-t-xl flex justify-between items-center border-b border-[var(--color-border)] bg-white">
-    <span>AI Assistant</span>
-    <button id="minimizeChatBtn" class="ml-auto mr-3 text-gray-500 hover:text-gray-700">
-      <span class="material-symbols-outlined">minimize</span>
-    </button>
-    <div class="flex items-center">
-      <label for="showToolsToggle" class="text-sm mr-2 text-[var(--color-text-secondary)]">Show Agents</label>
-      <div class="relative inline-block w-10 align-middle select-none">
-        <input type="checkbox" id="showToolsToggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-2 appearance-none cursor-pointer transition-transform duration-200 ease-in-out" style="top: 0; left: 0; transform: translateY(0);">
-        <label for="showToolsToggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+<!-- CHAT PANEL -->
+<div id="chatContainer" class="chat-container fixed inset-0 w-full h-full flex flex-col z-40" style="display: none; border-radius: 0;">
+  <div class="chat-header">
+    <div class="flex items-center gap-3">
+      <div id="orbDock" class="w-12 h-12 flex-shrink-0"></div>
+      <span class="text-[#e4e4f0] font-semibold">AI Assistant</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2">
+        <label class="text-xs text-[#8888a8]">Show Agents</label>
+        <div id="showToolsToggleTrack" class="toggle-track">
+          <div class="toggle-thumb"></div>
+        </div>
+        <input type="checkbox" id="showToolsToggle" class="hidden">
       </div>
+      <button id="minimizeChatBtn" class="text-[#8888a8] hover:text-[#00f0ff] transition-colors duration-300">
+        <span class="material-symbols-outlined">minimize</span>
+      </button>
     </div>
   </div>
-  <div id="output" class="chat-output-area flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-gray-100">
+  <div id="output" class="chat-output-area flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
     <div class="message-wrapper system-message">
          <div class="message-bubble"><span>Conversation started</span></div>
     </div>
   </div>
   <div id="loadingIndicator" class="loading-indicator hidden flex flex-shrink-0 p-3 justify-center">
     <div class="spinner"></div>
-    <span class="align-middle ml-2">Processing...</span>
+    <span class="align-middle ml-2 text-sm" style="font-family:'JetBrains Mono',monospace;">Processing...</span>
   </div>
-  <div class="input-area-container p-4 md:p-5 flex-shrink-0 rounded-b-xl bg-white border-t border-[var(--color-border)]">
-      <div class="input-area flex items-center space-x-3 bg-gray-50 rounded-full p-2 shadow-sm border border-gray-200">
+  <div class="input-area-container">
+      <div class="input-area">
           <button id="micButton" disabled class="input-action-button mic-button" title="Start/Stop Recording">
               <span class="material-symbols-outlined">mic</span>
           </button>
@@ -918,18 +1308,19 @@
             <span class="material-symbols-outlined">photo_camera</span>
           </button>
           <textarea id="textInput" placeholder="Ask about products..." class="text-input-field" rows="1"></textarea>
-          <button id="interruptButton" class="input-action-button" style="display: none;" title="Interrupt Response">
+          <button id="interruptButton" class="input-action-button" style="display:none;" title="Interrupt Response">
             <span class="material-symbols-outlined">stop</span>
           </button>
-          <button id="sendButton" class="input-action-button send-button" style="display: none;" title="Send Message" disabled>
-              <span class="material-symbols-outlined">arrow_upward</span>
+          <button id="sendButton" class="input-action-button send-button" title="Send Message" disabled>
+              <span class="material-symbols-outlined">send</span>
           </button>
       </div>
-      <video id="videoPreview" style="max-width: 300px; border: 1px solid #ccc; margin-top: 10px;" class="hidden" autoplay playsinline></video>
-      <p class="text-xs text-center text-[var(--color-text-secondary)] pt-2">AI Assistant Demo. Output may not be accurate.</p>
+      <video id="videoPreview" style="max-width: 300px; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; margin-top: 10px; display: none;" autoplay playsinline></video>
+      <p class="text-xs text-center text-[#555570] pt-2" style="font-family:'JetBrains Mono',monospace;">AI Assistant Demo. Output may not be accurate.</p>
   </div>
-</div> 
+</div>
 
+<!-- SCRIPTS -->
 <script src="https://cdn.jsdelivr.net/npm/eventemitter3@5.0.1/dist/eventemitter3.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -940,61 +1331,139 @@
   import { GeminiAPI } from './src/api/gemini-api.js';
   import { base64ToArrayBuffer } from './src/utils/utils.js';
   import { HomeDecorRenderer } from './src/ui/home-decor-renderer.js';
+  import { VoiceOrb, ORB_STATES } from './src/ui/voice-orb.js';
 
-  // --- Chat Window Management ---
+  // ===== ORCHESTRATED PAGE LOAD =====
+  function orchestrateEntrance() {
+    const steps = [
+      { selector: '.load-fade', delay: 0 },
+      { selector: '.load-scale', delay: 200 },
+      { selector: '.load-slide-down', delay: 400 },
+    ];
+    steps.forEach(step => {
+      setTimeout(() => {
+        document.querySelectorAll(step.selector).forEach(el => el.classList.add('loaded'));
+      }, step.delay);
+    });
+
+    // Stagger product cards
+    const cards = document.querySelectorAll('.product-card');
+    cards.forEach((card, i) => {
+      setTimeout(() => card.classList.add('visible'), 600 + i * 50);
+    });
+  }
+  requestAnimationFrame(() => setTimeout(orchestrateEntrance, 100));
+
+  // ===== 3D TILT ON PRODUCT CARDS =====
+  function initCardTilt() {
+    const cards = document.querySelectorAll('.product-card');
+    cards.forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+        card.style.transform = `translateY(-4px) perspective(600px) rotateX(${-y * 6}deg) rotateY(${x * 6}deg)`;
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = '';
+      });
+    });
+  }
+  requestAnimationFrame(() => setTimeout(initCardTilt, 1500));
+
+  // ===== VOICE ORB =====
+  const voiceOrb = new VoiceOrb('voiceOrbContainer');
+  const orbContainer = document.getElementById('voiceOrbContainer');
+  const orbDock = document.getElementById('orbDock');
+  const orbLabel = document.getElementById('orbLabel');
+
+  // ===== UI SOUND TICK (optional) =====
+  function playUITick() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.05);
+      gain.gain.setValueAtTime(0.03, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.08);
+    } catch (e) { /* silent fail */ }
+  }
+
+  // ===== CHAT WINDOW MANAGEMENT =====
   const chatContainer = document.getElementById('chatContainer');
   const floatingChatBtn = document.getElementById('floatingChatBtn');
   const minimizeChatBtn = document.getElementById('minimizeChatBtn');
   let chatInitialized = false;
-  let userIntroSent = false; // Flag to prevent duplicate user intro messages
+  let userIntroSent = false;
 
-  // Initialize chat connection only when user opens chat
   function initializeChat() {
     if (!chatInitialized) {
       chatInitialized = true;
-      // Initialize API connection with customer info
-      api = new GeminiAPI(null, currentUser); // Pass customer info for personalization
-
-      // Set up API event handlers (defined below)
+      api = new GeminiAPI(null, currentUser);
       setupAPIHandlers();
 
-      // Send user intro after connection is ready
       api.onReady = () => {
         apiReady = true;
         micButton.disabled = false;
         textInput.disabled = false;
         updateSendButtonState();
 
-        // Send user info to backend ONLY ONCE on first connection
         if (currentUser && !userIntroSent) {
-          userIntroSent = true;  // Set flag to prevent duplicate sends
+          userIntroSent = true;
           const userIntroMessage = `My name is ${currentUser.firstName} ${currentUser.lastName}, email: ${currentUser.email}, customer ID: ${currentUser.customerId}.`;
-          // Don't log this message to avoid double greeting appearance
-          // The agent will respond with a greeting that includes the user's name
           api.sendTextMessage(userIntroMessage);
-          // Add a small system message instead
           logMessage(`Connected as ${currentUser.firstName}`, 'system');
         }
       };
     }
   }
 
-  // Toggle chat window
+  // Orb click opens chat
+  orbContainer.addEventListener('click', () => {
+    chatContainer.style.display = 'flex';
+    // Dock orb into chat header
+    orbContainer.classList.add('docked');
+    orbDock.appendChild(orbContainer);
+    voiceOrb.setSmall(true);
+    initializeChat();
+  });
+
+  // floatingChatBtn compatibility
   floatingChatBtn.addEventListener('click', () => {
     chatContainer.style.display = 'flex';
-    floatingChatBtn.style.display = 'none';
+    orbContainer.classList.add('docked');
+    orbDock.appendChild(orbContainer);
+    voiceOrb.setSmall(true);
     initializeChat();
   });
 
   minimizeChatBtn.addEventListener('click', () => {
     chatContainer.style.display = 'none';
-    floatingChatBtn.style.display = 'flex';
+    // Undock orb back to body
+    orbContainer.classList.remove('docked');
+    document.body.appendChild(orbContainer);
+    voiceOrb.setSmall(false);
   });
 
-  // --- User Session Management ---
+  // ===== TOGGLE SWITCH (futuristic) =====
+  const showToolsToggle = document.getElementById('showToolsToggle');
+  const showToolsToggleTrack = document.getElementById('showToolsToggleTrack');
+  showToolsToggleTrack.addEventListener('click', () => {
+    showToolsToggle.checked = !showToolsToggle.checked;
+    showToolsToggleTrack.classList.toggle('active', showToolsToggle.checked);
+    showToolsOnly = showToolsToggle.checked;
+    updateMessageVisibility();
+  });
+
+  // ===== USER SESSION MANAGEMENT =====
   let currentUser = null;
 
-  // Update UI to show user profile
   function updateUserUI() {
     if (currentUser) {
       document.getElementById('userNameDisplay').textContent = currentUser.firstName;
@@ -1006,7 +1475,6 @@
     }
   }
 
-  // Check if user is already signed in
   const savedUser = localStorage.getItem('cymbalUser');
   if (savedUser) {
     currentUser = JSON.parse(savedUser);
@@ -1014,7 +1482,6 @@
     updateUserUI();
   }
 
-  // Handle sign-in form submission
   document.getElementById('signInForm').addEventListener('submit', (e) => {
     e.preventDefault();
     currentUser = {
@@ -1025,27 +1492,29 @@
       signInTime: new Date().toISOString()
     };
     localStorage.setItem('cymbalUser', JSON.stringify(currentUser));
-    document.getElementById('signInModal').style.display = 'none';
-    updateUserUI();
+
+    // Dissolve animation
+    const modalContent = document.querySelector('#signInModal > div');
+    modalContent.classList.add('modal-dissolve');
+    setTimeout(() => {
+      document.getElementById('signInModal').style.display = 'none';
+      updateUserUI();
+    }, 500);
     console.log('User signed in:', currentUser);
-    // Reload page to create new session with user info
-    window.location.reload();
   });
 
-  // Handle sign-out
   document.getElementById('signOutBtn').addEventListener('click', () => {
     localStorage.removeItem('cymbalUser');
     currentUser = null;
     window.location.reload();
   });
 
-  // --- Component References ---
+  // ===== COMPONENT REFERENCES =====
   const output = document.getElementById('output');
   const micButton = document.getElementById('micButton');
   const textInput = document.getElementById('textInput');
   const sendButton = document.getElementById('sendButton');
   const loadingIndicator = document.getElementById('loadingIndicator');
-  const showToolsToggle = document.getElementById('showToolsToggle');
   const cameraButton = document.getElementById('cameraButton');
   const videoPreview = document.getElementById('videoPreview');
   const interruptButton = document.getElementById('interruptButton');
@@ -1059,39 +1528,50 @@
   const emptyCartMessage = document.getElementById('emptyCartMessage');
   const cartTotalAmount = document.getElementById('cartTotalAmount');
 
-  // --- Class Instances ---
+  // ===== CLASS INSTANCES =====
   const audioRecorder = new AudioRecorder();
   const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
   const audioStreamer = new AudioStreamer(audioContext);
   const mediaHandler = new MediaHandler();
-  let api = null; // Will be initialized when chat opens
-  let decorRenderer = null; // Will be initialized when chat opens
-  
-  // --- State Variables ---
+  let api = null;
+  let decorRenderer = null;
+
+  // ===== STATE VARIABLES =====
   let isRecording = false;
   let currentTurn = 0;
   let lastAudioTurn = -1;
   let currentGeminiMessageElement = null;
   let hasLoggedUserAction = false;
   let apiReady = false;
-  let showToolsOnly = false; // Default to showing conversation
+  let showToolsOnly = false;
   let isCameraActive = false;
-  let cartState = { items: [], subtotal: 0 }; // Track cart state
+  let cartState = { items: [], subtotal: 0 };
 
-  // --- Initialization ---
+  // ===== INITIALIZATION =====
   mediaHandler.initialize(videoPreview);
   showToolsToggle.checked = showToolsOnly;
   adjustTextareaHeight();
   updateSendButtonState();
   updateMessageVisibility();
 
-  // --- Helper Functions ---
+  // Connect playback analyser for speaking orb animation
+  const playbackAnalyserNode = voiceOrb.connectPlaybackAnalyser(audioContext);
+  if (playbackAnalyserNode) {
+    // Insert analyser into the audio streamer's gain node chain
+    audioStreamer.gainNode.disconnect();
+    audioStreamer.gainNode.connect(playbackAnalyserNode);
+    playbackAnalyserNode.connect(audioContext.destination);
+  }
+
+  // ===== HELPER FUNCTIONS =====
   function showLoading(show) {
       loadingIndicator.classList.toggle('hidden', !show);
       loadingIndicator.classList.toggle('flex', show);
       const isLoading = !loadingIndicator.classList.contains('hidden');
       textInput.disabled = isLoading;
-      updateSendButtonState(); // Update all buttons based on loading state
+      updateSendButtonState();
+      // Orb: thinking state when loading
+      if (show && !isRecording) voiceOrb.setState(ORB_STATES.THINKING);
   }
 
   function addSpeakingIndicator(element) {
@@ -1105,16 +1585,16 @@
   }
 
   async function handleCameraButtonClick() {
-    if (!apiReady) return;  // Allow camera to work even when recording audio
+    if (!apiReady) return;
     if (isCameraActive) {
         mediaHandler.stopAll();
-        videoPreview.classList.add('hidden');
+        videoPreview.style.display = 'none';
         isCameraActive = false;
         cameraButton.classList.remove('recording');
     } else {
         const success = await mediaHandler.startWebcam();
         if (success) {
-            videoPreview.classList.remove('hidden');
+            videoPreview.style.display = 'block';
             isCameraActive = true;
             cameraButton.classList.add('recording');
             mediaHandler.startFrameCapture((base64ImageData) => {
@@ -1145,12 +1625,12 @@
       textInput.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
   }
 
-   function updateSendButtonState() {
+  function updateSendButtonState() {
       const isLoading = !loadingIndicator.classList.contains('hidden');
       const hasText = textInput.value.trim() !== '';
       sendButton.disabled = !apiReady || isLoading || isRecording || !hasText;
       micButton.disabled = !apiReady || isLoading;
-      cameraButton.disabled = !apiReady || isLoading;  // Allow camera during audio recording
+      cameraButton.disabled = !apiReady || isLoading;
   }
 
   function updateMessageVisibility() {
@@ -1166,44 +1646,62 @@
       scrollToBottom();
   }
 
-  // --- Cart Functions ---
+  // ===== STREAMING TEXT EFFECT =====
+  function streamText(element, fullText, onComplete) {
+    let index = 0;
+    const textNode = document.createTextNode('');
+    const caret = document.createElement('span');
+    caret.className = 'typing-caret';
+    element.innerHTML = '';
+    element.appendChild(textNode);
+    element.appendChild(caret);
+
+    function tick() {
+      if (index < fullText.length) {
+        // Add characters in small batches for performance
+        const batchSize = Math.min(2, fullText.length - index);
+        textNode.textContent += fullText.substring(index, index + batchSize);
+        index += batchSize;
+        scrollToBottom();
+        setTimeout(tick, 20);
+      } else {
+        caret.remove();
+        if (onComplete) onComplete();
+      }
+    }
+    tick();
+  }
+
+  // ===== CART FUNCTIONS =====
   function updateCartDisplay() {
     const hasItems = cartState.items && cartState.items.length > 0;
-
-    // Update cart count badge
     cartCount.textContent = hasItems ? cartState.items.length : '0';
-
-    // Show/hide empty message and clear button
     emptyCartMessage.style.display = hasItems ? 'none' : 'block';
     cartItemsContainer.style.display = hasItems ? 'block' : 'none';
     clearCartBtn.style.display = hasItems ? 'block' : 'none';
 
-    // Render cart items
     if (hasItems) {
       cartItemsContainer.innerHTML = '';
       cartState.items.forEach(item => {
         const itemDiv = document.createElement('div');
-        itemDiv.className = 'border border-gray-200 rounded-lg p-4 flex justify-between items-center';
+        itemDiv.className = 'glass rounded-xl p-4 flex justify-between items-center';
         itemDiv.innerHTML = `
           <div class="flex-1">
-            <h3 class="font-bold text-base">${item.name || 'Product'}</h3>
-            <p class="text-sm text-gray-600">Quantity: ${item.quantity || 1}</p>
-            <p class="text-sm text-gray-600">SKU: ${item.sku || item.product_id || 'N/A'}</p>
+            <h3 class="font-bold text-base text-[#e4e4f0]">${item.name || 'Product'}</h3>
+            <p class="text-sm text-[#8888a8]">Quantity: ${item.quantity || 1}</p>
+            <p class="text-sm text-[#555570]" style="font-family:'JetBrains Mono',monospace;">SKU: ${item.sku || item.product_id || 'N/A'}</p>
           </div>
           <div class="text-right">
-            <p class="font-bold text-lg text-[var(--color-accent)]">€${(item.price || 0).toFixed(2)}</p>
+            <p class="price">&euro;${(item.price || 0).toFixed(2)}</p>
           </div>
         `;
         cartItemsContainer.appendChild(itemDiv);
       });
     }
-
-    // Update total
-    cartTotalAmount.textContent = `€${(cartState.subtotal || 0).toFixed(2)}`;
+    cartTotalAmount.textContent = `\u20AC${(cartState.subtotal || 0).toFixed(2)}`;
   }
 
   function updateCartFromToolResponse(data) {
-    // Check if this is a modify_cart response with updated cart data
     if (data && data.updated_cart) {
       cartState.items = data.updated_cart.items || [];
       cartState.subtotal = data.updated_cart.subtotal || 0;
@@ -1212,11 +1710,10 @@
     }
   }
 
-  // --- API Event Handlers ---
+  // ===== API EVENT HANDLERS =====
   function setupAPIHandlers() {
     if (!api) return;
 
-    // Initialize home decor renderer
     decorRenderer = new HomeDecorRenderer(api, output);
 
     api.onAudioData = async (audioData) => {
@@ -1224,8 +1721,9 @@
           if (!api.isSpeaking || lastAudioTurn !== currentTurn) {
               api.isSpeaking = true;
               lastAudioTurn = currentTurn;
-              interruptButton.classList.remove('hidden');
+              interruptButton.style.display = 'flex';
               if (currentGeminiMessageElement) addSpeakingIndicator(currentGeminiMessageElement);
+              voiceOrb.setState(ORB_STATES.SPEAKING);
           }
           const arrayBuffer = base64ToArrayBuffer(audioData);
           await audioStreamer.addPCM16(new Uint8Array(arrayBuffer));
@@ -1233,98 +1731,92 @@
       } catch (error) {
           logMessage(`Audio Playback Error: ${error.message}`, 'system');
       }
-  };
+    };
 
-  api.onTextContent = (text) => {
-    if (text.trim()) {
-      if (api.isSpeaking) showLoading(false);
-      // Update existing message or create new one only if none exists for this turn
-      if (currentGeminiMessageElement && currentGeminiMessageElement.parentNode) {
-        // Update existing message content
-        const bubble = currentGeminiMessageElement.querySelector('.message-bubble div');
-        if (bubble) {
-          const para = bubble.querySelector('p') || document.createElement('p');
-          para.textContent = text;
-          if (!bubble.querySelector('p')) bubble.appendChild(para);
+    api.onTextContent = (text) => {
+      if (text.trim()) {
+        if (api.isSpeaking) showLoading(false);
+        if (currentGeminiMessageElement && currentGeminiMessageElement.parentNode) {
+          const bubble = currentGeminiMessageElement.querySelector('.message-bubble div');
+          if (bubble) {
+            const para = bubble.querySelector('p') || document.createElement('p');
+            if (!bubble.querySelector('p')) bubble.appendChild(para);
+            // Stream the text character by character
+            streamText(para, text);
+          }
+        } else {
+          logMessage(text, 'gemini', false, false, false, true);
         }
-      } else {
-        // Create new message only if no current message exists
-        logMessage(text, 'gemini');
       }
-    }
-  };
+    };
 
-  api.onTurnComplete = () => {
-    showLoading(false);
-    api.isSpeaking = false;
-    audioStreamer.complete();
-    interruptButton.classList.add('hidden');
-    if (currentGeminiMessageElement) removeSpeakingIndicator(currentGeminiMessageElement);
-    currentGeminiMessageElement = null;
-    hasLoggedUserAction = false;
-    textInput.disabled = false;
-    micButton.disabled = !apiReady;
-    updateSendButtonState();
-  };
-
-  api.onInterrupted = (data) => {
-    showLoading(false);
-    logMessage('Response stopped.', 'system');
-    api.isSpeaking = false;
-    audioStreamer.stop();
-    interruptButton.classList.add('hidden');
-    if (currentGeminiMessageElement) removeSpeakingIndicator(currentGeminiMessageElement);
-    currentGeminiMessageElement = null;
-    hasLoggedUserAction = false;
-    // DO NOT stop recording on interruption - user is still speaking!
-    // The interruption happened BECAUSE the user started speaking (VAD detection)
-    // if (isRecording) resetRecordingState();  // <-- REMOVED: This was stopping the microphone
-    textInput.disabled = isRecording || !apiReady;  // Keep text disabled if still recording
-    micButton.disabled = !apiReady;
-    updateSendButtonState();
-  };
-
-  api.onFunctionCall = (data) => {
+    api.onTurnComplete = () => {
       showLoading(false);
-      logFunctionCall(data.name, data.args);
-  };
+      api.isSpeaking = false;
+      audioStreamer.complete();
+      interruptButton.style.display = 'none';
+      if (currentGeminiMessageElement) removeSpeakingIndicator(currentGeminiMessageElement);
+      currentGeminiMessageElement = null;
+      hasLoggedUserAction = false;
+      textInput.disabled = false;
+      micButton.disabled = !apiReady;
+      updateSendButtonState();
+      // Return orb to idle
+      if (!isRecording) voiceOrb.setState(ORB_STATES.IDLE);
+    };
 
-  api.onFunctionResponse = (data) => {
-      logFunctionResponse(data);
-      // Update cart if modify_cart was called
-      updateCartFromToolResponse(data);
+    api.onInterrupted = (data) => {
+      showLoading(false);
+      logMessage('Response stopped.', 'system');
+      api.isSpeaking = false;
+      audioStreamer.stop();
+      interruptButton.style.display = 'none';
+      if (currentGeminiMessageElement) removeSpeakingIndicator(currentGeminiMessageElement);
+      currentGeminiMessageElement = null;
+      hasLoggedUserAction = false;
+      textInput.disabled = isRecording || !apiReady;
+      micButton.disabled = !apiReady;
+      updateSendButtonState();
+      if (!isRecording) voiceOrb.setState(ORB_STATES.IDLE);
+    };
 
-      // Check for home decor ui_data and render interactive elements
-      if (data && data.ui_data && decorRenderer) {
-        decorRenderer.renderUIData(data.ui_data, data.session_id);
+    api.onFunctionCall = (data) => {
+        showLoading(false);
+        logFunctionCall(data.name, data.args);
+    };
+
+    api.onFunctionResponse = (data) => {
+        logFunctionResponse(data);
+        updateCartFromToolResponse(data);
+
+        if (data && data.ui_data && decorRenderer) {
+          decorRenderer.renderUIData(data.ui_data, data.session_id);
+        }
+
+        if (data && data.moodboard && decorRenderer) {
+          decorRenderer.renderMoodboard(data.moodboard);
+        }
+    };
+
+    api.onTriggerPhotoAnalysis = (data) => {
+      console.log('[Voice Trigger] Photo analysis requested via voice:', data);
+      if (decorRenderer && decorRenderer.photoUploadHandler) {
+        const photos = decorRenderer.photoUploadHandler.getPhotoData();
+        if (photos.length > 0) {
+          console.log(`[Voice Trigger] Auto-submitting ${photos.length} photos`);
+          decorRenderer.handlePhotoSubmit();
+        } else {
+          logMessage('No photos uploaded yet. Please upload photos first.', 'system');
+        }
       }
+    };
 
-      // Check for moodboard and render it
-      if (data && data.moodboard && decorRenderer) {
-        decorRenderer.renderMoodboard(data.moodboard);
-      }
-  };
+    api.onError = (error) => {
+      logMessage(error.message || 'Connection error occurred', 'system');
+    };
+  }
 
-  api.onTriggerPhotoAnalysis = (data) => {
-    console.log('[Voice Trigger] Photo analysis requested via voice:', data);
-    // Automatically trigger photo submission if decorRenderer has photos
-    if (decorRenderer && decorRenderer.photoUploadHandler) {
-      const photos = decorRenderer.photoUploadHandler.getPhotoData();
-      if (photos.length > 0) {
-        console.log(`[Voice Trigger] Auto-submitting ${photos.length} photos`);
-        decorRenderer.handlePhotoSubmit();
-      } else {
-        logMessage('No photos uploaded yet. Please upload photos first.', 'system');
-      }
-    }
-  };
-
-  api.onError = (error) => {
-    logMessage(error.message || 'Connection error occurred', 'system');
-  };
-}
-
-  // --- Audio Recording ---
+  // ===== AUDIO RECORDING =====
   async function startRecording() {
     if (!apiReady || isRecording) return;
     try {
@@ -1335,6 +1827,12 @@
       }
       await audioContext.resume();
       await audioRecorder.start();
+
+      // Connect mic analyser for orb visualization (read-only tap)
+      if (audioRecorder.stream) {
+        voiceOrb.connectMicAnalyser(audioRecorder.stream);
+      }
+
       if (!hasLoggedUserAction) {
           currentTurn++;
           logMessage('Listening...', 'user', false, false, true);
@@ -1348,6 +1846,9 @@
       textInput.placeholder = "Listening...";
       textInput.disabled = true;
       sendButton.disabled = true;
+      voiceOrb.setState(ORB_STATES.LISTENING);
+      orbLabel.textContent = 'Listening...';
+      playUITick();
     } catch (error) {
       logMessage('Error starting recording: ' + error.message, 'system');
       resetRecordingState();
@@ -1370,6 +1871,8 @@
         logMessage('Audio Interaction', 'user');
     }
     api.sendEndMessage();
+    voiceOrb.setState(ORB_STATES.THINKING);
+    orbLabel.textContent = 'Processing...';
   }
 
   function resetRecordingState() {
@@ -1385,27 +1888,32 @@
       audioRecorder.off('data');
   }
 
-  // --- Message Logging ---
-  function logMessage(content, sender = 'system', isSpeaking = false, isMarkdown = false, isTemporary = false) {
+  // ===== MESSAGE LOGGING =====
+  function logMessage(content, sender = 'system', isSpeaking = false, isMarkdown = false, isTemporary = false, shouldStream = false) {
       const messageWrapper = document.createElement('div');
       messageWrapper.classList.add('message-wrapper', `${sender}-message`);
       if (isTemporary) messageWrapper.classList.add('temporary');
-      
+
       const bubble = document.createElement('div');
       bubble.classList.add('message-bubble');
-      
+
       const contentContainer = document.createElement('div');
       if (isMarkdown) {
           marked.setOptions({ breaks: true, gfm: true, mangle: false, headerIds: false });
           contentContainer.innerHTML = DOMPurify.sanitize(marked.parse(content), { USE_PROFILES: { html: true }, ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'a', 'code', 'pre', 'blockquote', 'hr', 'span', 'div', 'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td'], ALLOWED_ATTR: ['href', 'title', 'alt', 'src', 'class'] });
       } else {
           const para = document.createElement('p');
-          para.textContent = content;
-          contentContainer.appendChild(para);
+          if (shouldStream && sender === 'gemini') {
+            // Will be streamed
+            contentContainer.appendChild(para);
+          } else {
+            para.textContent = content;
+            contentContainer.appendChild(para);
+          }
       }
       bubble.appendChild(contentContainer);
       messageWrapper.appendChild(bubble);
-      
+
       if (sender === 'user' && !isTemporary) {
           const tempMsg = output.querySelector('.user-message.temporary:last-child');
           if (tempMsg) tempMsg.replaceWith(messageWrapper);
@@ -1413,18 +1921,22 @@
       } else {
            output.appendChild(messageWrapper);
       }
-      
+
       if (sender === 'gemini') {
           currentGeminiMessageElement = messageWrapper;
-          if (isSpeaking || api.isSpeaking) {
+          if (shouldStream) {
+            const para = contentContainer.querySelector('p');
+            if (para) streamText(para, content);
+          }
+          if (isSpeaking || (api && api.isSpeaking)) {
               addSpeakingIndicator(messageWrapper);
           }
       }
-      
+
       updateMessageVisibility();
   }
-  
-  // --- Agent/Tool Logging Functions (Restored) ---
+
+  // ===== AGENT/TOOL LOGGING =====
   function logFunctionCall(name, args) {
       const messageWrapper = document.createElement('div');
       messageWrapper.classList.add('message-wrapper', 'function-call', 'collapsible-tool');
@@ -1471,10 +1983,10 @@
               <strong>Agent Operator - Tool Response</strong>
           </span>
           <span class="material-symbols-outlined tool-toggle">expand_more</span>`;
-          
+
       const detailsDiv = document.createElement('div');
       detailsDiv.classList.add('tool-details', 'hidden');
-      
+
       try {
           renderJsonNode(data, detailsDiv, 0);
       } catch(e) {
@@ -1488,20 +2000,20 @@
       output.appendChild(messageWrapper);
       updateMessageVisibility();
   }
-  
-  // --- JSON Rendering Helpers (Restored) ---
+
+  // ===== JSON RENDERING =====
   function renderJsonNode(node, container, level = 0, keyName = null) {
-      container.innerHTML = ''; // Clear previous content
+      container.innerHTML = '';
 
       if (Array.isArray(node)) {
           const arrayWrapper = document.createElement('div');
           if (node.length === 0) {
               arrayWrapper.textContent = ' (empty list)';
-              arrayWrapper.classList.add('text-gray-500', 'italic', 'text-xs');
+              arrayWrapper.style.cssText = 'color:#555570; font-style:italic; font-size:12px;';
               container.appendChild(arrayWrapper);
               return;
           }
-          
+
           const header = document.createElement('div');
           header.classList.add('json-form-toggle-header');
           const iconContent = level === 0 ? 'expand_less' : 'expand_more';
@@ -1514,7 +2026,7 @@
 
           node.forEach((item) => {
               const itemContainer = document.createElement('div');
-              itemContainer.classList.add('json-form-array-item', 'border-t', 'border-gray-200', 'pt-2', 'mt-2');
+              itemContainer.style.cssText = 'border-top: 1px solid rgba(255,255,255,0.04); padding-top: 8px; margin-top: 8px;';
               renderJsonNode(item, itemContainer, level + 1);
               contentContainer.appendChild(itemContainer);
           });
@@ -1524,10 +2036,10 @@
           const keys = Object.keys(node);
           if (keys.length === 0) {
               container.textContent = ' (empty)';
-              container.classList.add('text-gray-500', 'italic', 'text-xs');
+              container.style.cssText = 'color:#555570; font-style:italic; font-size:12px;';
               return;
           }
-          
+
           const contentContainer = document.createElement('div');
           contentContainer.classList.add('json-form-object-content-toplevel');
           keys.forEach((key) => {
@@ -1536,18 +2048,20 @@
           container.appendChild(contentContainer);
       } else {
           const valueSpan = document.createElement('span');
-          valueSpan.classList.add('json-form-value');
           if (typeof node === 'string') {
               valueSpan.textContent = node;
+              valueSpan.style.color = '#c0c0d8';
           } else if (typeof node === 'boolean') {
               valueSpan.innerHTML = node
-                  ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Yes</span>'
-                  : '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">No</span>';
+                  ? '<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:500;background:rgba(34,197,94,0.1);color:#4ade80;border:1px solid rgba(34,197,94,0.2);">Yes</span>'
+                  : '<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:500;background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.2);">No</span>';
           } else if (node === null) {
               valueSpan.textContent = '-';
-              valueSpan.classList.add('text-gray-500');
+              valueSpan.style.color = '#555570';
           } else {
               valueSpan.textContent = String(node);
+              valueSpan.style.color = '#00f0ff';
+              valueSpan.style.fontFamily = "'JetBrains Mono', monospace";
           }
           container.appendChild(valueSpan);
       }
@@ -1570,14 +2084,14 @@
       parentContainer.appendChild(rowDiv);
   }
 
-  // --- Text Message Handling ---
+  // ===== TEXT MESSAGE HANDLING =====
   function sendTextMessage() {
     const text = textInput.value.trim();
     if (!text || isRecording || !apiReady || textInput.disabled) return;
     const currentContent = textInput.value;
     textInput.value = '';
     adjustTextareaHeight();
-    
+
     if (!hasLoggedUserAction) {
          currentTurn++;
          hasLoggedUserAction = true;
@@ -1587,14 +2101,14 @@
     api.sendTextMessage(currentContent);
   }
 
-  // --- Event Listeners ---
+  // ===== EVENT LISTENERS =====
   micButton.onclick = () => {
     if (isRecording) stopRecording();
     else startRecording();
   };
 
   sendButton.onclick = sendTextMessage;
-  
+
   interruptButton.onclick = () => {
     if (api.isSpeaking) api.interrupt();
   };
@@ -1613,12 +2127,7 @@
 
   cameraButton.onclick = handleCameraButtonClick;
 
-  showToolsToggle.addEventListener('change', () => {
-      showToolsOnly = showToolsToggle.checked;
-      updateMessageVisibility();
-  });
-
-  // Event listener for expanding/collapsing tool messages (delegated)
+  // Event listener for expanding/collapsing tool messages
   output.addEventListener('click', (event) => {
       const toolHeader = event.target.closest('.tool-header');
       if (toolHeader) {
@@ -1642,34 +2151,20 @@
       }
   });
 
-  // Cart modal event listeners
-  cartBtn.addEventListener('click', () => {
-    cartModal.style.display = 'flex';
-  });
-
-  closeCartBtn.addEventListener('click', () => {
-    cartModal.style.display = 'none';
-  });
-
-  // Clear cart functionality
+  // Cart modal events
+  cartBtn.addEventListener('click', () => { cartModal.style.display = 'flex'; });
+  closeCartBtn.addEventListener('click', () => { cartModal.style.display = 'none'; });
   clearCartBtn.addEventListener('click', () => {
     if (confirm('Are you sure you want to clear your cart?')) {
-      // Get all product IDs from current cart
       const allProductIds = cartState.items.map(item => item.product_id || item.sku);
-
       if (allProductIds.length > 0 && api && apiReady && currentUser) {
-        // Send message to agent to clear the cart
         api.sendTextMessage(`Please remove all items from my cart: ${allProductIds.join(', ')}`);
         cartModal.style.display = 'none';
       }
     }
   });
-
-  // Close cart modal when clicking outside
   cartModal.addEventListener('click', (e) => {
-    if (e.target === cartModal) {
-      cartModal.style.display = 'none';
-    }
+    if (e.target === cartModal) cartModal.style.display = 'none';
   });
 
 </script>
