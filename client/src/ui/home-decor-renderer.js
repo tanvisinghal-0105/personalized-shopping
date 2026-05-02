@@ -834,6 +834,37 @@ export class HomeDecorRenderer {
     const footer = document.createElement('div');
     footer.className = 'moodboard-footer mt-4 pt-4 border-t border-[rgba(255,255,255,0.08)]';
 
+    // --- Cart action buttons ---
+    const cartActions = document.createElement('div');
+    cartActions.className = 'flex gap-3 mb-4';
+
+    const addSelectedBtn = document.createElement('button');
+    addSelectedBtn.className = 'flex-1 btn-neon-fill py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed';
+    addSelectedBtn.textContent = 'Add Selected to Cart';
+    addSelectedBtn.disabled = true;
+    addSelectedBtn.id = 'addSelectedToCartBtn';
+    cartActions.appendChild(addSelectedBtn);
+
+    const addAllMoodboardBtn = document.createElement('button');
+    addAllMoodboardBtn.className = 'flex-1 decor-btn-secondary py-3 rounded-lg font-semibold';
+    addAllMoodboardBtn.textContent = 'Add All to Cart';
+    addAllMoodboardBtn.addEventListener('click', () => {
+      const allProducts = moodboardData.products || [];
+      if (allProducts.length > 0) {
+        addAllMoodboardBtn.textContent = 'Adding...';
+        addAllMoodboardBtn.disabled = true;
+        const names = allProducts.map(p => p.name).join(', ');
+        this.api.sendTextMessage(`Please add all these items to my cart: ${names}`);
+        setTimeout(() => {
+          addAllMoodboardBtn.textContent = 'Added All!';
+          addAllMoodboardBtn.classList.add('opacity-50');
+        }, 2000);
+      }
+    });
+    cartActions.appendChild(addAllMoodboardBtn);
+
+    footer.appendChild(cartActions);
+
     // --- Visualization selection panel (always present, collapsed initially) ---
     const vizPanel = document.createElement('div');
     vizPanel.className = 'viz-panel';
@@ -884,7 +915,29 @@ export class HomeDecorRenderer {
       generateBtn.disabled = count === 0;
       generateBtn.textContent = 'Generate';
       generateBtn.classList.remove('opacity-50');
+      // Also update cart selected button
+      addSelectedBtn.disabled = count === 0;
+      addSelectedBtn.textContent = count > 0
+        ? `Add ${count} Selected to Cart`
+        : 'Add Selected to Cart';
     };
+
+    // Wire up Add Selected to Cart
+    addSelectedBtn.addEventListener('click', () => {
+      if (vizState.selectedIds.length > 0) {
+        addSelectedBtn.textContent = 'Adding...';
+        addSelectedBtn.disabled = true;
+        const selectedProducts = (moodboardData.products || []).filter(
+          p => vizState.selectedIds.includes(p.product_id)
+        );
+        const names = selectedProducts.map(p => p.name).join(', ');
+        this.api.sendTextMessage(`Please add these items to my cart: ${names}`);
+        setTimeout(() => {
+          addSelectedBtn.textContent = 'Added!';
+          addSelectedBtn.classList.add('opacity-50');
+        }, 2000);
+      }
+    });
 
     const setCardSelected = (card, selected) => {
       const indicator = card.querySelector('.viz-indicator');
@@ -1370,13 +1423,6 @@ export class HomeDecorRenderer {
     uploadBtn.innerHTML = '<span class="material-symbols-outlined">upload</span> Upload Photos';
     uploadBtn.addEventListener('click', () => this.handlePhotoUploadClick());
     optionsContainer.appendChild(uploadBtn);
-
-    // Option 2: Live camera (existing feature)
-    const cameraBtn = document.createElement('button');
-    cameraBtn.className = 'photo-upload-btn secondary';
-    cameraBtn.innerHTML = '<span class="material-symbols-outlined">videocam</span> Use Live Camera';
-    cameraBtn.addEventListener('click', () => this.handleLiveCameraClick());
-    optionsContainer.appendChild(cameraBtn);
 
     uploadContainer.appendChild(optionsContainer);
 
