@@ -49,6 +49,11 @@ python -c "from evaluation.run_eval import trajectory_order_metric; print('OK')"
 | `server/tests/test_intent_detector.py` | Home decor intent detection, room type extraction |
 | `server/tests/test_session_state.py` | Session create, update, get, moodboard marking |
 | `server/tests/test_eval_metrics.py` | WER, trajectory order, step skip, moodboard quality, latency |
+| `server/tests/test_auth.py` | Token validation, IAP JWT verification, dev mode fallback |
+| `server/tests/test_cost_tracker.py` | Token counting, USD cost calculation, session tracking |
+| `server/tests/test_observability.py` | Metrics collection, error recording, health reporting |
+| `server/tests/test_retry.py` | Retryable error classification, backoff logic, 429/503 handling |
+| `server/tests/test_security.py` | Input sanitization, PII detection, injection guard, audit logging |
 
 ## GCS Upload (for deployment)
 ```bash

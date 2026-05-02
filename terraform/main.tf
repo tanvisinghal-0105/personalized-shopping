@@ -9,7 +9,7 @@ terraform {
   }
 
   backend "gcs" {
-    bucket = "capstone-tanvi-01-447109-tf-state"
+    bucket = "" # Set via -backend-config="bucket=PROJECT_ID-tf-state"
     prefix = "personalized-shopping"
   }
 }

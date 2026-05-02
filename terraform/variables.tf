@@ -1,7 +1,6 @@
 variable "project_id" {
   description = "GCP project ID"
   type        = string
-  default     = "capstone-tanvi-01-447109"
 }
 
 variable "region" {

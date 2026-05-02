@@ -153,7 +153,6 @@ The agent can execute these tools:
 | `get_product_recommendations` | Suggest relevant products |
 | `check_product_availability` | Check stock at stores |
 | `sync_ask_for_approval` | Request manager approval for discounts |
-| `identify_phone_from_camera_feed` | Identify device from video |
 | `lookup_warranty_details` | Get warranty information |
 | `get_trade_in_value` | Calculate trade-in value |
 | `schedule_service_appointment` | Book service appointments |
@@ -241,6 +240,7 @@ Edit these files to customize the agent:
 
 ## Deployed Service
 
-- **URL**: https://live-agent-backend-lyja7bi4gq-uc.a.run.app
 - **Region**: us-central1
-- **Service Account**: live-agent-backend@PROJECT_ID.iam.gserviceaccount.com
+- **Service Account**: live-agent-backend@$PROJECT_ID.iam.gserviceaccount.com
+
+The service URL is dynamic and determined at deploy time. No hardcoded project IDs -- all configuration is via environment variables.

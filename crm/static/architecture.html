@@ -314,10 +314,61 @@
 <!-- ================================================================== -->
 <div style="margin-top:40px;text-align:center;">
     <h2 style="font-size:1.3em;font-weight:700;">Agentic Workflow</h2>
-    <p style="color:#555570;font-size:11px;">Home Decor Consultation - 9-Stage Flow with Tool Calls and Service Integration</p>
+    <p style="color:#555570;font-size:11px;">Two Demo Personas -- Voice-Driven Shopping Journeys via the Same ADK Agent</p>
 </div>
 
 <div style="max-width:1020px;margin:16px auto 0;">
+
+    <!-- Persona Cards -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
+
+        <!-- Persona 1: Electronics Shopper -->
+        <div style="border:1px solid rgba(0,240,255,0.15);border-radius:10px;padding:14px;background:rgba(0,240,255,0.015);position:relative;">
+            <div style="position:absolute;top:-9px;left:14px;background:#05060f;padding:0 8px;font-size:9px;font-weight:700;color:#00f0ff;text-transform:uppercase;letter-spacing:0.8px;">Persona A: Electronics Shopper</div>
+            <div style="display:flex;gap:10px;align-items:start;">
+                <div style="flex-shrink:0;width:36px;height:36px;border-radius:8px;background:rgba(0,240,255,0.08);display:flex;align-items:center;justify-content:center;">
+                    <span class="material-symbols-outlined" style="color:#00f0ff;font-size:20px;">smartphone</span>
+                </div>
+                <div>
+                    <div style="font-size:11px;font-weight:600;color:#e4e4f0;margin-bottom:4px;">Returning Customer (signed-in user)</div>
+                    <div style="font-size:9px;color:#555570;line-height:1.5;">
+                        Buys a Pixel 9 Pro, needs a protective case. Shows phone via camera for identification. Requests price match against online competitor (requires manager approval). Adds premium warranty and charger. Trades in old Pixel 7 for credit.
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px;">
+                        <span style="font-size:7px;background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.12);border-radius:3px;padding:1px 5px;color:#67e8f9;">check_product_availability</span>
+                        <span style="font-size:7px;background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.12);border-radius:3px;padding:1px 5px;color:#67e8f9;">modify_cart</span>
+                        <span style="font-size:7px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.12);border-radius:3px;padding:1px 5px;color:#fbbf24;">sync_ask_for_approval</span>
+                        <span style="font-size:7px;background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.12);border-radius:3px;padding:1px 5px;color:#67e8f9;">lookup_warranty_details</span>
+                        <span style="font-size:7px;background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.12);border-radius:3px;padding:1px 5px;color:#67e8f9;">get_trade_in_value</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Persona 2: Home Decor Consultant -->
+        <div style="border:1px solid rgba(168,85,247,0.15);border-radius:10px;padding:14px;background:rgba(168,85,247,0.015);position:relative;">
+            <div style="position:absolute;top:-9px;left:14px;background:#05060f;padding:0 8px;font-size:9px;font-weight:700;color:#a855f7;text-transform:uppercase;letter-spacing:0.8px;">Persona B: Home Decor Consultation</div>
+            <div style="display:flex;gap:10px;align-items:start;">
+                <div style="flex-shrink:0;width:36px;height:36px;border-radius:8px;background:rgba(168,85,247,0.08);display:flex;align-items:center;justify-content:center;">
+                    <span class="material-symbols-outlined" style="color:#a855f7;font-size:20px;">chair</span>
+                </div>
+                <div>
+                    <div style="font-size:11px;font-weight:600;color:#e4e4f0;margin-bottom:4px;">Adult Bedroom Redesign or Child's Themed Room</div>
+                    <div style="font-size:9px;color:#555570;line-height:1.5;">
+                        9-stage guided consultation. Picks room, purpose (decorate vs redesign), uploads photo for AI analysis. Selects styles (adult: modern/coastal or child: underwater/safari). Chooses colours and dimensions. Receives curated moodboard with scored products. Visualises room with Gemini Pro inpainting or Imagen 4 generation.
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px;">
+                        <span style="font-size:7px;background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.12);border-radius:3px;padding:1px 5px;color:#c084fc;">start_home_decor_consultation</span>
+                        <span style="font-size:7px;background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.12);border-radius:3px;padding:1px 5px;color:#c084fc;">continue_home_decor_consultation</span>
+                        <span style="font-size:7px;background:rgba(52,168,83,0.06);border:1px solid rgba(52,168,83,0.12);border-radius:3px;padding:1px 5px;color:#86efac;">analyze_room_with_history</span>
+                        <span style="font-size:7px;background:rgba(52,168,83,0.06);border:1px solid rgba(52,168,83,0.12);border-radius:3px;padding:1px 5px;color:#86efac;">create_style_moodboard</span>
+                        <span style="font-size:7px;background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.12);border-radius:3px;padding:1px 5px;color:#67e8f9;">visualize_room_with_products</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
 
     <!-- Legend -->
     <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;font-size:9px;">

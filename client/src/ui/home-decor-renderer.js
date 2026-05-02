@@ -288,7 +288,8 @@ export class HomeDecorRenderer {
 
     // Use image_url from backend if provided, otherwise use a style-based placeholder
     const img = document.createElement('img');
-    img.src = style.image_url || `https://storage.googleapis.com/capstone-tanvi-01-447109-shopping-assets/assets/${style.id}_style_preview.jpg`;
+    const gcsBase = window.__GCS_ASSETS_BASE || '';
+    img.src = style.image_url || `${gcsBase}/${style.id}_style_preview.jpg`;
     img.alt = style.label;
     img.className = 'w-full h-full object-cover';
     img.loading = 'lazy';

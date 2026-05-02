@@ -20,12 +20,10 @@ from .tools import (
     check_product_availability,
     schedule_service_appointment,
     get_available_service_times,
-    send_product_information,
     generate_qr_code,
     process_exchange_request,
     get_trade_in_value,
     lookup_warranty_details,
-    identify_phone_from_camera_feed,
     display_product_search_results,
     create_style_moodboard,
     start_home_decor_consultation,
@@ -158,8 +156,6 @@ def create_retail_agent(
         get_product_recommendations,
         check_product_availability,
         sync_ask_for_approval,
-        send_product_information,
-        identify_phone_from_camera_feed,
         display_product_search_results,
     ]
 

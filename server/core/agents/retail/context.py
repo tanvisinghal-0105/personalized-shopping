@@ -1472,9 +1472,9 @@ class RetailContext:
         "customer_profile": {
             "account_number": f"AN-{random.randint(100000000, 999999999)}",
             "customer_id": "CY-1234-1234",
-            "customer_first_name": "Cornelius",
-            "customer_last_name": "Koch",
-            "email": "Cornelius.koch@example.com",
+            "customer_first_name": "Demo",
+            "customer_last_name": "Customer",
+            "email": "demo.customer@example.com",
             "phone_number": "+49-89-555-1234",
             "customer_start_date": "2021-08-15",
             "years_as_customer": 4,
@@ -1560,6 +1560,31 @@ class RetailContext:
                     "store_id": "CY-BER-CENTER",
                     "channel": "instore",
                 },
+                {
+                    "order_id": f"ORD-{random.randint(10000, 99999)}",
+                    "date": "2024-06-15",
+                    "items": [
+                        {
+                            "product_id": "BED-DOUBLE-UPHOLSTERED",
+                            "sku": "5501234",
+                            "name": "Double Upholstered Bed",
+                            "quantity": 1,
+                            "type": "product",
+                            "price": 599.00,
+                        },
+                        {
+                            "product_id": "LAMP-TABLE-CERAMIC",
+                            "sku": "5509876",
+                            "name": "Ceramic Table Lamp",
+                            "quantity": 2,
+                            "type": "product",
+                            "price": 49.00,
+                        },
+                    ],
+                    "total_amount": 697.00,
+                    "store_id": "CY-BER-CENTER",
+                    "channel": "online",
+                },
             ],
             "current_cart": {
                 "cart_id": f"CART-{random.randint(100000, 999999)}",
@@ -1601,6 +1626,7 @@ class RetailContext:
                 "Audio",
                 "Mobile Computing",
                 "Photography",
+                "Home Decor",
             ],
             "registered_devices": [
                 {

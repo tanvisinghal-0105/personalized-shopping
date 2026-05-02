@@ -73,7 +73,7 @@ gcloud auth application-default login
 
 # Create GCS bucket for assets (one-time)
 gcloud storage buckets create gs://YOUR_PROJECT-shopping-assets --location=us-central1
-gcloud storage cp -r client/assets/* gs://YOUR_PROJECT-shopping-assets/assets/
+gcloud storage cp -r client/assets/* gs://YOUR_PROJECT-shopping-assets/assets/products/
 
 # Deploy services (CI runs pytest + black + mypy before each deploy)
 gcloud builds submit --config server/cloudbuild.yaml    # Backend

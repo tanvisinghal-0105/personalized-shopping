@@ -2,7 +2,7 @@ timeout: 1200s
 substitutions:
   _REGION: us-central1
   _SERVICE_NAME: live-agent-backend
-  _SERVICE_ACCOUNT: live-agent-backend@${PROJECT_ID}.iam.gserviceaccount.com
+  _SA_NAME: live-agent-backend
 
 steps:
 # Step 1: Run unit tests
@@ -99,7 +99,7 @@ steps:
   - '--set-env-vars'
   - 'PROJECT_ID=${PROJECT_ID},LOG_LEVEL=INFO,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${_REGION},GOOGLE_GENAI_USE_VERTEXAI=1,DEMO_TYPE=retail,VOICE_VERTEX_API=Aoede,LANGUAGE=en-GB,GCS_BUCKET_NAME=${PROJECT_ID}-shopping-assets'
   - '--service-account'
-  - '${_SERVICE_ACCOUNT}'
+  - '${_SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com'
   - '--session-affinity'
   - '--timeout'
   - '900'

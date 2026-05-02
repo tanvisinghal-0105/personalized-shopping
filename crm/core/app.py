@@ -1,7 +1,7 @@
 import fastapi
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import HTMLResponse
 from google.cloud import firestore
 import os
 import sys
@@ -19,6 +19,10 @@ app = fastapi.FastAPI()
 
 logger.info("Initializing Firestore client")
 db = firestore.Client()
+
+PROJECT_ID = os.environ.get("PROJECT_ID", "")
+GCS_BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME", f"{PROJECT_ID}-shopping-assets")
+GCS_ASSETS_BASE = f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/assets"
 
 # Define the path to the static directories
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
@@ -47,7 +51,10 @@ app.add_middleware(
 async def read_index():
     index_path = os.path.join(static_dir, "index.html")
     if os.path.exists(index_path):
-        return FileResponse(index_path)
+        with open(index_path) as f:
+            html = f.read()
+        html = html.replace("{{GCS_ASSETS_BASE}}", GCS_ASSETS_BASE)
+        return HTMLResponse(content=html)
     else:
         return fastapi.Response(content="index.html not found", status_code=404)
 
@@ -57,7 +64,10 @@ async def read_index():
 async def read_shop():
     shop_path = os.path.join(client_dir, "index.html")
     if os.path.exists(shop_path):
-        return FileResponse(shop_path)
+        with open(shop_path) as f:
+            html = f.read()
+        html = html.replace("{{GCS_ASSETS_BASE}}", GCS_ASSETS_BASE)
+        return HTMLResponse(content=html)
     else:
         return fastapi.Response(content="Shopping UI not found", status_code=404)
 
@@ -204,7 +214,9 @@ async def list_eval_sessions():
 @app.post("/api/v1/eval/run/{filename}")
 async def run_evaluation(filename: str, use_vertex: bool = True):
     """Run evaluation on a specific session log."""
-    filepath = os.path.join(EVAL_LOG_DIR, filename)
+    filepath = os.path.realpath(os.path.join(EVAL_LOG_DIR, filename))
+    if not filepath.startswith(os.path.realpath(EVAL_LOG_DIR) + os.sep):
+        raise fastapi.HTTPException(status_code=400, detail="Invalid filename")
     if not os.path.exists(filepath):
         raise fastapi.HTTPException(status_code=404, detail="Session file not found")
 
@@ -221,9 +233,11 @@ async def run_evaluation(filename: str, use_vertex: bool = True):
 @app.get("/api/v1/eval/results/{filename}")
 async def get_eval_results(filename: str):
     """Get evaluation results for a session."""
-    results_file = os.path.join(
-        EVAL_LOG_DIR, filename.replace(".json", "_eval_results.json")
+    results_file = os.path.realpath(
+        os.path.join(EVAL_LOG_DIR, filename.replace(".json", "_eval_results.json"))
     )
+    if not results_file.startswith(os.path.realpath(EVAL_LOG_DIR) + os.sep):
+        raise fastapi.HTTPException(status_code=400, detail="Invalid filename")
     if not os.path.exists(results_file):
         raise fastapi.HTTPException(
             status_code=404,

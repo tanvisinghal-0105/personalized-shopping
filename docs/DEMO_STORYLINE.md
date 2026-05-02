@@ -1,4 +1,15 @@
-# OTTO Home Decor Demo - Complete Dialog Script
+# Cymbal StyleSync Demo - Complete Dialog Script
+
+There are two demo personas:
+
+1. **Electronics Shopper** -- phone case, price match, warranty, trade-in flow
+2. **Home Decor Consultation** -- 9-stage flow with moodboard and room visualization (scripted below)
+
+The `examples.py` file contains 3 conversation examples: electronics shopping, adult bedroom redesign, and child themed bedroom.
+
+---
+
+## Home Decor Consultation (Child Themed Bedroom)
 
 ## Phase 1: Initial Request & Room Selection
 

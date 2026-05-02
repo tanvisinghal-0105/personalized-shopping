@@ -31,9 +31,7 @@ client/
 ├── styles/
 │   ├── style.css                # Development UI styles
 │   └── mobile-style.css         # Mobile UI styles
-├── assets/                      # Images and icons
-├── nginx.conf                   # nginx configuration
-└── Dockerfile                   # Container build config
+└── assets/                      # Images and icons
 ```
 
 ## Quick Start
@@ -57,30 +55,18 @@ client/
    - Development UI: http://localhost:8000/index.html
    - Mobile UI: http://localhost:8000/mobile.html
 
-### Configure Backend URL
+### WebSocket Endpoint
 
-Edit `index.html` and `mobile.html` to set the WebSocket endpoint:
-
-```javascript
-// For local development
-const api = new GeminiAPI();  // Uses ws://localhost:8081
-
-// For deployed backend
-const api = new GeminiAPI('wss://live-agent-backend-xxxx.run.app');
-```
+The WebSocket endpoint is auto-detected in `gemini-api.js` -- no manual configuration needed.
 
 ### Cloud Run Deployment
 
+The frontend is deployed as part of the consolidated `cymbal-frontend` service via `crm/cloudbuild.yaml`, which uses `frontend.Dockerfile` at the repo root. This single FastAPI-based service serves both the CRM dashboard and Shopping UI.
+
 ```bash
 # From project root
-gcloud builds submit --config client/cloudbuild.yaml
+gcloud builds submit --config crm/cloudbuild.yaml
 ```
-
-The deployment:
-- Builds nginx-based container
-- Serves static files
-- Runs on port 8080
-- Deployed as `cymbal-frontend`
 
 ## Features
 
@@ -165,6 +151,4 @@ The client sends these message types to the backend:
 
 ## Deployed Service
 
-- **URL**: https://cymbal-frontend-991831686961.us-central1.run.app
-- **Region**: us-central1
-- **Backend**: https://live-agent-backend-lyja7bi4gq-uc.a.run.app
+The frontend is served as part of the `cymbal-frontend` Cloud Run service. See the main README for deployment details.

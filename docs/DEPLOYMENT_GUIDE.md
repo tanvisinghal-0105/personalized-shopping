@@ -1,4 +1,4 @@
-# 🚀 Cymbal Shopping AI - Deployment Guide
+# Cymbal Shopping AI - Deployment Guide
 
 ## Quick Deploy Commands
 
@@ -8,9 +8,9 @@ cd /Users/tanvisinghal/Documents/personalized_shopping/server
 gcloud builds submit --config cloudbuild.yaml
 ```
 
-### Frontend Deployment
+### Frontend Deployment (CRM + Shopping UI)
 ```bash
-cd /Users/tanvisinghal/Documents/personalized_shopping/client
+cd /Users/tanvisinghal/Documents/personalized_shopping/crm
 gcloud builds submit --config cloudbuild.yaml
 ```
 
@@ -19,7 +19,7 @@ gcloud builds submit --config cloudbuild.yaml
 ### Step 1: Authenticate
 ```bash
 gcloud auth login
-gcloud config set project capstone-tanvi-01-447109
+gcloud config set project $PROJECT_ID
 ```
 
 ### Step 2: Deploy Backend
@@ -39,31 +39,32 @@ gcloud builds submit --config cloudbuild.yaml
 gcloud run services describe live-agent-backend --region us-central1 --format 'value(status.url)'
 ```
 
-### Step 4: Deploy Frontend
+### Step 4: Deploy Frontend (CRM + Shopping UI)
 ```bash
-cd /Users/tanvisinghal/Documents/personalized_shopping/client
+cd /Users/tanvisinghal/Documents/personalized_shopping/crm
 gcloud builds submit --config cloudbuild.yaml
 ```
+
+This uses `frontend.Dockerfile` at the repo root to build a single consolidated `cymbal-frontend` service (FastAPI-based) that serves both the CRM dashboard and Shopping UI.
 
 ### Step 5: Access Application
 Once both are deployed, open the frontend URL in your browser.
 
 ## Configuration Notes
 
-✅ **WebSocket endpoint is already updated** to point to the deployed backend:
-- File: `/client/src/api/gemini-api.js`
-- Endpoint: `wss://live-agent-backend-lyja7bi4gq-uc.a.run.app`
+- **WebSocket endpoint is auto-detected** -- no hardcoded URLs needed
+- **No hardcoded project IDs** -- all configuration is dynamic via environment variables
 
 ## Troubleshooting
 
 ### Permission Denied Error
 If you get permission errors, ensure your account has the necessary roles:
 ```bash
-gcloud projects add-iam-policy-binding capstone-tanvi-01-447109 \
+gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="user:tanvisinghal@google.com" \
   --role="roles/run.admin"
 
-gcloud projects add-iam-policy-binding capstone-tanvi-01-447109 \
+gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="user:tanvisinghal@google.com" \
   --role="roles/cloudbuild.builds.editor"
 ```
