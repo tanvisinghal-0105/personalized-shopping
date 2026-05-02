@@ -76,8 +76,7 @@ terraform init -backend-config="bucket=${PROJECT_ID}-tf-state"
 terraform apply -var="project_id=${PROJECT_ID}"
 
 # 2. Upload product images to GCS (one-time)
-cd ../server
-python scripts/upload_assets_to_gcs.py
+gcloud storage cp -r client/assets/products/* gs://${PROJECT_ID}-shopping-assets/assets/products/
 
 # 3. Deploy backend (pytest + black + mypy + Docker + Cloud Run)
 gcloud builds submit --config cloudbuild.yaml --substitutions=SHORT_SHA=$(git rev-parse --short HEAD)

@@ -33,7 +33,13 @@ This creates:
 - **Monitoring** -- Dashboards and alert policies
 - **Security** -- Cloud Armor WAF, Secret Manager
 
-## Step 3: Deploy Backend
+## Step 3: Upload Assets (one-time)
+
+```bash
+gcloud storage cp -r client/assets/products/* gs://${PROJECT_ID}-shopping-assets/assets/products/
+```
+
+## Step 4: Deploy Backend
 
 ```bash
 cd server
@@ -42,7 +48,7 @@ gcloud builds submit --config cloudbuild.yaml --substitutions=SHORT_SHA=$(git re
 
 Pipeline: pytest (103 tests) + black + mypy + Docker build + Cloud Run deploy
 
-## Step 4: Deploy Frontend
+## Step 5: Deploy Frontend
 
 ```bash
 cd crm
@@ -51,7 +57,7 @@ gcloud builds submit --config cloudbuild.yaml --substitutions=SHORT_SHA=$(git re
 
 Uses `frontend.Dockerfile` at repo root. Builds a single `cymbal-frontend` service (FastAPI) that serves both the CRM dashboard and Shopping UI.
 
-## Step 5: Verify
+## Step 6: Verify
 
 ```bash
 # Get service URLs

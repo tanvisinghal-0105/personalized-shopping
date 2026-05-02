@@ -57,7 +57,9 @@ python -c "from evaluation.run_eval import trajectory_order_metric; print('OK')"
 
 ## GCS Upload (for deployment)
 ```bash
-cd server
-python scripts/upload_assets_to_gcs.py --dry-run    # preview
-python scripts/upload_assets_to_gcs.py               # upload
+# Preview
+gcloud storage ls gs://${PROJECT_ID}-shopping-assets/assets/products/
+
+# Upload product images
+gcloud storage cp -r client/assets/products/* gs://${PROJECT_ID}-shopping-assets/assets/products/
 ```

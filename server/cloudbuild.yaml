@@ -26,7 +26,7 @@ steps:
   - |
     pip install -q 'black==25.1.0'
     echo "========== BLACK =========="
-    python -m black --check --diff core/ evaluation/ tests/ config/ server.py scripts/
+    python -m black --check --diff core/ evaluation/ tests/ config/ server.py
   dir: 'server'
   id: 'black'
   waitFor: ['-']
