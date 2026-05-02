@@ -92,6 +92,10 @@ resource "google_cloud_run_v2_service" "backend" {
         name  = "LOG_LEVEL"
         value = "INFO"
       }
+      env {
+        name  = "AUTH_ENABLED"
+        value = "true"
+      }
     }
 
     # 15 minute timeout for long-running WebSocket sessions
@@ -117,7 +121,8 @@ resource "google_cloud_run_v2_service" "backend" {
   }
 }
 
-# Allow unauthenticated access to frontend
+# Public access to Cloud Run -- app-level auth validates @google.com on WebSocket connect
+# App-level auth (AUTH_ENABLED=true) validates @google.com on WebSocket connect
 resource "google_cloud_run_v2_service_iam_member" "frontend_public" {
   name     = google_cloud_run_v2_service.frontend.name
   location = var.region

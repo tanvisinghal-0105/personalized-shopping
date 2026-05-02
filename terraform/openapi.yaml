@@ -7,6 +7,13 @@ schemes:
   - "https"
 produces:
   - "application/json"
+security:
+  - api_key: []
+securityDefinitions:
+  api_key:
+    type: "apiKey"
+    name: "x-api-key"
+    in: "header"
 x-google-backend:
   address: "${frontend_url}"
   protocol: h2

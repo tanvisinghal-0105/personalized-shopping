@@ -37,12 +37,18 @@ if os.path.isdir(os.path.join(client_dir, "src")):
         name="client_src",
     )
 
+_allowed_origins = [
+    f"https://cymbal-frontend-{os.environ.get('_HASH', 'lyja7bi4gq')}-uc.a.run.app",
+    f"https://cymbal-stylesync-gateway-{os.environ.get('_GW_HASH', 'cnn2z7ld')}.uc.gateway.dev",
+    "http://localhost:8082",
+    "http://localhost:8080",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 
