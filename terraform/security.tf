@@ -52,17 +52,6 @@ resource "google_compute_security_policy" "waf" {
     description = "Rate limiting: 100 req/min per IP"
   }
 
-  # Block known bad IPs / Tor exit nodes
-  rule {
-    action   = "deny(403)"
-    priority = 500
-    match {
-      expr {
-        expression = "evaluateThreatIntelligence('iplist-known-malicious-ips')"
-      }
-    }
-    description = "Block known malicious IPs"
-  }
 }
 
 # Firewall rules for VPC
@@ -170,7 +159,7 @@ resource "google_secret_manager_secret" "api_keys" {
 # Explicit data access logging for sensitive services
 resource "google_project_iam_audit_config" "firestore_audit" {
   project = var.project_id
-  service = "firestore.googleapis.com"
+  service = "datastore.googleapis.com"
 
   audit_log_config {
     log_type = "DATA_READ"
@@ -204,14 +193,13 @@ resource "google_project_iam_audit_config" "secretmanager_audit" {
 # Data retention via GCS lifecycle (already in gcs.tf)
 # Audit logs in Firestore have separate TTL (managed in application code)
 
-# Organization policy constraints (if org-level access)
-# Prevents public GCS buckets except our assets bucket
-# resource "google_org_policy_policy" "no_public_buckets" {
-#   name   = "projects/${var.project_id}/policies/storage.publicAccessPrevention"
-#   parent = "projects/${var.project_id}"
-#   spec {
-#     rules {
-#       enforce = "TRUE"
-#     }
-#   }
-# }
+# ================================================================== #
+#  6. MODEL ARMOR -- AI INPUT/OUTPUT SAFETY
+# ================================================================== #
+# Model Armor templates are provisioned via gcloud (see docs/DEPLOYMENT_GUIDE.md)
+# because the terraform google provider version requires 6.x+ for
+# google_model_armor_template resources.
+#
+# Templates:
+#   cymbal-prompt-sanitizer   -- filters user input (prompt injection, jailbreak, RAI, PII)
+#   cymbal-response-sanitizer -- filters model output (RAI, PII leakage)

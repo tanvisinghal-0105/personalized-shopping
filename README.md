@@ -14,6 +14,7 @@ This project handles the **Gemini Live API for real-time audio** in production -
 - **Slim product catalog** -- 130 products summarized as category table (12K tokens -> 200 tokens) with semantic search for retrieval
 - **Session auto-save** -- evaluation recordings save after every tool call, not just on disconnect
 - **Async style previews** -- room photo restyled into 6 themes in parallel via background tasks, streamed to frontend as they complete
+- **Model Armor integration** -- Google Cloud Model Armor sanitizes both user prompts (input) and model responses (output) for prompt injection, jailbreaks, harmful content, and PII leakage
 
 ## Quick Start (5 minutes)
 

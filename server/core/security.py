@@ -147,8 +147,105 @@ def hash_pii(value: str) -> str:
 
 
 # ================================================================== #
-#  3. AI-SPECIFIC SECURITY
+#  3. AI-SPECIFIC SECURITY (Model Armor + Local Checks)
 # ================================================================== #
+
+# Model Armor client (initialized lazily)
+_model_armor_client = None
+
+
+def _get_model_armor_client():
+    """Lazy-init the Model Armor client."""
+    global _model_armor_client
+    if _model_armor_client is None:
+        try:
+            from google.api_core.client_options import ClientOptions
+            from google.cloud import modelarmor_v1
+            import os
+
+            location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+            _model_armor_client = modelarmor_v1.ModelArmorClient(
+                transport="rest",
+                client_options=ClientOptions(
+                    api_endpoint=f"modelarmor.{location}.rep.googleapis.com"
+                ),
+            )
+            logger.info("[MODEL ARMOR] Client initialized")
+        except Exception as e:
+            logger.warning(f"[MODEL ARMOR] Not available, using local checks: {e}")
+    return _model_armor_client
+
+
+def sanitize_with_model_armor(text: str, is_prompt: bool = True) -> Dict[str, Any]:
+    """Sanitize text using Google Cloud Model Armor.
+
+    Args:
+        text: The text to sanitize.
+        is_prompt: True for user prompts (input), False for model responses (output).
+
+    Returns:
+        Dict with 'safe' bool, 'findings' list, and optionally 'sanitized_text'.
+    """
+    client = _get_model_armor_client()
+    if client is None:
+        return {"safe": True, "findings": [], "source": "skipped"}
+
+    try:
+        import os
+        from google.cloud import modelarmor_v1
+
+        project_id = os.environ.get("PROJECT_ID", "")
+        location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+        template_id = (
+            "cymbal-prompt-sanitizer" if is_prompt else "cymbal-response-sanitizer"
+        )
+        template_name = (
+            f"projects/{project_id}/locations/{location}/templates/{template_id}"
+        )
+        data_item = modelarmor_v1.DataItem(text=text)
+
+        if is_prompt:
+            request = modelarmor_v1.SanitizeUserPromptRequest(
+                name=template_name,
+                user_prompt_data=data_item,
+            )
+            response = client.sanitize_user_prompt(request=request)
+        else:
+            request = modelarmor_v1.SanitizeModelResponseRequest(
+                name=template_name,
+                model_response_data=data_item,
+            )
+            response = client.sanitize_model_response(request=request)
+
+        match_state = str(response.sanitization_result.filter_match_state)
+        is_safe = "MATCH_FOUND" not in match_state
+
+        findings = []
+        result = response.sanitization_result
+        if hasattr(result, "filter_results"):
+            for filter_name, filter_result in result.filter_results.items():
+                if "MATCH_FOUND" in str(filter_result.match_state):
+                    findings.append(filter_name)
+
+        if not is_safe:
+            logger.warning(
+                f"[MODEL ARMOR] {'Prompt' if is_prompt else 'Response'} "
+                f"flagged: {findings}"
+            )
+            audit_log(
+                "model_armor_finding",
+                {
+                    "type": "prompt" if is_prompt else "response",
+                    "findings": findings,
+                    "text_preview": text[:100],
+                },
+            )
+
+        return {"safe": is_safe, "findings": findings, "source": "model_armor"}
+
+    except Exception as e:
+        logger.warning(f"[MODEL ARMOR] Sanitization failed, using local checks: {e}")
+        return {"safe": True, "findings": [], "source": "fallback"}
 
 
 def check_ai_safety(text: str) -> Dict[str, Any]:

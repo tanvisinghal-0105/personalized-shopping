@@ -22,7 +22,12 @@ from google.genai.types import (
 from core.agent_factory import get_agent_config
 from .logger import logger
 from .observability import get_health, get_metrics
-from .security import sanitize_text_input, check_ai_safety, audit_log
+from .security import (
+    sanitize_text_input,
+    check_ai_safety,
+    sanitize_with_model_armor,
+    audit_log,
+)
 from .auth import authenticate_websocket
 from evaluation.session_recorder import get_recorder, finish_recorder
 from config.config import (
@@ -928,15 +933,21 @@ IMPORTANT: Briefly tell the customer what you see, then IMMEDIATELY call continu
 
                 elif msg_type == "text":
                     raw_text = data.get("data", "")
-                    # Sanitize and check AI safety
+                    # Sanitize and check AI safety (local + Model Armor)
                     clean_text = sanitize_text_input(raw_text)
                     safety = check_ai_safety(clean_text)
-                    if not safety["safe"]:
+                    armor_result = sanitize_with_model_armor(
+                        clean_text, is_prompt=True
+                    )
+                    if not safety["safe"] or not armor_result["safe"]:
+                        all_concerns = safety.get("concerns", []) + armor_result.get(
+                            "findings", []
+                        )
                         logger.warning(
-                            f"[SECURITY] Unsafe input blocked: {safety['concerns']}"
+                            f"[SECURITY] Unsafe input blocked: {all_concerns}"
                         )
                         audit_log(
-                            "unsafe_input_blocked", {"concerns": safety["concerns"]}
+                            "unsafe_input_blocked", {"concerns": all_concerns}
                         )
                     get_metrics().increment("total_requests")
                     logger.info("Client -> Agent: Sending text data...")

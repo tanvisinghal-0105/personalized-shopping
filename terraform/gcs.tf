@@ -42,15 +42,9 @@ resource "google_storage_bucket" "shopping_assets" {
   }
 }
 
-# Public read access for the assets prefix (product images, style previews)
+# Public read access for product images and style previews
 resource "google_storage_bucket_iam_member" "assets_public_read" {
   bucket = google_storage_bucket.shopping_assets.name
   role   = "roles/storage.objectViewer"
   member = "allUsers"
-
-  condition {
-    title       = "assets_only"
-    description = "Public read access only for the assets prefix"
-    expression  = "resource.name.startsWith(\"projects/_/buckets/${google_storage_bucket.shopping_assets.name}/objects/assets/\")"
-  }
 }

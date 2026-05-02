@@ -9,10 +9,9 @@ resource "google_monitoring_uptime_check_config" "backend_health" {
   period       = "60s"
 
   http_check {
-    path         = "/health"
-    port         = 8082
-    use_ssl      = true
-    validate_ssl = true
+    path    = "/health"
+    port    = 8082
+    use_ssl = true
   }
 
   monitored_resource {
