@@ -1,4 +1,5 @@
 """Tests for IntentDetector."""
+
 import sys
 import os
 import pytest

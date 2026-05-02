@@ -102,19 +102,19 @@ INTENT_TEST_CASES = [
 
 # -- Audio quality thresholds --
 AUDIO_QUALITY_THRESHOLDS = {
-    "max_wer": 0.15,                    # Word Error Rate: < 15%
+    "max_wer": 0.15,  # Word Error Rate: < 15%
     "max_latency_first_byte_ms": 2000,  # Time to first audio byte: < 2s
-    "max_latency_turn_ms": 5000,        # Full turn latency: < 5s
-    "min_naturalness_score": 3.5,       # MOS-style 1-5 scale
-    "min_relevance_score": 4.0,         # Response relevance 1-5 scale
+    "max_latency_turn_ms": 5000,  # Full turn latency: < 5s
+    "min_naturalness_score": 3.5,  # MOS-style 1-5 scale
+    "min_relevance_score": 4.0,  # Response relevance 1-5 scale
 }
 
 # -- Moodboard quality criteria --
 MOODBOARD_CRITERIA = {
     "min_products": 6,
     "max_products": 12,
-    "min_furniture_ratio": 0.3,    # At least 30% furniture for redesigns
-    "max_furniture_ratio": 0.5,    # At most 50% furniture
+    "min_furniture_ratio": 0.3,  # At least 30% furniture for redesigns
+    "max_furniture_ratio": 0.5,  # At most 50% furniture
     "min_style_match_ratio": 0.6,  # 60% of products should match selected styles
     "min_color_match_ratio": 0.4,  # 40% of products should match selected colours
 }

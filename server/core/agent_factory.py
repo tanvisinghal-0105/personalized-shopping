@@ -9,9 +9,7 @@ from datetime import datetime
 from .logger import logger
 
 
-def get_agent_config(
-    customer_id=None, first_name=None, last_name=None, email=None
-):
+def get_agent_config(customer_id=None, first_name=None, last_name=None, email=None):
     """
     Get agent configuration with optional customer personalization.
 
@@ -64,37 +62,49 @@ def get_agent_config(
                 enhanced_profile = profile_manager.get_profile(customer_id)
 
                 if enhanced_profile:
-                    logger.info(f"[BACKSTAGE] Profile loaded: {enhanced_profile.get('name')}, {enhanced_profile.get('loyalty_tier')} tier")
+                    logger.info(
+                        f"[BACKSTAGE] Profile loaded: {enhanced_profile.get('name')}, {enhanced_profile.get('loyalty_tier')} tier"
+                    )
 
                     # 2. Detect context (time, urgency, family)
                     context_detector = get_context_detector()
                     full_context = context_detector.get_full_context(
                         initial_request="",  # Will be filled in by first message
                         customer_profile=enhanced_profile,
-                        timestamp=datetime.now()
+                        timestamp=datetime.now(),
                     )
-                    logger.info(f"[BACKSTAGE] Context detected: {full_context['time_context']['shopping_context']}")
+                    logger.info(
+                        f"[BACKSTAGE] Context detected: {full_context['time_context']['shopping_context']}"
+                    )
 
                     # 3. Select persona based on context
                     persona_system = get_persona_system()
                     selected_persona = persona_system.select_persona(
                         project_scope=full_context["project_scope"]["scope"],
-                        complexity=full_context["project_scope"]["complexity"]
+                        complexity=full_context["project_scope"]["complexity"],
                     )
-                    logger.info(f"[BACKSTAGE] Persona selected: {persona_system.current_persona}")
+                    logger.info(
+                        f"[BACKSTAGE] Persona selected: {persona_system.current_persona}"
+                    )
 
                     # 4. Generate personalized greeting
                     customer_name = enhanced_profile.get("name", "").split()[0]
                     greeting_context = {
-                        "time_context": full_context["time_context"]["shopping_context"],
+                        "time_context": full_context["time_context"][
+                            "shopping_context"
+                        ],
                         "loyalty_tier": enhanced_profile.get("loyalty_tier"),
-                        "has_purchase_history": len(enhanced_profile.get("purchase_history", [])) > 0
+                        "has_purchase_history": len(
+                            enhanced_profile.get("purchase_history", [])
+                        )
+                        > 0,
                     }
                     personalized_greeting = persona_system.get_persona_greeting(
-                        customer_name=customer_name,
-                        context=greeting_context
+                        customer_name=customer_name, context=greeting_context
                     )
-                    logger.info(f"[BACKSTAGE] Greeting generated: {personalized_greeting[:50]}...")
+                    logger.info(
+                        f"[BACKSTAGE] Greeting generated: {personalized_greeting[:50]}..."
+                    )
 
                     # 5. Get persona-specific instructions
                     custom_instructions = selected_persona.get_system_instructions()
@@ -104,20 +114,27 @@ def get_agent_config(
                         "customer_profile": enhanced_profile,
                         "full_context": full_context,
                         "selected_persona": persona_system.current_persona,
-                        "personalized_greeting": personalized_greeting
+                        "personalized_greeting": personalized_greeting,
                     }
 
                     # Merge enhanced profile data into customer_profile context
-                    customer_profile["style_preferences"] = enhanced_profile.get("home_info", {}).get("style_preferences", [])
-                    customer_profile["loyalty_tier"] = enhanced_profile.get("loyalty_tier")
+                    customer_profile["style_preferences"] = enhanced_profile.get(
+                        "home_info", {}
+                    ).get("style_preferences", [])
+                    customer_profile["loyalty_tier"] = enhanced_profile.get(
+                        "loyalty_tier"
+                    )
                     customer_profile["customer_name"] = enhanced_profile.get("name")
 
                 else:
-                    logger.info(f"[BACKSTAGE] No enhanced profile found for {customer_id}, using basic profile")
+                    logger.info(
+                        f"[BACKSTAGE] No enhanced profile found for {customer_id}, using basic profile"
+                    )
 
             except Exception as e:
                 logger.error(f"[BACKSTAGE] Error loading enhanced profile: {e}")
                 import traceback
+
                 traceback.print_exc()
         # ===== END BACKSTAGE INTELLIGENCE =====
 
@@ -129,13 +146,10 @@ def get_agent_config(
         # Use custom instructions if persona was selected
         if custom_instructions:
             agent_config["root_agent"] = create_retail_agent(
-                context=customer_profile,
-                instruction=custom_instructions
+                context=customer_profile, instruction=custom_instructions
             )
         else:
-            agent_config["root_agent"] = create_retail_agent(
-                context=customer_profile
-            )
+            agent_config["root_agent"] = create_retail_agent(context=customer_profile)
 
     else:
         raise ValueError(f"Unknown DEMO_TYPE: `{DEMO_TYPE}`")

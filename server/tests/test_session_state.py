@@ -1,4 +1,5 @@
 """Tests for HomeDecorSessionState."""
+
 import sys
 import os
 import pytest

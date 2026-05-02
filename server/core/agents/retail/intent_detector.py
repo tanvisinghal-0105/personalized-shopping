@@ -39,9 +39,7 @@ class IntentDetector:
     ]
 
     # Combine into single pattern
-    HOME_DECOR_PATTERN = re.compile(
-        "|".join(HOME_DECOR_KEYWORDS), re.IGNORECASE
-    )
+    HOME_DECOR_PATTERN = re.compile("|".join(HOME_DECOR_KEYWORDS), re.IGNORECASE)
 
     @classmethod
     def detect_home_decor_intent(cls, message: str) -> bool:
@@ -72,7 +70,9 @@ class IntentDetector:
 
         for pattern in greeting_patterns:
             if re.search(pattern, message_lower):
-                logger.info("[INTENT DETECTOR] Message appears to be greeting/intro - no home decor intent")
+                logger.info(
+                    "[INTENT DETECTOR] Message appears to be greeting/intro - no home decor intent"
+                )
                 return False
 
         # Require action words with home decor keywords
@@ -109,9 +109,7 @@ class IntentDetector:
         for room, patterns in room_types.items():
             for pattern in patterns:
                 if pattern in message_lower:
-                    logger.info(
-                        f"[INTENT DETECTOR] Extracted room type: {room}"
-                    )
+                    logger.info(f"[INTENT DETECTOR] Extracted room type: {room}")
                     return room
 
         return None
@@ -140,9 +138,7 @@ class IntentDetector:
                     break
 
         if detected_styles:
-            logger.info(
-                f"[INTENT DETECTOR] Extracted styles: {detected_styles}"
-            )
+            logger.info(f"[INTENT DETECTOR] Extracted styles: {detected_styles}")
 
         return detected_styles if detected_styles else None
 
@@ -181,9 +177,7 @@ class IntentDetector:
                 detected_colors.append(color)
 
         if detected_colors:
-            logger.info(
-                f"[INTENT DETECTOR] Extracted colors: {detected_colors}"
-            )
+            logger.info(f"[INTENT DETECTOR] Extracted colors: {detected_colors}")
 
         return detected_colors if detected_colors else None
 
@@ -218,7 +212,9 @@ class IntentDetector:
 
         for pattern in photo_analysis_patterns:
             if re.search(pattern, message_lower):
-                logger.info(f"[INTENT DETECTOR] Photo analysis intent detected: '{pattern}'")
+                logger.info(
+                    f"[INTENT DETECTOR] Photo analysis intent detected: '{pattern}'"
+                )
                 return True
 
         return False

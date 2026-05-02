@@ -35,11 +35,13 @@ class CustomerProfileManager:
         """Load customer profiles from JSON file."""
         try:
             if os.path.exists(self.profiles_path):
-                with open(self.profiles_path, 'r') as f:
+                with open(self.profiles_path, "r") as f:
                     self.profiles = json.load(f)
                 logger.info(f"Loaded {len(self.profiles)} customer profiles")
             else:
-                logger.warning(f"Customer profiles file not found: {self.profiles_path}")
+                logger.warning(
+                    f"Customer profiles file not found: {self.profiles_path}"
+                )
                 self.profiles = {}
         except Exception as e:
             logger.error(f"Error loading customer profiles: {e}")
@@ -137,14 +139,20 @@ class CustomerProfileManager:
 
         # If it's a child's bedroom, infer from family members
         if "bedroom" in room_type.lower():
-            children = [m for m in family_members if m.get("relationship") in ["daughter", "son", "child"]]
+            children = [
+                m
+                for m in family_members
+                if m.get("relationship") in ["daughter", "son", "child"]
+            ]
 
             if len(children) == 1:
                 # Single child - use their age range
                 return children[0].get("age_range")
             elif len(children) > 1:
                 # Multiple children - would need more context
-                logger.info(f"Multiple children found for {customer_id}, cannot auto-infer age context")
+                logger.info(
+                    f"Multiple children found for {customer_id}, cannot auto-infer age context"
+                )
                 return None
 
         # For office/workspace, assume adult
@@ -157,7 +165,7 @@ class CustomerProfileManager:
         self,
         customer_id: str,
         room_type: Optional[str] = None,
-        category: Optional[str] = None
+        category: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         Get relevant past purchases filtered by room or category.
@@ -182,11 +190,13 @@ class CustomerProfileManager:
                     continue
 
                 # Add order context to item
-                relevant_items.append({
-                    **item,
-                    "order_date": order.get("date"),
-                    "order_id": order.get("order_id")
-                })
+                relevant_items.append(
+                    {
+                        **item,
+                        "order_date": order.get("date"),
+                        "order_id": order.get("order_id"),
+                    }
+                )
 
         return relevant_items
 
@@ -240,7 +250,7 @@ class CustomerProfileManager:
         if not profile:
             return {
                 "customer_known": False,
-                "greeting": "Hello! How can I help you today?"
+                "greeting": "Hello! How can I help you today?",
             }
 
         return {
@@ -250,10 +260,14 @@ class CustomerProfileManager:
             "family_members": self.get_family_members(customer_id),
             "home_info": self.get_home_info(customer_id),
             "style_preferences": self.get_style_preferences(customer_id),
-            "recent_purchases": self.get_purchase_history(customer_id)[-3:],  # Last 3 orders
+            "recent_purchases": self.get_purchase_history(customer_id)[
+                -3:
+            ],  # Last 3 orders
             "greeting": self.get_personalized_greeting(customer_id),
-            "preferred_communication": profile.get("preferences", {}).get("communication_channel", "voice"),
-            "values": profile.get("preferences", {}).get("values", [])
+            "preferred_communication": profile.get("preferences", {}).get(
+                "communication_channel", "voice"
+            ),
+            "values": profile.get("preferences", {}).get("values", []),
         }
 
 

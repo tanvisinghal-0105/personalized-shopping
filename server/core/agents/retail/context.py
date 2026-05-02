@@ -1640,15 +1640,15 @@ def _format_product_catalog():
         "|------------|-----|------|----------|-------------|----------|",
     ]
     for product in RetailContext.PRODUCT_CATALOG:
-        in_stock = 'Yes' if product.get('in_stock', True) else 'No'
-        lines.append(f"| {product['product_id']} | {product['sku']} | {product['name']} | {product['category']} | €{product['price']:.2f} | {in_stock} |")
+        in_stock = "Yes" if product.get("in_stock", True) else "No"
+        lines.append(
+            f"| {product['product_id']} | {product['sku']} | {product['name']} | {product['category']} | €{product['price']:.2f} | {in_stock} |"
+        )
     return "\n".join(lines)
 
 
 # Populate the available_products field with formatted catalog
-RetailContext.CUSTOMER_PROFILE["available_products"] = (
-    _format_product_catalog()
-)
+RetailContext.CUSTOMER_PROFILE["available_products"] = _format_product_catalog()
 
 
 def create_customer_profile(
@@ -1694,9 +1694,9 @@ def create_customer_profile(
         profile["customer_profile"]["current_cart"]["items"] = []
         profile["customer_profile"]["current_cart"]["subtotal"] = 0
         # Update customer start date to today
-        profile["customer_profile"][
-            "customer_start_date"
-        ] = datetime.now().strftime("%Y-%m-%d")
+        profile["customer_profile"]["customer_start_date"] = datetime.now().strftime(
+            "%Y-%m-%d"
+        )
         profile["customer_profile"]["loyalty_program"][
             "member_since"
         ] = datetime.now().strftime("%Y-%m-%d")

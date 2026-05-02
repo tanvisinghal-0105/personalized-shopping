@@ -146,13 +146,31 @@ Resources provisioned:
 - IAM service accounts (Vertex AI, Firestore, Secret Manager, Storage)
 - VPC connector for Cloud Run internal networking
 
-## Cloud Deployment
+## CI/CD Pipelines
+
+Each service has a Cloud Build pipeline that runs **tests before deploy** and tags images with the git commit SHA for traceability.
+
+| Pipeline | Pre-deploy Checks | Image Tag |
+|----------|-------------------|-----------|
+| `server/cloudbuild.yaml` | pytest (40 tests) + syntax validation | `$SHORT_SHA` + `latest` |
+| `client/cloudbuild.yaml` | Asset URL validation (no local refs) | `$SHORT_SHA` + `latest` |
+| `crm/cloudbuild.yaml` | Python syntax validation | `$SHORT_SHA` + `latest` |
+| `terraform/cloudbuild.yaml` | `terraform validate` + `plan` + `apply` | N/A |
 
 ```bash
-# Deploy via Cloud Build
-gcloud builds submit --config server/cloudbuild.yaml
-gcloud builds submit --config client/cloudbuild.yaml
-gcloud builds submit --config crm/cloudbuild.yaml
+# Deploy individual services
+gcloud builds submit --config server/cloudbuild.yaml      # tests + build + deploy
+gcloud builds submit --config client/cloudbuild.yaml      # validate + build + deploy
+gcloud builds submit --config crm/cloudbuild.yaml         # syntax + build + deploy
+gcloud builds submit --config terraform/cloudbuild.yaml   # validate + plan + apply
+```
+
+### Code Quality
+```bash
+cd server
+python -m pytest tests/ -v          # Unit tests
+python -m black . --check           # Code formatting
+python -m mypy core/ --ignore-missing-imports   # Type checking
 ```
 
 ## Demo Flow

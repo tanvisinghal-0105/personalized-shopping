@@ -22,11 +22,15 @@ GCS_BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME", f"{PROJECT_ID}-shopping-asse
 GCS_ASSETS_PREFIX = "assets"
 GCS_EVAL_PREFIX = "evaluation/logs"
 GCS_GENERATED_PREFIX = "generated"
-GCS_ASSETS_BASE_URL = f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/{GCS_ASSETS_PREFIX}"
+GCS_ASSETS_BASE_URL = (
+    f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/{GCS_ASSETS_PREFIX}"
+)
+
 
 def get_gcs_public_url(path: str) -> str:
     """Get the public URL for a GCS object."""
     return f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/{path}"
+
 
 def get_asset_url(relative_path: str) -> str:
     """Convert a local ./assets/... path to a GCS public URL.
@@ -83,9 +87,7 @@ def check_api_key_available() -> bool:
 USE_VERTEX_OVERRIDE = os.getenv("GOOGLE_GENAI_USE_VERTEXAI")
 if USE_VERTEX_OVERRIDE is not None:
     USE_VERTEX = int(USE_VERTEX_OVERRIDE)
-    logger.info(
-        f"Using explicit GOOGLE_GENAI_USE_VERTEXAI setting: {USE_VERTEX}"
-    )
+    logger.info(f"Using explicit GOOGLE_GENAI_USE_VERTEXAI setting: {USE_VERTEX}")
 else:
     USE_VERTEX = 0 if check_api_key_available() else 1
     logger.info(
@@ -105,9 +107,7 @@ class ApiConfig:
             try:
                 self.api_key = get_secret("GOOGLE_API_KEY")
             except Exception as e:
-                logger.warning(
-                    f"Failed to get API key from Secret Manager: {e}"
-                )
+                logger.warning(f"Failed to get API key from Secret Manager: {e}")
                 self.api_key = os.getenv("GOOGLE_API_KEY")
                 if not self.api_key:
                     raise ConfigurationError(
@@ -122,9 +122,7 @@ api_config = ApiConfig()
 if USE_VERTEX == 1:
     MODEL = os.getenv("MODEL_VERTEX_API", "gemini-live-2.5-flash-native-audio")
     AGENT_MODEL = os.getenv("AGENT_MODEL_VERTEX_API", MODEL)
-    RECOMMENDATION_MODEL = os.getenv(
-        "RECOMMENDATION_MODEL", "gemini-3.1-pro-preview"
-    )
+    RECOMMENDATION_MODEL = os.getenv("RECOMMENDATION_MODEL", "gemini-3.1-pro-preview")
     VOICE = os.getenv("VOICE_VERTEX_API", "Aoede")
     print(
         f"Use Vertex API with live model: {MODEL}, agent model: {AGENT_MODEL}, and voice {VOICE}"
@@ -133,9 +131,7 @@ if USE_VERTEX == 1:
 else:
     MODEL = os.getenv("MODEL_DEV_API", "gemini-3.1-flash-live-preview")
     AGENT_MODEL = os.getenv("AGENT_MODEL_DEV_API", MODEL)
-    RECOMMENDATION_MODEL = os.getenv(
-        "RECOMMENDATION_MODEL", "gemini-3.1-pro-preview"
-    )
+    RECOMMENDATION_MODEL = os.getenv("RECOMMENDATION_MODEL", "gemini-3.1-pro-preview")
     VOICE = os.getenv("VOICE_DEV_API", "Puck")
     print(
         f"Use Dev API (AI Studio) with live model: {MODEL}, agent model: {AGENT_MODEL}, and voice {VOICE}"
@@ -143,21 +139,15 @@ else:
     print(f"Recommendation model: {RECOMMENDATION_MODEL}")
 
 # ADK Feature Flags
-USE_INTERACTIONS_API = (
-    os.getenv("USE_INTERACTIONS_API", "false").lower() == "true"
-)
-ENABLE_CONTEXT_CACHING = (
-    os.getenv("ENABLE_CONTEXT_CACHING", "true").lower() == "true"
-)
+USE_INTERACTIONS_API = os.getenv("USE_INTERACTIONS_API", "false").lower() == "true"
+ENABLE_CONTEXT_CACHING = os.getenv("ENABLE_CONTEXT_CACHING", "true").lower() == "true"
 logger.info(
     f"ADK Features - Interactions API: {USE_INTERACTIONS_API}, Context Caching: {ENABLE_CONTEXT_CACHING}"
 )
 
 # Voice Activity Detection (VAD) Configuration
 VAD_ENABLED = os.getenv("VAD_ENABLED", "true").lower() == "true"
-VAD_START_SENSITIVITY = os.getenv(
-    "VAD_START_SENSITIVITY", "LOW"
-)  # LOW or HIGH
+VAD_START_SENSITIVITY = os.getenv("VAD_START_SENSITIVITY", "LOW")  # LOW or HIGH
 VAD_END_SENSITIVITY = os.getenv("VAD_END_SENSITIVITY", "LOW")  # LOW or HIGH
 VAD_PREFIX_PADDING_MS = int(os.getenv("VAD_PREFIX_PADDING_MS", "20"))
 VAD_SILENCE_DURATION_MS = int(os.getenv("VAD_SILENCE_DURATION_MS", "100"))

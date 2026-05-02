@@ -52,15 +52,12 @@ class HomeDecorSessionState:
         """Get the most recent session for a customer."""
         with self._lock:
             customer_sessions = [
-                s for s in self._sessions.values()
-                if s["customer_id"] == customer_id
+                s for s in self._sessions.values() if s["customer_id"] == customer_id
             ]
             if customer_sessions:
                 # Return most recent
                 return sorted(
-                    customer_sessions,
-                    key=lambda x: x["created_at"],
-                    reverse=True
+                    customer_sessions, key=lambda x: x["created_at"], reverse=True
                 )[0]
             return None
 
@@ -144,12 +141,14 @@ class HomeDecorSessionState:
         """Add a conversation turn to the session history."""
         with self._lock:
             if session_id in self._sessions:
-                self._sessions[session_id]["conversation_history"].append({
-                    "timestamp": datetime.now().isoformat(),
-                    "user": user_message,
-                    "agent": agent_response,
-                    "tool": tool_called,
-                })
+                self._sessions[session_id]["conversation_history"].append(
+                    {
+                        "timestamp": datetime.now().isoformat(),
+                        "user": user_message,
+                        "agent": agent_response,
+                        "tool": tool_called,
+                    }
+                )
 
     def clear_old_sessions(self, hours: int = 24) -> int:
         """Clear sessions older than specified hours. Returns count of cleared sessions."""

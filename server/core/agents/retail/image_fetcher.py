@@ -6,7 +6,9 @@ Maps product categories to images in the GCS bucket.
 from typing import List, Dict
 from ...logger import logger
 
-GCS_ASSETS_BASE = "https://storage.googleapis.com/capstone-tanvi-01-447109-shopping-assets/assets"
+GCS_ASSETS_BASE = (
+    "https://storage.googleapis.com/capstone-tanvi-01-447109-shopping-assets/assets"
+)
 
 # Category-to-image mapping
 _IMAGE_MAP = {
@@ -46,7 +48,9 @@ class ImageFetcher:
     """Maps product categories to GCS-hosted images."""
 
     def __init__(self):
-        logger.info(f"ImageFetcher initialized with {len(_IMAGE_MAP)} mappings, base: {GCS_ASSETS_BASE}")
+        logger.info(
+            f"ImageFetcher initialized with {len(_IMAGE_MAP)} mappings, base: {GCS_ASSETS_BASE}"
+        )
 
     def _get_image_for_category(self, category: str, subcategory: str = "") -> str:
         for key in (subcategory.lower(), category.lower()):
@@ -54,7 +58,9 @@ class ImageFetcher:
                 return f"{GCS_ASSETS_BASE}/{_IMAGE_MAP[key]}"
         return DEFAULT_IMAGE
 
-    def fetch_product_image(self, product_name: str, product_id: str, category: str = "", style: str = "") -> str:
+    def fetch_product_image(
+        self, product_name: str, product_id: str, category: str = "", style: str = ""
+    ) -> str:
         return self._get_image_for_category(category)
 
     def fetch_batch_images(self, products: List[Dict]) -> Dict[str, str]:

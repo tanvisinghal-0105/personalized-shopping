@@ -1,0 +1,52 @@
+timeout: 600s
+substitutions:
+  _TF_STATE_BUCKET: ${PROJECT_ID}-tf-state
+
+steps:
+# Step 1: Validate Terraform configuration
+- name: 'hashicorp/terraform:1.9'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    terraform init -backend=false
+    terraform validate
+    echo "Terraform validation passed"
+  dir: 'terraform'
+  id: 'validate'
+
+# Step 2: Plan infrastructure changes
+- name: 'hashicorp/terraform:1.9'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    terraform init \
+      -backend-config="bucket=${_TF_STATE_BUCKET}" \
+      -backend-config="prefix=personalized-shopping"
+    terraform plan \
+      -var="project_id=$PROJECT_ID" \
+      -var="region=us-central1" \
+      -out=tfplan
+  dir: 'terraform'
+  id: 'plan'
+  waitFor: ['validate']
+
+# Step 3: Apply infrastructure changes (only on main branch)
+- name: 'hashicorp/terraform:1.9'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    terraform init \
+      -backend-config="bucket=${_TF_STATE_BUCKET}" \
+      -backend-config="prefix=personalized-shopping"
+    terraform apply -auto-approve \
+      -var="project_id=$PROJECT_ID" \
+      -var="region=us-central1"
+  dir: 'terraform'
+  id: 'apply'
+  waitFor: ['plan']
+
+options:
+  logging: CLOUD_LOGGING_ONLY

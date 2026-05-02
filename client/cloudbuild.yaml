@@ -1,23 +1,59 @@
 timeout: 600s
+substitutions:
+  _REGION: us-central1
+  _SERVICE_NAME: cymbal-frontend
+
 steps:
-# Build the container image
-- name: 'gcr.io/cloud-builders/docker'
-  args: [ 'build', '-t', 'gcr.io/$PROJECT_ID/cymbal-frontend', '.' ]
+# Step 1: Validate HTML/JS syntax
+- name: 'node:20-slim'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    echo "Checking for broken asset references..."
+    # Verify no local ./assets/ references remain (should all be GCS URLs)
+    if grep -r '\./assets/' index.html src/ 2>/dev/null; then
+      echo "ERROR: Found local ./assets/ references. All assets should use GCS URLs."
+      exit 1
+    fi
+    echo "Asset references OK -- all pointing to GCS"
+  dir: 'client'
+  id: 'validate'
 
-# Push the container image to Container Registry
+# Step 2: Build the container image with git SHA tag
 - name: 'gcr.io/cloud-builders/docker'
-  args: [ 'push', 'gcr.io/$PROJECT_ID/cymbal-frontend' ]
+  args:
+  - 'build'
+  - '-t'
+  - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA'
+  - '-t'
+  - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:latest'
+  - '.'
+  dir: 'client'
+  id: 'build'
+  waitFor: ['validate']
 
-# Deploy container image to Cloud Run
+# Step 3: Push tagged images
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'push', 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA' ]
+  id: 'push-sha'
+  waitFor: ['build']
+
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'push', 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:latest' ]
+  id: 'push-latest'
+  waitFor: ['build']
+
+# Step 4: Deploy to Cloud Run
 - name: 'gcr.io/cloud-builders/gcloud'
   args:
   - 'run'
   - 'deploy'
-  - 'cymbal-frontend'
+  - '${_SERVICE_NAME}'
   - '--image'
-  - 'gcr.io/$PROJECT_ID/cymbal-frontend'
+  - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA'
   - '--region'
-  - 'us-central1'
+  - '${_REGION}'
   - '--platform'
   - 'managed'
   - '--allow-unauthenticated'
@@ -31,6 +67,12 @@ steps:
   - '0'
   - '--max-instances'
   - '10'
+  id: 'deploy'
+  waitFor: ['push-sha']
 
 images:
-- 'gcr.io/$PROJECT_ID/cymbal-frontend'
+- 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA'
+- 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

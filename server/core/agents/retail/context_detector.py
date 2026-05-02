@@ -15,7 +15,9 @@ class ContextDetector:
         """Initialize the context detector."""
         pass
 
-    def detect_time_context(self, timestamp: Optional[datetime] = None) -> Dict[str, Any]:
+    def detect_time_context(
+        self, timestamp: Optional[datetime] = None
+    ) -> Dict[str, Any]:
         """
         Detect time-of-day context.
 
@@ -78,7 +80,9 @@ class ContextDetector:
             "shopping_context": shopping_context,
             "mood": mood,
             "availability": availability,
-            "suggested_interaction_style": self._suggest_interaction_style(shopping_context, mood)
+            "suggested_interaction_style": self._suggest_interaction_style(
+                shopping_context, mood
+            ),
         }
 
     def _suggest_interaction_style(self, shopping_context: str, mood: str) -> str:
@@ -102,9 +106,7 @@ class ContextDetector:
             return "balanced"
 
     def detect_family_presence(
-        self,
-        transcript: str,
-        family_members: Optional[List[Dict[str, Any]]] = None
+        self, transcript: str, family_members: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
         """
         Detect if family members are mentioned or present in the conversation.
@@ -120,7 +122,7 @@ class ContextDetector:
             return {
                 "family_detected": False,
                 "members_mentioned": [],
-                "collaborative_decision": False
+                "collaborative_decision": False,
             }
 
         transcript_lower = transcript.lower()
@@ -132,16 +134,24 @@ class ContextDetector:
             for member in family_members:
                 name = member.get("name", "").lower()
                 if name and name in transcript_lower:
-                    members_mentioned.append({
-                        "name": member.get("name"),
-                        "relationship": member.get("relationship"),
-                        "age_range": member.get("age_range")
-                    })
+                    members_mentioned.append(
+                        {
+                            "name": member.get("name"),
+                            "relationship": member.get("relationship"),
+                            "age_range": member.get("age_range"),
+                        }
+                    )
 
         # Check for collaborative decision signals
         collaborative_keywords = [
-            "wants to help", "is here", "we both", "together",
-            "co-decide", "with me", "helping choose", "can help decide"
+            "wants to help",
+            "is here",
+            "we both",
+            "together",
+            "co-decide",
+            "with me",
+            "helping choose",
+            "can help decide",
         ]
 
         for keyword in collaborative_keywords:
@@ -150,8 +160,14 @@ class ContextDetector:
 
         # Check for child/family references
         family_keywords = [
-            "my daughter", "my son", "my child", "my kid",
-            "our daughter", "our son", "family", "children"
+            "my daughter",
+            "my son",
+            "my child",
+            "my kid",
+            "our daughter",
+            "our son",
+            "family",
+            "children",
         ]
 
         for keyword in family_keywords:
@@ -159,13 +175,19 @@ class ContextDetector:
                 collaborative_signals.append(keyword)
 
         return {
-            "family_detected": len(members_mentioned) > 0 or len(collaborative_signals) > 0,
+            "family_detected": len(members_mentioned) > 0
+            or len(collaborative_signals) > 0,
             "members_mentioned": members_mentioned,
             "collaborative_signals": collaborative_signals,
             "collaborative_decision": len(collaborative_signals) > 0,
-            "suggested_tone": "inclusive_child_friendly" if any(
-                m.get("age_range") in ["toddler", "school-age"] for m in members_mentioned
-            ) else "family_oriented"
+            "suggested_tone": (
+                "inclusive_child_friendly"
+                if any(
+                    m.get("age_range") in ["toddler", "school-age"]
+                    for m in members_mentioned
+                )
+                else "family_oriented"
+            ),
         }
 
     def detect_urgency(self, transcript: str) -> Dict[str, Any]:
@@ -182,7 +204,7 @@ class ContextDetector:
             return {
                 "urgency_level": "normal",
                 "urgency_signals": [],
-                "timeline": "flexible"
+                "timeline": "flexible",
             }
 
         transcript_lower = transcript.lower()
@@ -192,20 +214,37 @@ class ContextDetector:
 
         # High urgency signals
         high_urgency = [
-            "asap", "urgent", "quickly", "right away", "immediately",
-            "today", "this week", "soon", "starting school", "moving in"
+            "asap",
+            "urgent",
+            "quickly",
+            "right away",
+            "immediately",
+            "today",
+            "this week",
+            "soon",
+            "starting school",
+            "moving in",
         ]
 
         # Medium urgency signals
         medium_urgency = [
-            "next month", "few weeks", "upcoming", "before",
-            "in time for", "by the time"
+            "next month",
+            "few weeks",
+            "upcoming",
+            "before",
+            "in time for",
+            "by the time",
         ]
 
         # Low urgency signals
         low_urgency = [
-            "eventually", "someday", "when we can", "no rush",
-            "thinking about", "considering", "exploring"
+            "eventually",
+            "someday",
+            "when we can",
+            "no rush",
+            "thinking about",
+            "considering",
+            "exploring",
         ]
 
         # Check for urgency signals
@@ -233,7 +272,7 @@ class ContextDetector:
             "urgency_level": urgency_level,
             "urgency_signals": urgency_signals,
             "timeline": timeline,
-            "suggested_response_speed": "fast" if urgency_level == "high" else "normal"
+            "suggested_response_speed": "fast" if urgency_level == "high" else "normal",
         }
 
     def detect_project_scope(self, transcript: str) -> Dict[str, Any]:
@@ -247,39 +286,58 @@ class ContextDetector:
             Dictionary with project scope information.
         """
         if not transcript:
-            return {
-                "scope": "unknown",
-                "complexity": "simple",
-                "signals": []
-            }
+            return {"scope": "unknown", "complexity": "simple", "signals": []}
 
         transcript_lower = transcript.lower()
         scope_signals = []
 
         # Room redesign signals (high complexity)
         redesign_signals = [
-            "redesign", "redesigning", "redo", "redoing", "transform",
-            "complete makeover", "starting from scratch", "everything",
-            "furniture and decor", "entire room", "whole room"
+            "redesign",
+            "redesigning",
+            "redo",
+            "redoing",
+            "transform",
+            "complete makeover",
+            "starting from scratch",
+            "everything",
+            "furniture and decor",
+            "entire room",
+            "whole room",
         ]
 
         # Multi-product signals (medium complexity)
         multi_product_signals = [
-            "desk, bed", "bed and", "desk and", "wardrobe and",
-            "need several", "multiple items", "a few things",
-            "some furniture", "few pieces"
+            "desk, bed",
+            "bed and",
+            "desk and",
+            "wardrobe and",
+            "need several",
+            "multiple items",
+            "a few things",
+            "some furniture",
+            "few pieces",
         ]
 
         # Single product signals (low complexity)
         single_product_signals = [
-            "just a", "only need", "looking for one", "single",
-            "one item", "specific product"
+            "just a",
+            "only need",
+            "looking for one",
+            "single",
+            "one item",
+            "specific product",
         ]
 
         # Decoration only signals (low-medium complexity)
         decoration_signals = [
-            "decoration", "decorating", "decor", "accessories",
-            "finishing touches", "accent pieces", "some art"
+            "decoration",
+            "decorating",
+            "decor",
+            "accessories",
+            "finishing touches",
+            "accent pieces",
+            "some art",
         ]
 
         # Check for redesign (highest complexity)
@@ -291,7 +349,7 @@ class ContextDetector:
                     "complexity": "high",
                     "signals": scope_signals,
                     "estimated_products": "8-15",
-                    "suggested_persona": "interior_designer"
+                    "suggested_persona": "interior_designer",
                 }
 
         # Check for multi-product
@@ -303,7 +361,7 @@ class ContextDetector:
                     "complexity": "medium",
                     "signals": scope_signals,
                     "estimated_products": "3-7",
-                    "suggested_persona": "product_consultant"
+                    "suggested_persona": "product_consultant",
                 }
 
         # Check for decoration only
@@ -315,7 +373,7 @@ class ContextDetector:
                     "complexity": "medium",
                     "signals": scope_signals,
                     "estimated_products": "4-8",
-                    "suggested_persona": "style_advisor"
+                    "suggested_persona": "style_advisor",
                 }
 
         # Check for single product
@@ -327,7 +385,7 @@ class ContextDetector:
                     "complexity": "low",
                     "signals": scope_signals,
                     "estimated_products": "1-2",
-                    "suggested_persona": "sales_assistant"
+                    "suggested_persona": "sales_assistant",
                 }
 
         # Default
@@ -336,14 +394,14 @@ class ContextDetector:
             "complexity": "medium",
             "signals": [],
             "estimated_products": "3-5",
-            "suggested_persona": "general_assistant"
+            "suggested_persona": "general_assistant",
         }
 
     def get_full_context(
         self,
         initial_request: str,
         customer_profile: Optional[Dict[str, Any]] = None,
-        timestamp: Optional[datetime] = None
+        timestamp: Optional[datetime] = None,
     ) -> Dict[str, Any]:
         """
         Get comprehensive context analysis for the interaction.
@@ -360,20 +418,26 @@ class ContextDetector:
         urgency = self.detect_urgency(initial_request)
         project_scope = self.detect_project_scope(initial_request)
 
-        family_members = customer_profile.get("family_members", []) if customer_profile else []
+        family_members = (
+            customer_profile.get("family_members", []) if customer_profile else []
+        )
         family_presence = self.detect_family_presence(initial_request, family_members)
 
-        logger.info(f"Context detected: {project_scope['scope']}, urgency: {urgency['urgency_level']}, time: {time_context['shopping_context']}")
+        logger.info(
+            f"Context detected: {project_scope['scope']}, urgency: {urgency['urgency_level']}, time: {time_context['shopping_context']}"
+        )
 
         return {
-            "timestamp": timestamp.isoformat() if timestamp else datetime.now().isoformat(),
+            "timestamp": (
+                timestamp.isoformat() if timestamp else datetime.now().isoformat()
+            ),
             "time_context": time_context,
             "urgency": urgency,
             "project_scope": project_scope,
             "family_presence": family_presence,
             "suggested_approach": self._suggest_approach(
                 time_context, urgency, project_scope, family_presence
-            )
+            ),
         }
 
     def _suggest_approach(
@@ -381,7 +445,7 @@ class ContextDetector:
         time_context: Dict[str, Any],
         urgency: Dict[str, Any],
         project_scope: Dict[str, Any],
-        family_presence: Dict[str, Any]
+        family_presence: Dict[str, Any],
     ) -> Dict[str, Any]:
         """
         Suggest the best approach based on all context factors.
@@ -432,8 +496,8 @@ class ContextDetector:
                 f"Customer availability: {time_context['availability']}",
                 f"Project complexity: {project_scope['complexity']}",
                 f"Urgency: {urgency['urgency_level']}",
-                f"Family collaboration: {family_presence['collaborative_decision']}"
-            ]
+                f"Family collaboration: {family_presence['collaborative_decision']}",
+            ],
         }
 
 

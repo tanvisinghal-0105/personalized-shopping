@@ -16,17 +16,20 @@ try:
 except ImportError:
     print("Installing required packages...")
     import subprocess
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "google-cloud-aiplatform"])
+
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "google-cloud-aiplatform"]
+    )
     from vertexai.preview.vision_models import ImageGenerationModel
     import vertexai
 
 # Load environment variables
-env_path = Path(__file__).parent.parent / '.env'
+env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(env_path)
 
 # Get credentials from environment
-PROJECT_ID = os.getenv('GOOGLE_CLOUD_PROJECT')
-LOCATION = os.getenv('GOOGLE_CLOUD_LOCATION', 'us-central1')
+PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT")
+LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 
 # Room types with descriptive labels
 ROOMS = [
@@ -35,7 +38,7 @@ ROOMS = [
     ("dining_room", "dining room interior"),
     ("kitchen", "kitchen interior"),
     ("bathroom", "bathroom interior"),
-    ("home_office", "home office interior")
+    ("home_office", "home office interior"),
 ]
 
 # Style preferences with detailed descriptions
@@ -47,7 +50,7 @@ STYLE_DESCRIPTIONS = {
     "industrial": "industrial style with exposed brick, metal fixtures, raw materials, concrete floors, and warehouse-inspired elements",
     "scandinavian": "Scandinavian style with light wood tones, white walls, cozy textiles, functional design, and hygge atmosphere",
     "traditional": "traditional style with classic furniture, rich wood tones, elegant fabrics, ornate details, and timeless design",
-    "rustic": "rustic style with natural wood, stone elements, warm earthy tones, vintage pieces, and countryside charm"
+    "rustic": "rustic style with natural wood, stone elements, warm earthy tones, vintage pieces, and countryside charm",
 }
 
 
@@ -85,7 +88,7 @@ def generate_image_with_imagen(prompt: str, output_path: str, filename: str):
 
         # Save the image
         # The response has an images attribute that contains the generated images
-        if response and hasattr(response, 'images') and len(response.images) > 0:
+        if response and hasattr(response, "images") and len(response.images) > 0:
             image = response.images[0]
             filepath = os.path.join(output_path, filename)
             image.save(location=filepath, include_generation_parameters=False)
@@ -180,7 +183,9 @@ def main():
 
     if successful > 0:
         print(f"\nSuccessfully generated {successful} interior design images!")
-        print("All images are AI-generated and match the specified room-style combinations.")
+        print(
+            "All images are AI-generated and match the specified room-style combinations."
+        )
 
     if failed > 0:
         print(f"\nNote: {failed} generations failed.")

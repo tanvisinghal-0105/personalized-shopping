@@ -33,7 +33,7 @@ class InteriorDesignerPersona(AgentPersona):
     def __init__(self):
         super().__init__(
             name="Interior Designer",
-            description="Expert in home decor, furniture selection, and room design"
+            description="Expert in home decor, furniture selection, and room design",
         )
 
     def get_system_instructions(self) -> str:
@@ -83,7 +83,7 @@ Tools you use:
             "continue_home_decor_consultation",
             "create_style_moodboard",
             "modify_cart",
-            "access_cart_information"
+            "access_cart_information",
         ]
 
 
@@ -93,7 +93,7 @@ class ProductConsultantPersona(AgentPersona):
     def __init__(self):
         super().__init__(
             name="Product Consultant",
-            description="Expert in product recommendations and comparisons"
+            description="Expert in product recommendations and comparisons",
         )
 
     def get_system_instructions(self) -> str:
@@ -135,7 +135,7 @@ Tools you use:
             "get_product_recommendations",
             "check_product_availability",
             "modify_cart",
-            "access_cart_information"
+            "access_cart_information",
         ]
 
 
@@ -145,7 +145,7 @@ class SalesAssistantPersona(AgentPersona):
     def __init__(self):
         super().__init__(
             name="Sales Assistant",
-            description="Quick and efficient for simple purchases"
+            description="Quick and efficient for simple purchases",
         )
 
     def get_system_instructions(self) -> str:
@@ -179,7 +179,7 @@ Tools you use:
             "get_product_recommendations",
             "check_product_availability",
             "modify_cart",
-            "access_cart_information"
+            "access_cart_information",
         ]
 
 
@@ -189,7 +189,7 @@ class StyleAdvisorPersona(AgentPersona):
     def __init__(self):
         super().__init__(
             name="Style Advisor",
-            description="Expert in decorative accessories and styling"
+            description="Expert in decorative accessories and styling",
         )
 
     def get_system_instructions(self) -> str:
@@ -230,7 +230,7 @@ Tools you use:
             "start_home_decor_consultation",
             "continue_home_decor_consultation",
             "create_style_moodboard",
-            "modify_cart"
+            "modify_cart",
         ]
 
 
@@ -240,7 +240,7 @@ class GeneralAssistantPersona(AgentPersona):
     def __init__(self):
         super().__init__(
             name="General Assistant",
-            description="Versatile assistant for various shopping needs"
+            description="Versatile assistant for various shopping needs",
         )
 
     def get_system_instructions(self) -> str:
@@ -279,7 +279,7 @@ You have access to all tools and can handle:
             "check_product_availability",
             "modify_cart",
             "access_cart_information",
-            "schedule_service_appointment"
+            "schedule_service_appointment",
         ]
 
 
@@ -293,7 +293,7 @@ class PersonaSystem:
             "product_consultant": ProductConsultantPersona(),
             "sales_assistant": SalesAssistantPersona(),
             "style_advisor": StyleAdvisorPersona(),
-            "general_assistant": GeneralAssistantPersona()
+            "general_assistant": GeneralAssistantPersona(),
         }
         self.current_persona = "general_assistant"
 
@@ -310,10 +310,7 @@ class PersonaSystem:
         return self.personas.get(persona_key)
 
     def select_persona(
-        self,
-        project_scope: str,
-        complexity: str,
-        category: Optional[str] = None
+        self, project_scope: str, complexity: str, category: Optional[str] = None
     ) -> AgentPersona:
         """
         Select the most appropriate persona based on context.
@@ -382,7 +379,7 @@ class PersonaSystem:
         self,
         persona_key: Optional[str] = None,
         customer_name: Optional[str] = None,
-        context: Optional[str] = None
+        context: Optional[str] = None,
     ) -> str:
         """
         Get a personalized greeting from the specified persona.

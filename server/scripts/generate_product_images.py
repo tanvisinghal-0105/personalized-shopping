@@ -17,24 +17,29 @@ try:
 except ImportError:
     print("Installing required packages...")
     import subprocess
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "google-cloud-aiplatform"])
+
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "google-cloud-aiplatform"]
+    )
     from vertexai.preview.vision_models import ImageGenerationModel
     import vertexai
 
 # Load environment variables
-env_path = Path(__file__).parent.parent / '.env'
+env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(env_path)
 
 # Get credentials from environment
-PROJECT_ID = os.getenv('GOOGLE_CLOUD_PROJECT')
-LOCATION = os.getenv('GOOGLE_CLOUD_LOCATION', 'us-central1')
+PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT")
+LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 
 
 def load_product_catalog():
     """Load product catalog from context.py."""
-    context_path = Path(__file__).parent.parent / 'core' / 'agents' / 'retail' / 'context.py'
+    context_path = (
+        Path(__file__).parent.parent / "core" / "agents" / "retail" / "context.py"
+    )
 
-    with open(context_path, 'r') as f:
+    with open(context_path, "r") as f:
         content = f.read()
 
     # Extract products with their details
@@ -45,14 +50,16 @@ def load_product_catalog():
     matches = re.findall(pattern, content)
 
     for product_id, sku, name, category in matches:
-        filename = product_id.lower().replace('-', '_') + '.jpg'
-        products.append({
-            'product_id': product_id,
-            'sku': sku,
-            'name': name,
-            'category': category,
-            'filename': filename
-        })
+        filename = product_id.lower().replace("-", "_") + ".jpg"
+        products.append(
+            {
+                "product_id": product_id,
+                "sku": sku,
+                "name": name,
+                "category": category,
+                "filename": filename,
+            }
+        )
 
     return products
 
@@ -85,9 +92,13 @@ def create_product_prompt(product_name: str, category: str) -> str:
     elif category == "Wearables":
         prompt += "Clean white background, product displayed elegantly, luxury tech photography. "
     elif category == "Gaming":
-        prompt += "Clean white background, product centered, gaming hardware photography. "
+        prompt += (
+            "Clean white background, product centered, gaming hardware photography. "
+        )
     elif category == "Accessories":
-        prompt += "Clean white background, accessory displayed clearly, product photography. "
+        prompt += (
+            "Clean white background, accessory displayed clearly, product photography. "
+        )
     elif category == "Home Decor":
         prompt += "Clean white background, decor item beautifully styled, interior design product photography. "
     elif category == "Furniture":
@@ -130,7 +141,7 @@ def generate_product_image(product: dict, output_dir: Path) -> bool:
         model = ImageGenerationModel.from_pretrained("imagen-3.0-generate-001")
 
         # Create prompt
-        prompt = create_product_prompt(product['name'], product['category'])
+        prompt = create_product_prompt(product["name"], product["category"])
 
         print(f"Generating {product['filename']}...")
         print(f"  Product: {product['name']}")
@@ -147,9 +158,9 @@ def generate_product_image(product: dict, output_dir: Path) -> bool:
         )
 
         # Save the image
-        if response and hasattr(response, 'images') and len(response.images) > 0:
+        if response and hasattr(response, "images") and len(response.images) > 0:
             image = response.images[0]
-            filepath = output_dir / product['filename']
+            filepath = output_dir / product["filename"]
             image.save(location=str(filepath), include_generation_parameters=False)
             print(f"  ✓ Generated {product['filename']}")
             return True
@@ -165,7 +176,7 @@ def generate_product_image(product: dict, output_dir: Path) -> bool:
 def main():
     """Main function to generate product images."""
     # Check for --yes flag to skip confirmation
-    skip_confirmation = '--yes' in sys.argv or '-y' in sys.argv
+    skip_confirmation = "--yes" in sys.argv or "-y" in sys.argv
 
     # Check credentials
     if not PROJECT_ID:
@@ -193,7 +204,7 @@ def main():
     # Find products with placeholder images (< 10KB)
     products_to_generate = []
     for product in products:
-        filepath = output_dir / product['filename']
+        filepath = output_dir / product["filename"]
         if filepath.exists():
             size = filepath.stat().st_size
             if size < 10000:  # Placeholder images are < 10KB
@@ -219,7 +230,7 @@ def main():
 
     if not skip_confirmation:
         response = input("\nProceed with image generation? (yes/no): ")
-        if response.lower() not in ['yes', 'y']:
+        if response.lower() not in ["yes", "y"]:
             print("Cancelled.")
             return
     else:

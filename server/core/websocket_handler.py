@@ -86,9 +86,7 @@ async def create_session(
     """
     Creates and stores a new session, leveraging the new ADK live session runner.
     """
-    response_modalities_from_config = CONFIG["generation_config"][
-        "response_modalities"
-    ]
+    response_modalities_from_config = CONFIG["generation_config"]["response_modalities"]
 
     print(f"Voice: {CONFIG['generation_config']['speech_config']}")
     print(
@@ -126,18 +124,12 @@ async def create_session(
         logger.info("VAD disabled - manual activity control required")
 
     # Configure realtime input with VAD settings
-    realtime_config = types.RealtimeInputConfig(
-        automatic_activity_detection=vad_config
-    )
+    realtime_config = types.RealtimeInputConfig(automatic_activity_detection=vad_config)
 
     # Set activity handling based on interruption configuration
     if not ALLOW_INTERRUPTION:
-        realtime_config.activity_handling = (
-            types.ActivityHandling.NO_INTERRUPTION
-        )
-        logger.info(
-            "Interruptions disabled - model responses cannot be interrupted"
-        )
+        realtime_config.activity_handling = types.ActivityHandling.NO_INTERRUPTION
+        logger.info("Interruptions disabled - model responses cannot be interrupted")
 
     run_config = RunConfig(
         response_modalities=response_modalities_from_config,
@@ -216,38 +208,50 @@ async def _generate_and_send_style_previews(
             _generate_single_style_preview, room_photo_b64, style_entry, room_type
         )
 
-    logger.info(f"[STYLE PREVIEW ASYNC] Starting generation for {len(style_options)} styles")
-    tasks = {
-        asyncio.create_task(_gen_one(s)): s["id"]
-        for s in style_options
-    }
+    logger.info(
+        f"[STYLE PREVIEW ASYNC] Starting generation for {len(style_options)} styles"
+    )
+    tasks = {asyncio.create_task(_gen_one(s)): s["id"] for s in style_options}
 
     for coro in asyncio.as_completed(tasks):
         try:
             result = await coro
             if result and "data:image" in result.get("image_url", ""):
-                await websocket.send(json.dumps({
-                    "type": "style_preview_update",
-                    "data": {
-                        "style_id": result["id"],
-                        "image_url": result["image_url"],
-                    }
-                }))
+                await websocket.send(
+                    json.dumps(
+                        {
+                            "type": "style_preview_update",
+                            "data": {
+                                "style_id": result["id"],
+                                "image_url": result["image_url"],
+                            },
+                        }
+                    )
+                )
                 logger.info(f"[STYLE PREVIEW ASYNC] Sent preview for '{result['id']}'")
         except Exception as e:
             logger.error(f"[STYLE PREVIEW ASYNC] Error generating preview: {e}")
 
     # Notify frontend that personalisation is complete
     try:
-        await websocket.send(json.dumps({
-            "type": "style_preview_done",
-        }))
+        await websocket.send(
+            json.dumps(
+                {
+                    "type": "style_preview_done",
+                }
+            )
+        )
     except Exception:
         pass
     logger.info("[STYLE PREVIEW ASYNC] All style previews done")
 
 
-async def handle_agent_responses(websocket: Any, live_events: Any, session_id: str, live_request_queue: LiveRequestQueue) -> None:
+async def handle_agent_responses(
+    websocket: Any,
+    live_events: Any,
+    session_id: str,
+    live_request_queue: LiveRequestQueue,
+) -> None:
     """
     Handles responses from the agent, forwarding data to the client/frontend via websocket.
     Enhanced with improved interruption handling using Gemini SDK features.
@@ -263,54 +267,75 @@ async def handle_agent_responses(websocket: Any, live_events: Any, session_id: s
 
             # Check for voice input transcriptions to detect intent
             # ONLY process when transcription is finished to avoid duplicate detections
-            if hasattr(event, 'input_transcription') and event.input_transcription:
+            if hasattr(event, "input_transcription") and event.input_transcription:
                 transcribed_text = event.input_transcription.text
-                is_finished = getattr(event.input_transcription, 'finished', False)
+                is_finished = getattr(event.input_transcription, "finished", False)
 
                 if transcribed_text and is_finished:
-                    logger.info(f"[VOICE INTENT] User said (finished): '{transcribed_text}'")
+                    logger.info(
+                        f"[VOICE INTENT] User said (finished): '{transcribed_text}'"
+                    )
                     # Record for evaluation
                     try:
                         recorder = get_recorder(str(session_id))
                         recorder.record_user_input(transcribed_text)
-                        logger.info(f"[EVAL] Recorded user input: '{transcribed_text[:50]}'")
+                        logger.info(
+                            f"[EVAL] Recorded user input: '{transcribed_text[:50]}'"
+                        )
                     except Exception as rec_err:
                         logger.warning(f"[EVAL] Failed to record user input: {rec_err}")
 
                     # Get session context for all intent checks
                     from core.agents.retail.session_state import get_state_manager
+
                     session_context = SESSION_CONTEXTS.get(session_id, {})
                     customer_id = session_context.get("customer_id", "CY-DEFAULT")
                     state_manager = get_state_manager()
                     existing_session = state_manager.get_customer_session(customer_id)
 
                     # Check for photo analysis intent first
-                    forced_call = intent_detector.should_force_tool_call(transcribed_text)
+                    forced_call = intent_detector.should_force_tool_call(
+                        transcribed_text
+                    )
 
                     if forced_call and forced_call["tool_name"] == "analyze_photos":
                         # User said something like "analyze the photos" or "analyze my room"
-                        logger.info("[VOICE INTENT] ===== PHOTO ANALYSIS INTENT DETECTED =====")
+                        logger.info(
+                            "[VOICE INTENT] ===== PHOTO ANALYSIS INTENT DETECTED ====="
+                        )
 
                         # Signal frontend to automatically submit uploaded photos
                         await websocket.send(
-                            json.dumps({
-                                "type": "trigger_photo_analysis",
-                                "data": {
-                                    "trigger": "voice_command",
-                                    "transcription": transcribed_text
+                            json.dumps(
+                                {
+                                    "type": "trigger_photo_analysis",
+                                    "data": {
+                                        "trigger": "voice_command",
+                                        "transcription": transcribed_text,
+                                    },
                                 }
-                            })
+                            )
                         )
-                        logger.info("[VOICE INTENT] Sent trigger_photo_analysis to frontend")
+                        logger.info(
+                            "[VOICE INTENT] Sent trigger_photo_analysis to frontend"
+                        )
                         continue
 
                     # IMPORTANT: Check if there's already an active home decor consultation
                     # If yes (and moodboard not yet generated), allow natural conversation flow without forcing tool calls
                     # After moodboard is presented, allow forced tool calls for new requests
-                    if existing_session and existing_session.get("current_stage") not in ["moodboard_presented", None]:
-                        logger.info(f"[VOICE INTENT] Active home decor session exists (session_id: {existing_session['session_id']})")
-                        logger.info(f"[VOICE INTENT] Stage: {existing_session.get('current_stage')}")
-                        logger.info("[VOICE INTENT] Allowing natural conversation flow - NOT forcing tool call")
+                    if existing_session and existing_session.get(
+                        "current_stage"
+                    ) not in ["moodboard_presented", None]:
+                        logger.info(
+                            f"[VOICE INTENT] Active home decor session exists (session_id: {existing_session['session_id']})"
+                        )
+                        logger.info(
+                            f"[VOICE INTENT] Stage: {existing_session.get('current_stage')}"
+                        )
+                        logger.info(
+                            "[VOICE INTENT] Allowing natural conversation flow - NOT forcing tool call"
+                        )
                         # Don't process voice intent detection, let the message flow naturally
                         continue
 
@@ -318,7 +343,9 @@ async def handle_agent_responses(websocket: Any, live_events: Any, session_id: s
                         tool_name = forced_call["tool_name"]
                         parameters = forced_call["parameters"]
 
-                        logger.info(f"[VOICE INTENT] ===== HOME DECOR INTENT DETECTED IN VOICE =====")
+                        logger.info(
+                            f"[VOICE INTENT] ===== HOME DECOR INTENT DETECTED IN VOICE ====="
+                        )
                         logger.info(f"[VOICE INTENT] Forcing tool call: {tool_name}")
                         logger.info(f"[VOICE INTENT] Parameters: {parameters}")
 
@@ -361,7 +388,9 @@ YOU MUST IMMEDIATELY call start_home_decor_consultation with these parameters:
 
 DO NOT respond with text. DO NOT ask questions. JUST CALL THE TOOL NOW."""
 
-                        logger.info(f"[VOICE INTENT] Injecting forced tool call message")
+                        logger.info(
+                            f"[VOICE INTENT] Injecting forced tool call message"
+                        )
                         live_request_queue.send_content(
                             Content(
                                 role="user",
@@ -373,9 +402,7 @@ DO NOT respond with text. DO NOT ask questions. JUST CALL THE TOOL NOW."""
             # --- PRIORITY 1: Check for interruption FIRST (before processing any other data) ---
             # This ensures immediate handling of user interruptions via VAD
             if event.interrupted:
-                logger.info(
-                    "Interruption detected via VAD - user started speaking"
-                )
+                logger.info("Interruption detected via VAD - user started speaking")
                 await websocket.send(
                     json.dumps(
                         {
@@ -416,9 +443,7 @@ DO NOT respond with text. DO NOT ask questions. JUST CALL THE TOOL NOW."""
                     continue
 
             if event.content is None:
-                logger.info(
-                    f"None content - turn_complete:{event.turn_complete}"
-                )
+                logger.info(f"None content - turn_complete:{event.turn_complete}")
                 continue
 
             # --- Tool Call and Result handling ---
@@ -437,44 +462,60 @@ DO NOT respond with text. DO NOT ask questions. JUST CALL THE TOOL NOW."""
                 )
             elif event.content.parts[0].function_response:
                 tool_result = event.content.parts[0].function_response
-                tool_name = getattr(tool_result, 'name', 'unknown')
+                tool_name = getattr(tool_result, "name", "unknown")
                 response_data = tool_result.response
-                logger.info(f"[TOOL RESPONSE] Function response for: {tool_name}, keys: {list(response_data.keys()) if isinstance(response_data, dict) else 'not-dict'}")
+                logger.info(
+                    f"[TOOL RESPONSE] Function response for: {tool_name}, keys: {list(response_data.keys()) if isinstance(response_data, dict) else 'not-dict'}"
+                )
 
                 # Record tool call for evaluation (use args from the function_call event)
                 try:
                     recorder = get_recorder(str(session_id))
                     tool_args = _last_tool_call_args.pop(tool_name, {})
                     recorder.record_tool_call(tool_name, tool_args, response_data)
-                    logger.info(f"[EVAL] Recorded tool call: {tool_name} with args keys: {list(tool_args.keys())}")
+                    logger.info(
+                        f"[EVAL] Recorded tool call: {tool_name} with args keys: {list(tool_args.keys())}"
+                    )
                 except Exception as rec_err:
                     logger.warning(f"[EVAL] Failed to record tool call: {rec_err}")
 
                 # For visualization results, the image_base64 may be too large
                 # for the ADK to pass through. Send it directly via websocket.
-                if isinstance(response_data, dict) and response_data.get("ui_data", {}).get("display_type") == "room_visualization":
-                    logger.info(f"[TOOL RESPONSE] Sending room_visualization ui_data directly to frontend")
+                if (
+                    isinstance(response_data, dict)
+                    and response_data.get("ui_data", {}).get("display_type")
+                    == "room_visualization"
+                ):
+                    logger.info(
+                        f"[TOOL RESPONSE] Sending room_visualization ui_data directly to frontend"
+                    )
 
                 # Async style preview generation: if the tool returned a
                 # style_selector with a room photo, extract the photo before
                 # sending the result to the client (to avoid a huge payload).
                 room_photo_for_preview = None
-                ui_data = response_data.get("ui_data", {}) if isinstance(response_data, dict) else {}
-                if (ui_data.get("display_type") == "style_selector"
-                        and ui_data.get("generate_previews_from_photo")
-                        and ui_data.get("room_photo_base64")):
+                ui_data = (
+                    response_data.get("ui_data", {})
+                    if isinstance(response_data, dict)
+                    else {}
+                )
+                if (
+                    ui_data.get("display_type") == "style_selector"
+                    and ui_data.get("generate_previews_from_photo")
+                    and ui_data.get("room_photo_base64")
+                ):
                     room_photo_for_preview = ui_data.pop("room_photo_base64")
                     ui_data.pop("generate_previews_from_photo", None)
                     ui_data["personalizing_in_progress"] = True
 
                 await websocket.send(
-                    json.dumps(
-                        {"type": "tool_result", "data": response_data}
-                    )
+                    json.dumps({"type": "tool_result", "data": response_data})
                 )
 
                 if room_photo_for_preview:
-                    logger.info("[STYLE PREVIEW] Kicking off async style preview generation")
+                    logger.info(
+                        "[STYLE PREVIEW] Kicking off async style preview generation"
+                    )
                     asyncio.create_task(
                         _generate_and_send_style_previews(
                             websocket,
@@ -495,13 +536,9 @@ DO NOT respond with text. DO NOT ask questions. JUST CALL THE TOOL NOW."""
                     full_text = ""
 
             # --- Image handling ---
-            inline_data = (
-                event.content.parts and event.content.parts[0].inline_data
-            )
+            inline_data = event.content.parts and event.content.parts[0].inline_data
             if inline_data and inline_data.mime_type.startswith("image"):
-                image_base64 = base64.b64encode(inline_data.data).decode(
-                    "utf-8"
-                )
+                image_base64 = base64.b64encode(inline_data.data).decode("utf-8")
                 await websocket.send(
                     json.dumps(
                         {
@@ -514,9 +551,7 @@ DO NOT respond with text. DO NOT ask questions. JUST CALL THE TOOL NOW."""
 
             # --- Audio handling ---
             if inline_data and inline_data.mime_type.startswith("audio/pcm"):
-                audio_base64 = base64.b64encode(inline_data.data).decode(
-                    "utf-8"
-                )
+                audio_base64 = base64.b64encode(inline_data.data).decode("utf-8")
                 await websocket.send(
                     json.dumps({"type": "audio", "data": audio_base64})
                 )
@@ -540,7 +575,9 @@ async def handle_client_messages(
                 data = json.loads(message)
 
                 msg_type = data.get("type")
-                logger.info(f"[WEBSOCKET] Received message type: {msg_type}, data length: {len(str(data.get('data', '')))}")
+                logger.info(
+                    f"[WEBSOCKET] Received message type: {msg_type}, data length: {len(str(data.get('data', '')))}"
+                )
 
                 if msg_type == "audio":
                     logger.debug("Client -> Agent: Handling audio data...")
@@ -563,6 +600,7 @@ async def handle_client_messages(
 
                     # Check if there's an active home decor consultation
                     from core.agents.retail.session_state import get_state_manager
+
                     session_context = SESSION_CONTEXTS.get(session_id, {})
                     customer_id = session_context.get("customer_id", "CY-DEFAULT")
                     state_manager = get_state_manager()
@@ -571,7 +609,9 @@ async def handle_client_messages(
                     # Allow photo analysis during active consultations AND after moodboard is presented
                     # (for follow-up questions and refinements)
                     if existing_session:
-                        logger.info(f"[IMAGE INTERCEPTOR] Active home decor session found (session_id: {existing_session['session_id']})")
+                        logger.info(
+                            f"[IMAGE INTERCEPTOR] Active home decor session found (session_id: {existing_session['session_id']})"
+                        )
 
                         # Check the current stage to determine which analysis tool to call
                         current_stage = existing_session.get("stage", "")
@@ -582,9 +622,16 @@ async def handle_client_messages(
 
                         # If we're in Phase 3 (after constraints, awaiting photos for redesign), call analyze_room_with_history
                         # This cross-references with order history
-                        if current_stage == "stage_1d_photo_request" and collected_data.get("room_purpose") == "redesign":
-                            logger.info("[IMAGE INTERCEPTOR] Phase 3: Calling analyze_room_with_history for order history cross-reference")
-                            from core.agents.retail.tools import analyze_room_with_history
+                        if (
+                            current_stage == "stage_1d_photo_request"
+                            and collected_data.get("room_purpose") == "redesign"
+                        ):
+                            logger.info(
+                                "[IMAGE INTERCEPTOR] Phase 3: Calling analyze_room_with_history for order history cross-reference"
+                            )
+                            from core.agents.retail.tools import (
+                                analyze_room_with_history,
+                            )
 
                             try:
                                 tool_result = await asyncio.to_thread(
@@ -593,22 +640,32 @@ async def handle_client_messages(
                                     session_id=decor_session_id,
                                     age_context=age_context,
                                     room_type=room_type,
-                                    image_data=image_data_str
+                                    image_data=image_data_str,
                                 )
-                                logger.info(f"[IMAGE INTERCEPTOR] Tool result status: {tool_result.get('status')}")
+                                logger.info(
+                                    f"[IMAGE INTERCEPTOR] Tool result status: {tool_result.get('status')}"
+                                )
                             except Exception as tool_error:
-                                logger.error(f"[IMAGE INTERCEPTOR] Error calling analyze_room_with_history: {tool_error}")
-                                logger.error(f"Full traceback:\n{traceback.format_exc()}")
+                                logger.error(
+                                    f"[IMAGE INTERCEPTOR] Error calling analyze_room_with_history: {tool_error}"
+                                )
+                                logger.error(
+                                    f"Full traceback:\n{traceback.format_exc()}"
+                                )
                                 # Fall through to normal processing if tool call fails
                                 decoded_data = base64.b64decode(image_data_str)
                                 live_request_queue.send_realtime(
                                     Blob(data=decoded_data, mime_type="image/jpeg")
                                 )
-                                logger.debug("Image sent to Agent via multimodal context after tool error")
+                                logger.debug(
+                                    "Image sent to Agent via multimodal context after tool error"
+                                )
                                 continue
                         else:
                             # For other scenarios (simple decor requests without order history), call analyze_room_for_decor
-                            logger.info("[IMAGE INTERCEPTOR] Calling analyze_room_for_decor directly")
+                            logger.info(
+                                "[IMAGE INTERCEPTOR] Calling analyze_room_for_decor directly"
+                            )
                             from core.agents.retail.tools import analyze_room_for_decor
 
                             try:
@@ -616,49 +673,79 @@ async def handle_client_messages(
                                     analyze_room_for_decor,
                                     customer_id=customer_id,
                                     room_type_hint=room_type,
-                                    image_data=image_data_str
+                                    image_data=image_data_str,
                                 )
-                                logger.info(f"[IMAGE INTERCEPTOR] Tool result status: {tool_result.get('status')}")
+                                logger.info(
+                                    f"[IMAGE INTERCEPTOR] Tool result status: {tool_result.get('status')}"
+                                )
                             except Exception as tool_error:
-                                logger.error(f"[IMAGE INTERCEPTOR] Error calling analyze_room_for_decor: {tool_error}")
-                                logger.error(f"Full traceback:\n{traceback.format_exc()}")
+                                logger.error(
+                                    f"[IMAGE INTERCEPTOR] Error calling analyze_room_for_decor: {tool_error}"
+                                )
+                                logger.error(
+                                    f"Full traceback:\n{traceback.format_exc()}"
+                                )
                                 # Fall through to normal processing if tool call fails
                                 decoded_data = base64.b64decode(image_data_str)
                                 live_request_queue.send_realtime(
                                     Blob(data=decoded_data, mime_type="image/jpeg")
                                 )
-                                logger.debug("Image sent to Agent via multimodal context after tool error")
+                                logger.debug(
+                                    "Image sent to Agent via multimodal context after tool error"
+                                )
                                 continue
 
                         # Mark room photos as analyzed and store photo for visualization
-                        if tool_result.get('status') == 'success':
+                        if tool_result.get("status") == "success":
                             try:
                                 # Store the first photo as primary for inpainting,
                                 # and append all photos to the list
-                                existing_session_data = state_manager.get_session(decor_session_id)
-                                existing_photos = existing_session_data.get("collected_data", {}).get("room_photos_list", []) if existing_session_data else []
+                                existing_session_data = state_manager.get_session(
+                                    decor_session_id
+                                )
+                                existing_photos = (
+                                    existing_session_data.get("collected_data", {}).get(
+                                        "room_photos_list", []
+                                    )
+                                    if existing_session_data
+                                    else []
+                                )
                                 existing_photos.append(image_data_str)
-                                primary_photo = existing_session_data.get("collected_data", {}).get("room_photo_base64") if existing_session_data else None
+                                primary_photo = (
+                                    existing_session_data.get("collected_data", {}).get(
+                                        "room_photo_base64"
+                                    )
+                                    if existing_session_data
+                                    else None
+                                )
 
                                 state_manager.update_session(
                                     session_id=decor_session_id,
                                     room_photos_analyzed=True,
-                                    photo_analysis=tool_result.get('analysis', {}),
+                                    photo_analysis=tool_result.get("analysis", {}),
                                     room_photo_base64=primary_photo or image_data_str,
                                 )
                                 # Update the photos list directly
-                                session_obj = state_manager.get_session(decor_session_id)
+                                session_obj = state_manager.get_session(
+                                    decor_session_id
+                                )
                                 if session_obj:
-                                    session_obj["collected_data"]["room_photos_list"] = existing_photos
+                                    session_obj["collected_data"][
+                                        "room_photos_list"
+                                    ] = existing_photos
 
-                                logger.info(f"[IMAGE INTERCEPTOR] Updated session {decor_session_id} with room_photos_analyzed=True, stored {len(existing_photos)} photo(s)")
+                                logger.info(
+                                    f"[IMAGE INTERCEPTOR] Updated session {decor_session_id} with room_photos_analyzed=True, stored {len(existing_photos)} photo(s)"
+                                )
                             except Exception as update_error:
-                                logger.error(f"[IMAGE INTERCEPTOR] Failed to update session state: {update_error}")
+                                logger.error(
+                                    f"[IMAGE INTERCEPTOR] Failed to update session state: {update_error}"
+                                )
 
                         # Send the tool result to the agent as if it came from a function response
                         # This way the agent can present the recommendations naturally
                         # Send a slim summary to the live agent to avoid overloading the audio session
-                        analysis = tool_result.get('analysis', {})
+                        analysis = tool_result.get("analysis", {})
                         analysis_summary = {
                             "room_type": analysis.get("room_type", "unknown"),
                             "current_style": analysis.get("current_style", "unknown"),
@@ -678,26 +765,31 @@ IMPORTANT: Briefly tell the customer what you see, then IMMEDIATELY call continu
 
                         # Also send acknowledgment to client
                         await websocket.send(
-                            json.dumps({
-                                "type": "tool_call",
-                                "data": {
-                                    "name": "analyze_room_for_decor" if current_stage != "stage_1d_photo_request" else "analyze_room_with_history",
-                                    "args": {
-                                        "customer_id": customer_id,
-                                        "room_type_hint": room_type
-                                    }
+                            json.dumps(
+                                {
+                                    "type": "tool_call",
+                                    "data": {
+                                        "name": (
+                                            "analyze_room_for_decor"
+                                            if current_stage != "stage_1d_photo_request"
+                                            else "analyze_room_with_history"
+                                        ),
+                                        "args": {
+                                            "customer_id": customer_id,
+                                            "room_type_hint": room_type,
+                                        },
+                                    },
                                 }
-                            })
+                            )
                         )
 
                         await websocket.send(
-                            json.dumps({
-                                "type": "tool_result",
-                                "data": tool_result
-                            })
+                            json.dumps({"type": "tool_result", "data": tool_result})
                         )
 
-                        logger.info("[IMAGE INTERCEPTOR] Successfully processed image and sent results")
+                        logger.info(
+                            "[IMAGE INTERCEPTOR] Successfully processed image and sent results"
+                        )
                         continue
 
                     # Normal processing: send image to agent via multimodal context
@@ -712,6 +804,7 @@ IMPORTANT: Briefly tell the customer what you see, then IMMEDIATELY call continu
                     logger.info("[CART DIRECT] Received cart_action from frontend")
                     try:
                         from core.agents.retail.tools import modify_cart
+
                         cart_data = data.get("data", {})
                         customer_id = cart_data.get("customer_id", "CY-DEFAULT")
                         items_to_add = cart_data.get("items_to_add", [])
@@ -720,23 +813,29 @@ IMPORTANT: Briefly tell the customer what you see, then IMMEDIATELY call continu
                         cart_result = modify_cart(
                             customer_id=customer_id,
                             items_to_add=items_to_add if items_to_add else None,
-                            items_to_remove=items_to_remove if items_to_remove else None,
+                            items_to_remove=(
+                                items_to_remove if items_to_remove else None
+                            ),
                         )
-                        logger.info(f"[CART DIRECT] Cart updated: {cart_result.get('status')}")
+                        logger.info(
+                            f"[CART DIRECT] Cart updated: {cart_result.get('status')}"
+                        )
 
                         await websocket.send(
-                            json.dumps({
-                                "type": "tool_result",
-                                "data": cart_result
-                            })
+                            json.dumps({"type": "tool_result", "data": cart_result})
                         )
                     except Exception as cart_error:
                         logger.error(f"[CART DIRECT] Error: {cart_error}")
                         await websocket.send(
-                            json.dumps({
-                                "type": "tool_result",
-                                "data": {"status": "error", "message": str(cart_error)}
-                            })
+                            json.dumps(
+                                {
+                                    "type": "tool_result",
+                                    "data": {
+                                        "status": "error",
+                                        "message": str(cart_error),
+                                    },
+                                }
+                            )
                         )
                     continue
 
@@ -753,17 +852,14 @@ IMPORTANT: Briefly tell the customer what you see, then IMMEDIATELY call continu
                     logger.info("Received end signal from client.")
                 else:
                     debug_data = data.copy()
-                    if (
-                        "data" in debug_data
-                        and debug_data.get("type") == "audio"
-                    ):
+                    if "data" in debug_data and debug_data.get("type") == "audio":
                         debug_data["data"] = "<audio data>"
-                    logger.warning(f"Unsupported message type from client: {data.get('type')}. Full data: {debug_data}")
+                    logger.warning(
+                        f"Unsupported message type from client: {data.get('type')}. Full data: {debug_data}"
+                    )
 
             except json.JSONDecodeError:
-                logger.error(
-                    f"Failed to decode JSON from client message: {message}"
-                )
+                logger.error(f"Failed to decode JSON from client message: {message}")
             except Exception as e:
                 logger.error(f"Error handling client message: {e}")
                 logger.error(f"Full traceback:\n{traceback.format_exc()}")
@@ -775,7 +871,10 @@ IMPORTANT: Briefly tell the customer what you see, then IMMEDIATELY call continu
 
 
 async def handle_messages(
-    websocket: Any, live_events: Any, live_request_queue: LiveRequestQueue, session_id: str
+    websocket: Any,
+    live_events: Any,
+    live_request_queue: LiveRequestQueue,
+    session_id: str,
 ) -> None:
     """Handles bidirectional message flow between client and Agent."""
     client_task = None
@@ -787,7 +886,9 @@ async def handle_messages(
                 handle_client_messages(websocket, live_request_queue, session_id)
             )
             agent_task = tg.create_task(
-                handle_agent_responses(websocket, live_events, session_id, live_request_queue)
+                handle_agent_responses(
+                    websocket, live_events, session_id, live_request_queue
+                )
             )
     except Exception as eg:
         handled = False
@@ -815,9 +916,7 @@ async def handle_messages(
                     handled = True
                     break
                 except Exception as send_err:
-                    logger.error(
-                        f"Failed to send quota error message: {send_err}"
-                    )
+                    logger.error(f"Failed to send quota error message: {send_err}")
             elif "connection closed" in str(exc).lower():
                 logger.info("WebSocket connection closed")
                 handled = True
@@ -826,14 +925,16 @@ async def handle_messages(
                 logger.warning(f"Gemini Live audio session error: {exc}")
                 try:
                     await websocket.send(
-                        json.dumps({
-                            "type": "error",
-                            "data": {
-                                "message": "Audio session interrupted. Please reconnect.",
-                                "error_type": "audio_session_error",
-                                "action": "reconnect",
+                        json.dumps(
+                            {
+                                "type": "error",
+                                "data": {
+                                    "message": "Audio session interrupted. Please reconnect.",
+                                    "error_type": "audio_session_error",
+                                    "action": "reconnect",
+                                },
                             }
-                        })
+                        )
                     )
                 except Exception:
                     pass
@@ -881,13 +982,16 @@ async def handle_client(websocket: Any) -> None:
         if customer_id:
             try:
                 from google.cloud import firestore as _fs
+
                 _db = _fs.Client()
-                _db.collection("carts").document(customer_id).set({
-                    "cart_id": f"CART-{customer_id}",
-                    "items": {},
-                    "subtotal": 0,
-                    "last_updated": datetime.datetime.now().isoformat(),
-                })
+                _db.collection("carts").document(customer_id).set(
+                    {
+                        "cart_id": f"CART-{customer_id}",
+                        "items": {},
+                        "subtotal": 0,
+                        "last_updated": datetime.datetime.now().isoformat(),
+                    }
+                )
                 logger.info(f"Cart cleared for new session: {customer_id}")
             except Exception as e:
                 logger.warning(f"Could not clear cart: {e}")
@@ -896,7 +1000,9 @@ async def handle_client(websocket: Any) -> None:
         try:
             recorder = get_recorder(str(session_id), customer_id or "unknown")
             recorder.customer_id = customer_id or "unknown"
-            logger.info(f"[EVAL] Recorder initialized for session {session_id}, customer {customer_id}")
+            logger.info(
+                f"[EVAL] Recorder initialized for session {session_id}, customer {customer_id}"
+            )
         except Exception as rec_err:
             logger.warning(f"[EVAL] Failed to init recorder: {rec_err}")
 
@@ -917,8 +1023,8 @@ async def handle_client(websocket: Any) -> None:
         ) + datetime.timedelta(
             hours=2
         )  # CEST is UTC+2
-        initial_session_state["current_datetime"] = (
-            current_time_munich.strftime("%Y-%m-%d %H:%M:%S %Z")
+        initial_session_state["current_datetime"] = current_time_munich.strftime(
+            "%Y-%m-%d %H:%M:%S %Z"
         )
 
         live_events = await create_session(
@@ -929,9 +1035,7 @@ async def handle_client(websocket: Any) -> None:
         live_request_queue = get_session_request_queue(session_id)
 
         if not live_request_queue:
-            raise ValueError(
-                "Failed to create a live request queue for the session."
-            )
+            raise ValueError("Failed to create a live request queue for the session.")
 
         # Store session context for voice intent detection
         SESSION_CONTEXTS[session_id] = {
@@ -964,9 +1068,7 @@ async def handle_client(websocket: Any) -> None:
         logger.error(f"Error in handle_client for session {session_id}: {e}")
         logger.error(f"Full traceback:\n{traceback.format_exc()}")
         if "connection closed" in str(e).lower() or "code = 100" in str(e):
-            logger.info(
-                f"WebSocket connection closed for session {session_id}"
-            )
+            logger.info(f"WebSocket connection closed for session {session_id}")
         else:
             await send_error_message(
                 websocket,

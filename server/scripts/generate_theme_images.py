@@ -15,16 +15,19 @@ try:
 except ImportError:
     print("Installing required packages...")
     import subprocess
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "google-cloud-aiplatform"])
+
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "google-cloud-aiplatform"]
+    )
     from vertexai.preview.vision_models import ImageGenerationModel
     import vertexai
 
 # Load environment variables
-env_path = Path(__file__).parent.parent / '.env'
+env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(env_path)
 
-PROJECT_ID = os.getenv('GOOGLE_CLOUD_PROJECT')
-LOCATION = os.getenv('GOOGLE_CLOUD_LOCATION', 'us-central1')
+PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT")
+LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 
 THEMES = {
     "underwater_world": (
@@ -112,8 +115,10 @@ def main():
                 person_generation="dont_allow",
             )
 
-            if response and hasattr(response, 'images') and len(response.images) > 0:
-                response.images[0].save(location=str(filepath), include_generation_parameters=False)
+            if response and hasattr(response, "images") and len(response.images) > 0:
+                response.images[0].save(
+                    location=str(filepath), include_generation_parameters=False
+                )
                 print(f"  -> {filename} saved")
                 successful += 1
             else:

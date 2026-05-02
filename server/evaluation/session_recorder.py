@@ -40,11 +40,13 @@ class SessionRecorder:
             "elapsed_ms": int((ts - self.start_time) * 1000),
         }
         self.events.append(event)
-        self.transcriptions.append({
-            "role": "user",
-            "text": transcription,
-            "turn": self.turn_count,
-        })
+        self.transcriptions.append(
+            {
+                "role": "user",
+                "text": transcription,
+                "turn": self.turn_count,
+            }
+        )
 
     def record_agent_response(
         self,
@@ -64,11 +66,13 @@ class SessionRecorder:
             "elapsed_ms": int((ts - self.start_time) * 1000),
         }
         self.events.append(event)
-        self.transcriptions.append({
-            "role": "agent",
-            "text": transcription,
-            "turn": self.turn_count,
-        })
+        self.transcriptions.append(
+            {
+                "role": "agent",
+                "text": transcription,
+                "turn": self.turn_count,
+            }
+        )
 
     def record_tool_call(
         self,
@@ -98,25 +102,29 @@ class SessionRecorder:
         self.tool_calls.append(tool_entry)
         self.events.append({"type": "tool_call", **tool_entry})
 
-    def record_moodboard(self, products: list, style_preferences: list, color_preferences: list):
-        self.events.append({
-            "type": "moodboard_generated",
-            "product_count": len(products),
-            "products": [
-                {
-                    "product_id": p.get("product_id"),
-                    "name": p.get("name"),
-                    "category": p.get("category"),
-                    "style_tags": p.get("style_tags", []),
-                    "color_palette": p.get("color_palette", []),
-                }
-                for p in products
-            ],
-            "style_preferences": style_preferences,
-            "color_preferences": color_preferences,
-            "turn": self.turn_count,
-            "timestamp": time.time(),
-        })
+    def record_moodboard(
+        self, products: list, style_preferences: list, color_preferences: list
+    ):
+        self.events.append(
+            {
+                "type": "moodboard_generated",
+                "product_count": len(products),
+                "products": [
+                    {
+                        "product_id": p.get("product_id"),
+                        "name": p.get("name"),
+                        "category": p.get("category"),
+                        "style_tags": p.get("style_tags", []),
+                        "color_palette": p.get("color_palette", []),
+                    }
+                    for p in products
+                ],
+                "style_preferences": style_preferences,
+                "color_preferences": color_preferences,
+                "turn": self.turn_count,
+                "timestamp": time.time(),
+            }
+        )
 
     def save(self):
         """Persist the session log locally and optionally to GCS."""
@@ -186,9 +194,11 @@ def _upload_to_gcs(filename: str, record: dict):
     """Upload session log to GCS bucket if configured."""
     try:
         from config.config import GCS_BUCKET_NAME, GCS_EVAL_PREFIX
+
         if not GCS_BUCKET_NAME:
             return
         from google.cloud import storage
+
         client = storage.Client()
         bucket = client.bucket(GCS_BUCKET_NAME)
         blob = bucket.blob(f"{GCS_EVAL_PREFIX}/{filename}")

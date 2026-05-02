@@ -48,7 +48,9 @@ def create_placeholder_image(
     draw.text((text_x, text_y), text, fill=(100, 100, 100), font=font)
     draw.text((subtext_x, subtext_y), subtext, fill=(150, 150, 150), font=small_font)
 
-    draw.rectangle([(50, 50), (width - 50, height - 50)], outline=(200, 200, 200), width=3)
+    draw.rectangle(
+        [(50, 50), (width - 50, height - 50)], outline=(200, 200, 200), width=3
+    )
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 

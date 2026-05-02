@@ -64,12 +64,15 @@ def upload_assets(bucket_name: str, dry_run: bool = False):
 def main():
     parser = argparse.ArgumentParser(description="Upload assets to GCS bucket")
     parser.add_argument("--bucket", type=str, default=None, help="GCS bucket name")
-    parser.add_argument("--dry-run", action="store_true", help="Print what would be uploaded")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Print what would be uploaded"
+    )
     args = parser.parse_args()
 
     bucket_name = args.bucket
     if not bucket_name:
         from config.config import GCS_BUCKET_NAME
+
         bucket_name = GCS_BUCKET_NAME
 
     print(f"Uploading assets to gs://{bucket_name}/assets/")

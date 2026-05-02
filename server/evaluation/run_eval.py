@@ -58,6 +58,7 @@ def _init_vertex():
 #  LAYER 1 - Speech Quality (custom computation metrics)
 # ================================================================== #
 
+
 def _word_error_rate(reference: str, hypothesis: str) -> float:
     """Compute WER between reference and hypothesis transcriptions."""
     ref_words = reference.lower().split()
@@ -122,13 +123,18 @@ def speech_wer_metric(instance: dict) -> dict:
 #  LAYER 2 - Agent Trajectory (Vertex AI + custom)
 # ================================================================== #
 
+
 def trajectory_order_metric(instance: dict) -> dict:
     """Custom metric: check that tool calls follow expected order."""
     predicted = instance.get("predicted_trajectory", [])
     expected = EXPECTED_TRAJECTORY
 
     if not predicted:
-        return {"trajectory_order_score": 0.0, "matched_steps": 0, "total_steps": len(expected)}
+        return {
+            "trajectory_order_score": 0.0,
+            "matched_steps": 0,
+            "total_steps": len(expected),
+        }
 
     matched = 0
     pred_idx = 0
@@ -177,7 +183,11 @@ def trajectory_args_metric(instance: dict) -> dict:
                 passed += 1
 
     score = passed / checks if checks else 1.0
-    return {"trajectory_args_score": round(score, 3), "args_passed": passed, "args_total": checks}
+    return {
+        "trajectory_args_score": round(score, 3),
+        "args_passed": passed,
+        "args_total": checks,
+    }
 
 
 def step_skip_metric(instance: dict) -> dict:
@@ -210,6 +220,7 @@ def step_skip_metric(instance: dict) -> dict:
 # ================================================================== #
 #  LAYER 3 - Conversation Quality (Vertex AI PointwiseMetric)
 # ================================================================== #
+
 
 def _build_vertex_conversation_metrics():
     """Build Vertex AI PointwiseMetrics for conversation quality."""
@@ -271,23 +282,31 @@ def _build_vertex_conversation_metrics():
 #  LAYER 4 - Moodboard Quality (custom computation)
 # ================================================================== #
 
+
 def moodboard_quality_metric(instance: dict) -> dict:
     """Custom metric: evaluate moodboard product selection quality."""
     # Check explicit moodboard events first, then fall back to tool call results
-    moodboard_events = [e for e in instance.get("events", []) if e.get("type") == "moodboard_generated"]
+    moodboard_events = [
+        e for e in instance.get("events", []) if e.get("type") == "moodboard_generated"
+    ]
 
     # If no explicit event, look for moodboard data in tool call results
     if not moodboard_events:
         for tc in instance.get("tool_calls", []):
-            if tc.get("stage") == "moodboard_presented" or tc.get("ui_type") == "moodboard":
+            if (
+                tc.get("stage") == "moodboard_presented"
+                or tc.get("ui_type") == "moodboard"
+            ):
                 # Reconstruct from tool call args
                 args = tc.get("args", {})
-                moodboard_events = [{
-                    "type": "moodboard_generated",
-                    "products": [],
-                    "style_preferences": args.get("style_preferences", []),
-                    "color_preferences": args.get("color_preferences", []),
-                }]
+                moodboard_events = [
+                    {
+                        "type": "moodboard_generated",
+                        "products": [],
+                        "style_preferences": args.get("style_preferences", []),
+                        "color_preferences": args.get("color_preferences", []),
+                    }
+                ]
                 break
 
     if not moodboard_events:
@@ -300,7 +319,11 @@ def moodboard_quality_metric(instance: dict) -> dict:
     product_count = len(products)
 
     # Product count check
-    count_ok = MOODBOARD_CRITERIA["min_products"] <= product_count <= MOODBOARD_CRITERIA["max_products"]
+    count_ok = (
+        MOODBOARD_CRITERIA["min_products"]
+        <= product_count
+        <= MOODBOARD_CRITERIA["max_products"]
+    )
 
     # Style match: what fraction of products have at least one matching style tag?
     style_matches = 0
@@ -332,11 +355,17 @@ def moodboard_quality_metric(instance: dict) -> dict:
 
     # Composite score
     composite = (
-        (1.0 if count_ok else 0.5)
-        * 0.2
+        (1.0 if count_ok else 0.5) * 0.2
         + min(style_ratio / MOODBOARD_CRITERIA["min_style_match_ratio"], 1.0) * 0.35
         + min(color_ratio / MOODBOARD_CRITERIA["min_color_match_ratio"], 1.0) * 0.25
-        + (1.0 if MOODBOARD_CRITERIA["min_furniture_ratio"] <= furniture_ratio <= MOODBOARD_CRITERIA["max_furniture_ratio"] else 0.5) * 0.2
+        + (
+            1.0
+            if MOODBOARD_CRITERIA["min_furniture_ratio"]
+            <= furniture_ratio
+            <= MOODBOARD_CRITERIA["max_furniture_ratio"]
+            else 0.5
+        )
+        * 0.2
     )
     scores["moodboard_quality_score"] = round(composite, 3)
     return scores
@@ -346,6 +375,7 @@ def moodboard_quality_metric(instance: dict) -> dict:
 #  LAYER 5 - End-to-End Session (custom computation)
 # ================================================================== #
 
+
 def session_completion_metric(instance: dict) -> dict:
     """Custom metric: did the session reach the moodboard and how efficiently?"""
     tool_calls = instance.get("tool_calls", [])
@@ -354,7 +384,9 @@ def session_completion_metric(instance: dict) -> dict:
     turn_count = instance.get("turn_count", 0)
 
     # Ideal turn count for the demo storyline is ~8-10
-    efficiency = max(0.0, min(1.0, 1.0 - abs(turn_count - 9) / 9)) if turn_count > 0 else 0.0
+    efficiency = (
+        max(0.0, min(1.0, 1.0 - abs(turn_count - 9) / 9)) if turn_count > 0 else 0.0
+    )
 
     return {
         "session_completion_score": 1.0 if reached_moodboard else 0.0,
@@ -367,6 +399,7 @@ def session_completion_metric(instance: dict) -> dict:
 # ================================================================== #
 #  Main evaluation runner
 # ================================================================== #
+
 
 def evaluate_session(session_file: str, use_vertex: bool = True) -> dict:
     """Run all evaluation layers on a recorded session."""
@@ -454,10 +487,12 @@ def _run_vertex_conversation_eval(session_data: dict) -> dict:
                     prev_user = transcriptions[j]["text"]
                     break
             if prev_user:
-                eval_dataset.append({
-                    "prompt": prev_user,
-                    "response": t["text"],
-                })
+                eval_dataset.append(
+                    {
+                        "prompt": prev_user,
+                        "response": t["text"],
+                    }
+                )
 
     if not eval_dataset:
         return {"error": "no_conversation_pairs", "score": 0.0}
@@ -498,7 +533,11 @@ def _compute_overall_score(results: dict) -> dict:
         layer = results.get(key, {})
         # Find the primary score key (first key ending in '_score')
         score = next(
-            (v for k, v in layer.items() if k.endswith("_score") and isinstance(v, (int, float))),
+            (
+                v
+                for k, v in layer.items()
+                if k.endswith("_score") and isinstance(v, (int, float))
+            ),
             None,
         )
         if score is not None:
@@ -536,11 +575,16 @@ def _print_scores(label: str, scores: dict):
 #  CLI
 # ================================================================== #
 
+
 def main():
     parser = argparse.ArgumentParser(description="OTTO Home Decor Agent Evaluation")
     parser.add_argument("--session", type=str, help="Path to a session log JSON file")
-    parser.add_argument("--all", action="store_true", help="Evaluate all logged sessions")
-    parser.add_argument("--no-vertex", action="store_true", help="Skip Vertex AI evaluation")
+    parser.add_argument(
+        "--all", action="store_true", help="Evaluate all logged sessions"
+    )
+    parser.add_argument(
+        "--no-vertex", action="store_true", help="Skip Vertex AI evaluation"
+    )
     args = parser.parse_args()
 
     if args.session:

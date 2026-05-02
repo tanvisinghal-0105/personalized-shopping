@@ -38,9 +38,7 @@ from .tools import (
 )
 
 
-def intent_interceptor(
-    user_message: str, tool_context: ToolContext
-) -> Optional[str]:
+def intent_interceptor(user_message: str, tool_context: ToolContext) -> Optional[str]:
     """
     Intercepts user messages BEFORE the model processes them.
     Modifies the message to force appropriate tool calls based on detected intent.
@@ -49,18 +47,25 @@ def intent_interceptor(
     """
     logger.info(f"[INTENT INTERCEPTOR] ===== CALLBACK FIRED =====")
     logger.info(f"[INTENT INTERCEPTOR] Analyzing message: '{user_message}'")
-    logger.info(f"[INTENT INTERCEPTOR] Tool context state keys: {list(tool_context.state.keys())}")
+    logger.info(
+        f"[INTENT INTERCEPTOR] Tool context state keys: {list(tool_context.state.keys())}"
+    )
 
     # IMPORTANT: Check if there's already an active home decor consultation
     # If yes, let the agent handle the conversation naturally without forcing tool calls
     from .session_state import get_state_manager
+
     customer_id = tool_context.state.get("customer_id", "CY-DEFAULT")
     state_manager = get_state_manager()
     existing_session = state_manager.get_customer_session(customer_id)
 
     if existing_session and not existing_session.get("moodboard_generated", False):
-        logger.info(f"[INTENT INTERCEPTOR] Active home decor session exists (session_id: {existing_session['session_id']})")
-        logger.info("[INTENT INTERCEPTOR] Allowing agent to handle message naturally - NOT forcing tool call")
+        logger.info(
+            f"[INTENT INTERCEPTOR] Active home decor session exists (session_id: {existing_session['session_id']})"
+        )
+        logger.info(
+            "[INTENT INTERCEPTOR] Allowing agent to handle message naturally - NOT forcing tool call"
+        )
         return None
 
     intent_detector = get_intent_detector()
@@ -72,15 +77,9 @@ def intent_interceptor(
         tool_name = forced_call["tool_name"]
         parameters = forced_call["parameters"]
 
-        logger.info(
-            f"[INTENT INTERCEPTOR] ===== HOME DECOR INTENT DETECTED ====="
-        )
-        logger.info(
-            f"[INTENT INTERCEPTOR] Forcing tool call: {tool_name}"
-        )
-        logger.info(
-            f"[INTENT INTERCEPTOR] Parameters: {parameters}"
-        )
+        logger.info(f"[INTENT INTERCEPTOR] ===== HOME DECOR INTENT DETECTED =====")
+        logger.info(f"[INTENT INTERCEPTOR] Forcing tool call: {tool_name}")
+        logger.info(f"[INTENT INTERCEPTOR] Parameters: {parameters}")
 
         logger.info(f"[INTENT INTERCEPTOR] Customer ID: {customer_id}")
 
@@ -96,10 +95,14 @@ YOU MUST IMMEDIATELY call the {tool_name} tool with these parameters:
 DO NOT respond with text. DO NOT ask questions. JUST CALL THE TOOL NOW.
 Call {tool_name}(customer_id="{customer_id}", initial_request="{user_message}")"""
 
-        logger.info(f"[INTENT INTERCEPTOR] Modified message: {modified_message[:200]}...")
+        logger.info(
+            f"[INTENT INTERCEPTOR] Modified message: {modified_message[:200]}..."
+        )
         return modified_message
 
-    logger.info("[INTENT INTERCEPTOR] No home decor intent detected - message unchanged")
+    logger.info(
+        "[INTENT INTERCEPTOR] No home decor intent detected - message unchanged"
+    )
     return None
 
 
@@ -126,9 +129,7 @@ def logic_check(
                 }
             else:
                 tool_context.state["temp:discount_approved"] = True
-                return {
-                    "result": "You can approve this discount; no manager needed."
-                }
+                return {"result": "You can approve this discount; no manager needed."}
 
     if tool.name == "modify_cart":
         items_added = args.get("items_added")
@@ -191,9 +192,7 @@ def create_retail_agent(
     default_sub_agents = []
 
     final_tools = SessionUtils.dedupe_lists(default_tools, tools)
-    final_sub_agents = SessionUtils.dedupe_lists(
-        default_sub_agents, sub_agents
-    )
+    final_sub_agents = SessionUtils.dedupe_lists(default_sub_agents, sub_agents)
 
     # Enhanced generation config with latest features
     gen_config = genai_types.GenerateContentConfig(

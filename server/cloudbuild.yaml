@@ -1,33 +1,108 @@
 timeout: 1200s
+substitutions:
+  _REGION: us-central1
+  _SERVICE_NAME: live-agent-backend
+  _SERVICE_ACCOUNT: live-agent-backend@${PROJECT_ID}.iam.gserviceaccount.com
+
 steps:
-# Build the container image
-- name: 'gcr.io/cloud-builders/docker'
-  args: [ 'build', '--no-cache', '-t', 'gcr.io/$PROJECT_ID/live-agent-backend', '.' ]
+# Step 1: Run unit tests
+- name: 'python:3.12-slim'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    pip install -q uv
+    uv pip install --system -q pytest black mypy
+    uv pip install --system -q -r requirements.txt
+    echo "========== PYTEST =========="
+    python -m pytest tests/ -v --tb=short
+  dir: 'server'
+  id: 'pytest'
 
-# Push the container image to Container Registry
-- name: 'gcr.io/cloud-builders/docker'
-  args: [ 'push', 'gcr.io/$PROJECT_ID/live-agent-backend' ]
+# Step 2: Code formatting check (black) -- runs in parallel
+- name: 'python:3.12-slim'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    pip install -q uv
+    uv pip install --system -q black
+    echo "========== BLACK =========="
+    python -m black --check --diff core/ evaluation/ tests/ config/ server.py scripts/
+  dir: 'server'
+  id: 'black'
+  waitFor: ['-']
 
-# Deploy container image to Cloud Run
-# note: session affinity is enabled to ensure that the same instance is used for the same user's requests
-# note: timeout 15 minutes which is the max live-api can handle
-# note: concurrency 1 such that global state is not shared between requests
+# Step 3: Type checking (mypy) -- runs in parallel
+- name: 'python:3.12-slim'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    pip install -q uv
+    uv pip install --system -q mypy
+    uv pip install --system -q -r requirements.txt
+    echo "========== MYPY =========="
+    python -m mypy evaluation/ tests/ --ignore-missing-imports --explicit-package-bases --no-error-summary || true
+  dir: 'server'
+  id: 'mypy'
+  waitFor: ['-']
+
+# Step 4: Syntax validation -- runs in parallel
+- name: 'python:3.12-slim'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    echo "========== SYNTAX CHECK =========="
+    find . -name "*.py" -exec python -c "import ast; ast.parse(open('{}').read())" \;
+    echo "Syntax validation passed"
+  dir: 'server'
+  id: 'syntax-check'
+  waitFor: ['-']
+
+# Step 5: Build with git SHA tag (only after all checks pass)
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+  - 'build'
+  - '--no-cache'
+  - '-t'
+  - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA'
+  - '-t'
+  - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:latest'
+  - '.'
+  dir: 'server'
+  id: 'build'
+  waitFor: ['pytest', 'black', 'syntax-check']
+
+# Step 6: Push tagged images
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'push', 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA' ]
+  id: 'push-sha'
+  waitFor: ['build']
+
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'push', 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:latest' ]
+  id: 'push-latest'
+  waitFor: ['build']
+
+# Step 7: Deploy to Cloud Run
 - name: 'gcr.io/cloud-builders/gcloud'
   args:
   - 'run'
   - 'deploy'
-  - 'live-agent-backend'
+  - '${_SERVICE_NAME}'
   - '--image'
-  - 'gcr.io/$PROJECT_ID/live-agent-backend'
+  - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA'
   - '--region'
-  - 'us-central1'
+  - '${_REGION}'
   - '--platform'
   - 'managed'
   - '--allow-unauthenticated'
   - '--set-env-vars'
-  - 'PROJECT_ID=${PROJECT_ID},LOG_LEVEL=INFO,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=us-central1,GOOGLE_GENAI_USE_VERTEXAI=1,DEMO_TYPE=retail,VOICE_VERTEX_API=Aoede,LANGUAGE=en-GB'
+  - 'PROJECT_ID=${PROJECT_ID},LOG_LEVEL=INFO,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${_REGION},GOOGLE_GENAI_USE_VERTEXAI=1,DEMO_TYPE=retail,VOICE_VERTEX_API=Aoede,LANGUAGE=en-GB,GCS_BUCKET_NAME=${PROJECT_ID}-shopping-assets'
   - '--service-account'
-  - 'live-agent-backend@${PROJECT_ID}.iam.gserviceaccount.com'
+  - '${_SERVICE_ACCOUNT}'
   - '--session-affinity'
   - '--timeout'
   - '900'
@@ -37,6 +112,12 @@ steps:
   - '2'
   - '--memory'
   - '2Gi'
+  id: 'deploy'
+  waitFor: ['push-sha']
 
 images:
-- 'gcr.io/$PROJECT_ID/live-agent-backend'
+- 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA'
+- 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

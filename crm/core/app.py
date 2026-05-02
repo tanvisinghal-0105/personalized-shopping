@@ -10,7 +10,9 @@ import glob
 import logging
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 app = fastapi.FastAPI()
@@ -31,6 +33,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Route to serve index.html from the root
 @app.get("/", include_in_schema=False)
 async def read_index():
@@ -45,26 +48,29 @@ async def read_index():
 @app.put("/api/v1/approvals/{customer_id}")
 async def update_approval(customer_id: str):
     logger.info(f"Received PUT request for customer ID: {customer_id}")
-    document = db.collection('customers').document(customer_id).get()
+    document = db.collection("customers").document(customer_id).get()
     if document.exists:
         try:
-            document.reference.update({
-                "approval_status": "approved"
-            })
-            logger.info(f"Successfully updated approval status for customer ID: {customer_id}")
+            document.reference.update({"approval_status": "approved"})
+            logger.info(
+                f"Successfully updated approval status for customer ID: {customer_id}"
+            )
             return {"customer_id": customer_id}
         except Exception as e:
             logger.error(f"Error updating Firestore for customer ID {customer_id}: {e}")
-            raise fastapi.HTTPException(status_code=500, detail="Internal server error during update")
+            raise fastapi.HTTPException(
+                status_code=500, detail="Internal server error during update"
+            )
     else:
         logger.warning(f"Customer ID not found during PUT request: {customer_id}")
         # Return a proper FastAPI HTTP exception for not found
         raise fastapi.HTTPException(status_code=404, detail="Customer not found")
 
+
 @app.get("/api/v1/approvals/{customer_id}")
 async def get_approval(customer_id: str):
     logger.info(f"Received GET request for customer ID: {customer_id}")
-    document = db.collection('customers').document(customer_id).get()
+    document = db.collection("customers").document(customer_id).get()
     if document.exists:
         logger.info(f"Found customer ID: {customer_id}")
         return document.to_dict()
@@ -74,20 +80,26 @@ async def get_approval(customer_id: str):
         raise fastapi.HTTPException(status_code=404, detail="Customer not found")
 
 
-# 
+#
 # Add a route to reset the cart info with the DEFAULT CART INFO
 @app.post("/api/v1/reset_cart/{customer_id}")
 async def reset_cart(customer_id: str):
     CUSTOMER_CART_INFO = {
-            'cart_id': 'CART-112233', # Use example ID for consistency
-            'items': {
-                'GENERIC-PIXEL-CASE': {'sku': '1122334', 'name': 'Generic Google Pixel Case', 'quantity': 1, 'price': 19} },
-            'subtotal': 19,
-            'last_updated': '2025-04-23 11:05:00' # Use example timestamp
+        "cart_id": "CART-112233",  # Use example ID for consistency
+        "items": {
+            "GENERIC-PIXEL-CASE": {
+                "sku": "1122334",
+                "name": "Generic Google Pixel Case",
+                "quantity": 1,
+                "price": 19,
+            }
+        },
+        "subtotal": 19,
+        "last_updated": "2025-04-23 11:05:00",  # Use example timestamp
     }
 
     logger.info(f"Setting up mock cart info for customer ID: {customer_id}...")
-    db.collection('carts').document(customer_id).set(CUSTOMER_CART_INFO)
+    db.collection("carts").document(customer_id).set(CUSTOMER_CART_INFO)
     logger.info(f"Mock cart info set up for customer ID: {customer_id}")
     return {"status": "success", "customer_id": customer_id, "cart_reset": True}
 
@@ -95,20 +107,33 @@ async def reset_cart(customer_id: str):
 # Add a route to reset approval status back to pending
 @app.post("/api/v1/reset_approval/{customer_id}")
 async def reset_approval_status(customer_id: str):
-    logger.info(f"Received POST request to reset approval status for customer ID: {customer_id}")
-    document = db.collection('customers').document(customer_id).get()
+    logger.info(
+        f"Received POST request to reset approval status for customer ID: {customer_id}"
+    )
+    document = db.collection("customers").document(customer_id).get()
     if document.exists:
         try:
-            document.reference.update({
-                "approval_status": "pending"
-            })
-            logger.info(f"Successfully reset approval status to pending for customer ID: {customer_id}")
-            return {"status": "success", "customer_id": customer_id, "approval_status": "pending"}
+            document.reference.update({"approval_status": "pending"})
+            logger.info(
+                f"Successfully reset approval status to pending for customer ID: {customer_id}"
+            )
+            return {
+                "status": "success",
+                "customer_id": customer_id,
+                "approval_status": "pending",
+            }
         except Exception as e:
-            logger.error(f"Error resetting approval status for customer ID {customer_id}: {e}")
-            raise fastapi.HTTPException(status_code=500, detail="Internal server error during approval status reset")
+            logger.error(
+                f"Error resetting approval status for customer ID {customer_id}: {e}"
+            )
+            raise fastapi.HTTPException(
+                status_code=500,
+                detail="Internal server error during approval status reset",
+            )
     else:
-        logger.warning(f"Customer ID not found during reset approval request: {customer_id}")
+        logger.warning(
+            f"Customer ID not found during reset approval request: {customer_id}"
+        )
         raise fastapi.HTTPException(status_code=404, detail="Customer not found")
 
 
@@ -116,7 +141,9 @@ async def reset_approval_status(customer_id: str):
 #  Evaluation API endpoints
 # ================================================================== #
 
-EVAL_LOG_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "server", "evaluation", "logs")
+EVAL_LOG_DIR = os.path.join(
+    os.path.dirname(__file__), "..", "..", "server", "evaluation", "logs"
+)
 
 # Add server dir to path so we can import the evaluation module
 _server_dir = os.path.join(os.path.dirname(__file__), "..", "..", "server")
@@ -127,7 +154,9 @@ if _server_dir not in sys.path:
 @app.get("/api/v1/eval/sessions")
 async def list_eval_sessions():
     """List all recorded evaluation sessions."""
-    files = sorted(glob.glob(os.path.join(EVAL_LOG_DIR, "session_*.json")), reverse=True)
+    files = sorted(
+        glob.glob(os.path.join(EVAL_LOG_DIR, "session_*.json")), reverse=True
+    )
     files = [f for f in files if "_eval_results" not in f]
     sessions = []
     for f in files:
@@ -136,16 +165,18 @@ async def list_eval_sessions():
                 data = json.load(fh)
             results_file = f.replace(".json", "_eval_results.json")
             has_results = os.path.exists(results_file)
-            sessions.append({
-                "file": os.path.basename(f),
-                "session_id": data.get("session_id"),
-                "customer_id": data.get("customer_id"),
-                "start_time": data.get("start_time"),
-                "duration_seconds": data.get("duration_seconds"),
-                "turn_count": data.get("turn_count"),
-                "tool_call_count": data.get("tool_call_count"),
-                "has_eval_results": has_results,
-            })
+            sessions.append(
+                {
+                    "file": os.path.basename(f),
+                    "session_id": data.get("session_id"),
+                    "customer_id": data.get("customer_id"),
+                    "start_time": data.get("start_time"),
+                    "duration_seconds": data.get("duration_seconds"),
+                    "turn_count": data.get("turn_count"),
+                    "tool_call_count": data.get("tool_call_count"),
+                    "has_eval_results": has_results,
+                }
+            )
         except Exception:
             pass
     return {"sessions": sessions}
@@ -160,6 +191,7 @@ async def run_evaluation(filename: str, use_vertex: bool = True):
 
     try:
         from evaluation.run_eval import evaluate_session
+
         results = evaluate_session(filepath, use_vertex=use_vertex)
         return {"status": "success", "results": results}
     except Exception as e:
@@ -170,9 +202,14 @@ async def run_evaluation(filename: str, use_vertex: bool = True):
 @app.get("/api/v1/eval/results/{filename}")
 async def get_eval_results(filename: str):
     """Get evaluation results for a session."""
-    results_file = os.path.join(EVAL_LOG_DIR, filename.replace(".json", "_eval_results.json"))
+    results_file = os.path.join(
+        EVAL_LOG_DIR, filename.replace(".json", "_eval_results.json")
+    )
     if not os.path.exists(results_file):
-        raise fastapi.HTTPException(status_code=404, detail="Evaluation results not found. Run evaluation first.")
+        raise fastapi.HTTPException(
+            status_code=404,
+            detail="Evaluation results not found. Run evaluation first.",
+        )
     with open(results_file) as f:
         return json.load(f)
 
