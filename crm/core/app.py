@@ -165,12 +165,13 @@ async def reset_approval_status(customer_id: str):
 
 
 # ================================================================== #
-#  Evaluation API endpoints
+#  Evaluation API endpoints (reads from GCS)
 # ================================================================== #
 
 EVAL_LOG_DIR = os.path.join(
     os.path.dirname(__file__), "..", "..", "server", "evaluation", "logs"
 )
+GCS_EVAL_PREFIX = "evaluation/logs"
 
 # Add server dir to path so we can import the evaluation module
 _server_dir = os.path.join(os.path.dirname(__file__), "..", "..", "server")
@@ -178,9 +179,50 @@ if _server_dir not in sys.path:
     sys.path.insert(0, _server_dir)
 
 
-@app.get("/api/v1/eval/sessions")
-async def list_eval_sessions():
-    """List all recorded evaluation sessions."""
+def _list_gcs_eval_sessions():
+    """List eval sessions from GCS bucket."""
+    try:
+        from google.cloud import storage
+
+        client = storage.Client()
+        bucket = client.bucket(GCS_BUCKET_NAME)
+        blobs = list(
+            bucket.list_blobs(prefix=f"{GCS_EVAL_PREFIX}/session_", delimiter="/")
+        )
+        sessions = []
+        for blob in sorted(blobs, key=lambda b: b.name, reverse=True):
+            if "_eval_results" in blob.name:
+                continue
+            try:
+                data = json.loads(blob.download_as_text())
+                results_blob = bucket.blob(
+                    blob.name.replace(".json", "_eval_results.json")
+                )
+                has_results = results_blob.exists()
+                sessions.append(
+                    {
+                        "file": os.path.basename(blob.name),
+                        "session_id": data.get("session_id"),
+                        "customer_id": data.get("customer_id"),
+                        "start_time": data.get("start_time"),
+                        "duration_seconds": data.get("duration_seconds"),
+                        "turn_count": data.get("turn_count"),
+                        "tool_call_count": data.get("tool_call_count"),
+                        "cost_usd": data.get("cost_usd", 0),
+                        "token_usage": data.get("token_usage", {}),
+                        "has_eval_results": has_results,
+                    }
+                )
+            except Exception:
+                pass
+        return sessions
+    except Exception as e:
+        logger.warning(f"Failed to read eval sessions from GCS: {e}")
+        return []
+
+
+def _list_local_eval_sessions():
+    """Fallback: list eval sessions from local filesystem."""
     files = sorted(
         glob.glob(os.path.join(EVAL_LOG_DIR, "session_*.json")), reverse=True
     )
@@ -208,6 +250,15 @@ async def list_eval_sessions():
             )
         except Exception:
             pass
+    return sessions
+
+
+@app.get("/api/v1/eval/sessions")
+async def list_eval_sessions():
+    """List all recorded evaluation sessions from GCS or local fallback."""
+    sessions = _list_gcs_eval_sessions()
+    if not sessions:
+        sessions = _list_local_eval_sessions()
     return {"sessions": sessions}
 
 
@@ -232,7 +283,21 @@ async def run_evaluation(filename: str, use_vertex: bool = True):
 
 @app.get("/api/v1/eval/results/{filename}")
 async def get_eval_results(filename: str):
-    """Get evaluation results for a session."""
+    """Get evaluation results for a session (GCS or local)."""
+    # Try GCS first
+    try:
+        from google.cloud import storage
+
+        client = storage.Client()
+        bucket = client.bucket(GCS_BUCKET_NAME)
+        results_name = filename.replace(".json", "_eval_results.json")
+        blob = bucket.blob(f"{GCS_EVAL_PREFIX}/{results_name}")
+        if blob.exists():
+            return json.loads(blob.download_as_text())
+    except Exception as e:
+        logger.warning(f"GCS eval results lookup failed: {e}")
+
+    # Fallback to local
     results_file = os.path.realpath(
         os.path.join(EVAL_LOG_DIR, filename.replace(".json", "_eval_results.json"))
     )

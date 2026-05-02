@@ -2,24 +2,23 @@
 #  OBSERVABILITY & MONITORING
 # ================================================================== #
 
-# Uptime checks for all Cloud Run services
-resource "google_monitoring_uptime_check_config" "backend_health" {
-  display_name = "Shopping Backend Health"
+# Uptime check for frontend (HTTP health via Cloud Run URL)
+resource "google_monitoring_uptime_check_config" "frontend_health" {
+  display_name = "Cymbal Frontend Health"
   timeout      = "10s"
   period       = "60s"
 
   http_check {
-    path    = "/health"
-    port    = 8082
+    path    = "/"
+    port    = 443
     use_ssl = true
   }
 
   monitored_resource {
-    type = "cloud_run_revision"
+    type = "uptime_url"
     labels = {
-      project_id         = var.project_id
-      service_name       = google_cloud_run_v2_service.backend.name
-      location           = var.region
+      project_id = var.project_id
+      host       = replace(google_cloud_run_v2_service.frontend.uri, "https://", "")
     }
   }
 }
@@ -32,7 +31,7 @@ resource "google_monitoring_alert_policy" "high_error_rate" {
   conditions {
     display_name = "Error rate > 5%"
     condition_threshold {
-      filter          = "resource.type = \"cloud_run_revision\" AND metric.type = \"run.googleapis.com/request_count\" AND metric.labels.response_code_class = \"5xx\""
+      filter          = "resource.type = \"cloud_run_revision\" AND resource.label.service_name = \"live-agent-backend\" AND metric.type = \"run.googleapis.com/request_count\" AND metric.labels.response_code_class = \"5xx\""
       duration        = "300s"
       comparison      = "COMPARISON_GT"
       threshold_value = 5
@@ -58,7 +57,7 @@ resource "google_monitoring_alert_policy" "high_latency" {
   conditions {
     display_name = "P95 latency > 5s"
     condition_threshold {
-      filter          = "resource.type = \"cloud_run_revision\" AND metric.type = \"run.googleapis.com/request_latencies\""
+      filter          = "resource.type = \"cloud_run_revision\" AND resource.label.service_name = \"live-agent-backend\" AND metric.type = \"run.googleapis.com/request_latencies\""
       duration        = "300s"
       comparison      = "COMPARISON_GT"
       threshold_value = 5000
@@ -89,7 +88,7 @@ resource "google_monitoring_dashboard" "shopping" {
             dataSets = [{
               timeSeriesQuery = {
                 timeSeriesFilter = {
-                  filter = "resource.type = \"cloud_run_revision\" AND metric.type = \"run.googleapis.com/request_count\""
+                  filter = "resource.type = \"cloud_run_revision\" AND resource.label.service_name = \"live-agent-backend\" AND metric.type = \"run.googleapis.com/request_count\""
                   aggregation = {
                     alignmentPeriod  = "60s"
                     perSeriesAligner = "ALIGN_RATE"
@@ -106,7 +105,7 @@ resource "google_monitoring_dashboard" "shopping" {
             dataSets = [{
               timeSeriesQuery = {
                 timeSeriesFilter = {
-                  filter = "resource.type = \"cloud_run_revision\" AND metric.type = \"run.googleapis.com/request_latencies\""
+                  filter = "resource.type = \"cloud_run_revision\" AND resource.label.service_name = \"live-agent-backend\" AND metric.type = \"run.googleapis.com/request_latencies\""
                   aggregation = {
                     alignmentPeriod  = "60s"
                     perSeriesAligner = "ALIGN_PERCENTILE_99"
@@ -122,7 +121,7 @@ resource "google_monitoring_dashboard" "shopping" {
             dataSets = [{
               timeSeriesQuery = {
                 timeSeriesFilter = {
-                  filter = "resource.type = \"cloud_run_revision\" AND metric.type = \"run.googleapis.com/container/instance_count\""
+                  filter = "resource.type = \"cloud_run_revision\" AND resource.label.service_name = \"live-agent-backend\" AND metric.type = \"run.googleapis.com/container/instance_count\""
                   aggregation = {
                     alignmentPeriod  = "60s"
                     perSeriesAligner = "ALIGN_MAX"
@@ -138,7 +137,7 @@ resource "google_monitoring_dashboard" "shopping" {
             dataSets = [{
               timeSeriesQuery = {
                 timeSeriesFilter = {
-                  filter = "resource.type = \"cloud_run_revision\" AND metric.type = \"run.googleapis.com/container/memory/utilizations\""
+                  filter = "resource.type = \"cloud_run_revision\" AND resource.label.service_name = \"live-agent-backend\" AND metric.type = \"run.googleapis.com/container/memory/utilizations\""
                   aggregation = {
                     alignmentPeriod  = "60s"
                     perSeriesAligner = "ALIGN_PERCENTILE_95"

@@ -1,27 +1,93 @@
 swagger: "2.0"
 info:
   title: "Cymbal StyleSync API"
-  description: "API Gateway for the Cymbal StyleSync shopping assistant backend"
+  description: "API Gateway for the Cymbal StyleSync platform REST endpoints"
   version: "1.0.0"
 schemes:
   - "https"
 produces:
   - "application/json"
 x-google-backend:
-  address: "${backend_url}"
+  address: "${frontend_url}"
   protocol: h2
 paths:
-  /health:
+  /api/v1/approvals/{customer_id}:
     get:
-      summary: "Health check"
-      operationId: "healthCheck"
+      summary: "Get customer approval status"
+      operationId: "getApproval"
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          type: string
       responses:
         200:
-          description: "Service is healthy"
-  /ws:
-    get:
-      summary: "WebSocket connection for Gemini Live"
-      operationId: "websocketConnect"
+          description: "Customer approval data"
+        404:
+          description: "Customer not found"
+    put:
+      summary: "Approve customer discount request"
+      operationId: "approveDiscount"
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          type: string
       responses:
-        101:
-          description: "WebSocket upgrade"
+        200:
+          description: "Approval updated"
+  /api/v1/reset_cart/{customer_id}:
+    post:
+      summary: "Reset customer cart to default state"
+      operationId: "resetCart"
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          type: string
+      responses:
+        200:
+          description: "Cart reset successfully"
+  /api/v1/reset_approval/{customer_id}:
+    post:
+      summary: "Reset approval status to pending"
+      operationId: "resetApproval"
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          type: string
+      responses:
+        200:
+          description: "Approval status reset"
+  /api/v1/eval/sessions:
+    get:
+      summary: "List all evaluation sessions"
+      operationId: "listEvalSessions"
+      responses:
+        200:
+          description: "List of evaluation sessions"
+  /api/v1/eval/run/{filename}:
+    post:
+      summary: "Run evaluation on a session"
+      operationId: "runEvaluation"
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          type: string
+      responses:
+        200:
+          description: "Evaluation results"
+  /api/v1/eval/results/{filename}:
+    get:
+      summary: "Get evaluation results"
+      operationId: "getEvalResults"
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          type: string
+      responses:
+        200:
+          description: "Evaluation results data"
