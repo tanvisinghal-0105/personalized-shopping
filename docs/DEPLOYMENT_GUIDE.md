@@ -1,82 +1,107 @@
-# Cymbal Shopping AI - Deployment Guide
+# Cymbal StyleSync - Deployment Guide
 
-## Quick Deploy Commands
+## Prerequisites
 
-### Backend Deployment
-```bash
-cd /Users/tanvisinghal/Documents/personalized_shopping/server
-gcloud builds submit --config cloudbuild.yaml
-```
+- Google Cloud project with billing enabled
+- `gcloud` CLI authenticated
+- Terraform >= 1.5.0
 
-### Frontend Deployment (CRM + Shopping UI)
-```bash
-cd /Users/tanvisinghal/Documents/personalized_shopping/crm
-gcloud builds submit --config cloudbuild.yaml
-```
+## Step 1: Authenticate
 
-## Detailed Instructions
-
-### Step 1: Authenticate
 ```bash
 gcloud auth login
-gcloud config set project $PROJECT_ID
+export PROJECT_ID=$(gcloud config get-value project)
 ```
 
-### Step 2: Deploy Backend
+## Step 2: Deploy Infrastructure (Terraform)
+
+Terraform provisions all GCP resources: Cloud Run services, VPC, IAM, GCS bucket, monitoring, and security.
+
 ```bash
-cd /Users/tanvisinghal/Documents/personalized_shopping/server
-gcloud builds submit --config cloudbuild.yaml
+cd terraform
+terraform init -backend-config="bucket=${PROJECT_ID}-tf-state"
+terraform plan -var="project_id=${PROJECT_ID}"
+terraform apply -var="project_id=${PROJECT_ID}"
 ```
 
-**Expected Output:**
-- Build ID will be displayed
-- Container image pushed to GCR
-- Service deployed to Cloud Run
-- Service URL: `https://live-agent-backend-XXXXX-uc.a.run.app`
+This creates:
+- **cymbal-frontend** -- Cloud Run service (CRM + Shopping UI)
+- **live-agent-backend** -- Cloud Run service (WebSocket + Gemini Live)
+- **GCS bucket** -- Product images, eval logs, generated images
+- **VPC** -- Private network for backend services
+- **IAM** -- Service accounts with least-privilege roles
+- **Monitoring** -- Dashboards and alert policies
+- **Security** -- Cloud Armor WAF, Secret Manager
 
-### Step 3: Verify Backend Deployment
+## Step 3: Deploy Backend
+
 ```bash
+cd server
+gcloud builds submit --config cloudbuild.yaml --substitutions=SHORT_SHA=$(git rev-parse --short HEAD)
+```
+
+Pipeline: pytest (103 tests) + black + mypy + Docker build + Cloud Run deploy
+
+## Step 4: Deploy Frontend
+
+```bash
+cd crm
+gcloud builds submit --config cloudbuild.yaml --substitutions=SHORT_SHA=$(git rev-parse --short HEAD)
+```
+
+Uses `frontend.Dockerfile` at repo root. Builds a single `cymbal-frontend` service (FastAPI) that serves both the CRM dashboard and Shopping UI.
+
+## Step 5: Verify
+
+```bash
+# Get service URLs
+gcloud run services describe cymbal-frontend --region us-central1 --format 'value(status.url)'
 gcloud run services describe live-agent-backend --region us-central1 --format 'value(status.url)'
+
+# Check terraform outputs
+cd terraform && terraform output
 ```
 
-### Step 4: Deploy Frontend (CRM + Shopping UI)
-```bash
-cd /Users/tanvisinghal/Documents/personalized_shopping/crm
-gcloud builds submit --config cloudbuild.yaml
-```
+## Architecture
 
-This uses `frontend.Dockerfile` at the repo root to build a single consolidated `cymbal-frontend` service (FastAPI-based) that serves both the CRM dashboard and Shopping UI.
+| Service | Image | Port | Resources |
+|---------|-------|------|-----------|
+| cymbal-frontend | `gcr.io/$PROJECT_ID/cymbal-frontend` | 8080 | 1 CPU, 512Mi |
+| live-agent-backend | `gcr.io/$PROJECT_ID/live-agent-backend` | 8081 | 2 CPU, 2Gi |
 
-### Step 5: Access Application
-Once both are deployed, open the frontend URL in your browser.
+## Configuration
 
-## Configuration Notes
-
-- **WebSocket endpoint is auto-detected** -- no hardcoded URLs needed
-- **No hardcoded project IDs** -- all configuration is dynamic via environment variables
+- **No hardcoded project IDs** -- all dynamic via environment variables
+- **WebSocket endpoint** -- auto-detected from frontend hostname
+- **GCS assets** -- served from `${PROJECT_ID}-shopping-assets/assets/products/`
+- **Service accounts** -- `live-agent-backend@${PROJECT_ID}.iam.gserviceaccount.com`
 
 ## Troubleshooting
 
-### Permission Denied Error
-If you get permission errors, ensure your account has the necessary roles:
+### Permission Denied
 ```bash
 gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member="user:tanvisinghal@google.com" \
+  --member="user:$(gcloud config get-value account)" \
   --role="roles/run.admin"
 
 gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member="user:tanvisinghal@google.com" \
+  --member="user:$(gcloud config get-value account)" \
   --role="roles/cloudbuild.builds.editor"
 ```
 
-### View Deployment Logs
+### View Logs
 ```bash
-# Backend logs
 gcloud run services logs tail live-agent-backend --region us-central1
-
-# Build logs
+gcloud run services logs tail cymbal-frontend --region us-central1
 gcloud builds list --limit 5
-gcloud builds log [BUILD_ID]
 ```
 
+### Terraform State
+```bash
+# Create state bucket if it doesn't exist
+gsutil mb gs://${PROJECT_ID}-tf-state
 
+# Re-initialize
+cd terraform
+terraform init -backend-config="bucket=${PROJECT_ID}-tf-state" -reconfigure
+```

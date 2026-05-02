@@ -65,26 +65,29 @@ cd server && python server.py &
 cd ../crm && python main.py &
 ```
 
-## Deploy to Cloud Run
+## Deploy to Google Cloud
 
 ```bash
-# Authenticate
-gcloud auth application-default login
+export PROJECT_ID=$(gcloud config get-value project)
 
-# Create GCS bucket for assets (one-time)
-gcloud storage buckets create gs://YOUR_PROJECT-shopping-assets --location=us-central1
-gcloud storage cp -r client/assets/* gs://YOUR_PROJECT-shopping-assets/assets/products/
-
-# Deploy services (CI runs pytest + black + mypy before each deploy)
-gcloud builds submit --config server/cloudbuild.yaml    # Backend
-gcloud builds submit --config crm/cloudbuild.yaml       # CRM + UI
-
-# Deploy infrastructure (VPC, IAM, monitoring, security)
+# 1. Infrastructure (VPC, IAM, GCS, monitoring, security)
 cd terraform
-terraform init
-terraform plan -var="project_id=YOUR_PROJECT"
-terraform apply -var="project_id=YOUR_PROJECT"
+terraform init -backend-config="bucket=${PROJECT_ID}-tf-state"
+terraform apply -var="project_id=${PROJECT_ID}"
+
+# 2. Upload product images to GCS (one-time)
+cd ../server
+python scripts/upload_assets_to_gcs.py
+
+# 3. Deploy backend (pytest + black + mypy + Docker + Cloud Run)
+gcloud builds submit --config cloudbuild.yaml --substitutions=SHORT_SHA=$(git rev-parse --short HEAD)
+
+# 4. Deploy frontend (CRM + Shopping UI)
+cd ../crm
+gcloud builds submit --config cloudbuild.yaml --substitutions=SHORT_SHA=$(git rev-parse --short HEAD)
 ```
+
+Full guide: [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)
 
 ## Project Structure
 
@@ -95,15 +98,11 @@ client/          Shopping UI (embedded in CRM)
 terraform/       GCP infra (Cloud Run, GCS, VPC, IAM, monitoring)
 ```
 
-## The Demo Flow
+## Demo Personas
 
-1. "I need help redesigning Mila's bedroom"
-2. Room purpose -> Age -> Constraints -> Photo upload
-3. AI analyzes room + cross-references order history
-4. Style Finder with AI-generated previews from the room photo
-5. Color + dimensions -> Moodboard with 10 curated products
-6. Room visualization (Nano Banana Pro editing + Imagen 4 fallback)
-7. Add to cart -> Ask for discount -> Manager approves via CRM
+**Persona A: Electronics Shopper** -- Show phone via camera, get case recommendation, price match against competitor (manager approval via CRM), add warranty, trade in old device.
+
+**Persona B: Home Decor Consultation** -- 9-stage guided flow: room selection, purpose, photo upload with AI analysis + order history cross-reference, style discovery with AI-generated previews, colour + dimensions, curated moodboard, room visualization (Gemini Pro inpainting / Imagen 4 fallback).
 
 Full script: [docs/DEMO_STORYLINE.md](docs/DEMO_STORYLINE.md)
 
