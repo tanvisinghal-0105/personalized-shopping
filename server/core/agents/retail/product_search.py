@@ -26,8 +26,9 @@ def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
 
 
 def _get_embedding(texts: List[str]) -> List[List[float]]:
-    """Get text embeddings from Gemini."""
+    """Get text embeddings from Gemini with retry."""
     from google import genai
+    from ...retry import vertex_ai_retry
 
     client = genai.Client()
     result = client.models.embed_content(

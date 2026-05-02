@@ -279,13 +279,27 @@ async def _handle_direct_visualization(websocket: Any, data: dict, session_id: s
         logger.info("[DIRECT VIZ] Visualization sent to frontend")
 
     except Exception as e:
-        logger.error(f"[DIRECT VIZ] Visualization failed: {e}")
+        from core.retry import classify_error
+
+        error_type = classify_error(e)
+        logger.error(f"[DIRECT VIZ] Visualization failed ({error_type}): {e}")
+
+        # Graceful degradation: send user-friendly error based on type
+        user_messages = {
+            "rate_limited": "Image generation is busy. Please try again in a moment.",
+            "credentials_expired": "Please ask the admin to refresh credentials.",
+            "timeout": "Image generation took too long. Try selecting fewer products.",
+            "service_unavailable": "Image service is temporarily unavailable. Please try again.",
+        }
+        user_msg = user_messages.get(error_type, f"Visualization failed. Please try again.")
+
         await websocket.send(
             json.dumps({
                 "type": "tool_result",
                 "data": {
                     "status": "error",
-                    "message": f"Visualization failed: {str(e)}",
+                    "message": user_msg,
+                    "error_type": error_type,
                 },
             })
         )

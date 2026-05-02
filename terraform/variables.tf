@@ -21,3 +21,15 @@ variable "eval_log_retention_days" {
   type        = number
   default     = 90
 }
+
+variable "enable_vpc_service_controls" {
+  description = "Enable VPC Service Controls perimeter (requires org-level access)"
+  type        = bool
+  default     = false
+}
+
+variable "access_policy_id" {
+  description = "Access Context Manager policy ID (required if enable_vpc_service_controls=true)"
+  type        = string
+  default     = ""
+}

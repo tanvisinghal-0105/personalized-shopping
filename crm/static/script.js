@@ -23,116 +23,80 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function displayStatus(data) {
         console.log('Displaying status:', data);
-        // Clear previous content
         statusDisplay.innerHTML = '';
 
-        if (typeof data === 'object' && data !== null) {
-            // Define the order and labels for keys
-            const displayOrder = {
-                customer_id: 'Customer ID',
-                approval_status: 'Approval Status',
-                discount_type: 'Discount Type',
-                discount_value: 'Discount Value',
-                product_id: 'Product ID',
-                crmAccountId: 'CRM Account ID',
-                escalationHost: 'Escalation Host',
-                menuLang: 'Menu Language',
-                menuId: 'Menu ID',
-                messages: 'Messages' // Special handling
-            };
-
-            for (const key in displayOrder) {
-                if (data.hasOwnProperty(key)) {
-                    const value = data[key];
-                    const label = displayOrder[key];
-
-                    const itemDiv = document.createElement('div');
-                    itemDiv.classList.add('detail-item');
-
-                    const keySpan = document.createElement('span');
-                    keySpan.classList.add('detail-key');
-                    keySpan.textContent = `${label}:`;
-                    itemDiv.appendChild(keySpan);
-
-                    const valueSpan = document.createElement('span');
-                    valueSpan.classList.add('detail-value');
-
-                    if (key === 'approval_status') {
-                        // Special styling for approval status
-                        const statusBadge = document.createElement('span');
-                        statusBadge.classList.add('status-badge');
-                        statusBadge.textContent = value;
-                        // Add classes based on value (e.g., approved, pending, denied)
-                        statusBadge.classList.add(value.toLowerCase()); 
-                        valueSpan.appendChild(statusBadge);
-                    } else if (key === 'messages' && typeof value === 'object' && value !== null) {
-                        // Handle messages object
-                        const messagesList = document.createElement('div');
-                        messagesList.classList.add('messages-details');
-                        for (const msgKey in value) {
-                            if (value.hasOwnProperty(msgKey)) {
-                                const msgItemDiv = document.createElement('div');
-                                msgItemDiv.classList.add('message-item');
-                                
-                                const msgKeySpan = document.createElement('span');
-                                msgKeySpan.classList.add('message-key');
-                                msgKeySpan.textContent = `${msgKey}:`;
-                                msgItemDiv.appendChild(msgKeySpan);
-
-                                const msgValueSpan = document.createElement('span');
-                                msgValueSpan.classList.add('message-value');
-                                if (Array.isArray(value[msgKey])) {
-                                    // Display agent messages as a list
-                                    const agentList = document.createElement('ul');
-                                    value[msgKey].forEach(agentMsg => {
-                                        const li = document.createElement('li');
-                                        li.textContent = agentMsg;
-                                        agentList.appendChild(li);
-                                    });
-                                    msgValueSpan.appendChild(agentList);
-                                } else {
-                                    msgValueSpan.textContent = value[msgKey];
-                                }
-                                msgItemDiv.appendChild(msgValueSpan);
-                                messagesList.appendChild(msgItemDiv);
-                            }
-                        }
-                        valueSpan.appendChild(messagesList);
-                    } else {
-                        // Default display for other values
-                        valueSpan.textContent = value;
-                    }
-
-                    itemDiv.appendChild(valueSpan);
-                    statusDisplay.appendChild(itemDiv);
-                }
-            }
-             // Handle keys not in displayOrder (optional, for completeness)
-             for (const key in data) {
-                 if (data.hasOwnProperty(key) && !displayOrder.hasOwnProperty(key)) {
-                     const itemDiv = document.createElement('div');
-                     itemDiv.classList.add('detail-item', 'extra-detail'); // Mark as extra
-                     const keySpan = document.createElement('span');
-                     keySpan.classList.add('detail-key');
-                     keySpan.textContent = `${key}:`;
-                     itemDiv.appendChild(keySpan);
-                     const valueSpan = document.createElement('span');
-                     valueSpan.classList.add('detail-value');
-                     valueSpan.textContent = typeof data[key] === 'object' ? JSON.stringify(data[key]) : data[key];
-                     itemDiv.appendChild(valueSpan);
-                     statusDisplay.appendChild(itemDiv);
-                 }
-             }
-
-        } else {
-            // Handle non-object data (e.g., simple success message)
+        if (typeof data === 'string') {
             const simpleText = document.createElement('p');
             simpleText.textContent = data;
             statusDisplay.appendChild(simpleText);
+            customerInfoDiv.style.display = 'block';
+            errorMessageDiv.style.display = 'none';
+            return;
         }
 
-        customerInfoDiv.style.display = 'block'; // Show info div
-        errorMessageDiv.style.display = 'none'; // Hide error div
+        if (typeof data !== 'object' || data === null) return;
+
+        function addRow(label, value, className) {
+            const row = document.createElement('div');
+            row.classList.add('detail-item');
+            if (className) row.classList.add(className);
+            const keyEl = document.createElement('span');
+            keyEl.classList.add('detail-key');
+            keyEl.textContent = label + ':';
+            row.appendChild(keyEl);
+            const valEl = document.createElement('span');
+            valEl.classList.add('detail-value');
+            if (typeof value === 'object' && value !== null) {
+                const badge = document.createElement('span');
+                badge.classList.add('status-badge', (value.class || ''));
+                badge.textContent = value.text || '';
+                valEl.appendChild(badge);
+            } else {
+                valEl.textContent = value;
+            }
+            row.appendChild(valEl);
+            statusDisplay.appendChild(row);
+        }
+
+        // Header info
+        addRow('Customer ID', data.customer_id || 'N/A');
+        addRow('Approval Status', {
+            text: data.approval_status || 'unknown',
+            class: (data.approval_status || '').toLowerCase()
+        });
+        addRow('Requested At', data.requested_at || 'N/A');
+
+        // Discount details
+        if (data.discount_type) {
+            addRow('Discount Type', data.discount_type);
+            addRow('Discount Value', data.discount_type === 'percentage'
+                ? data.discount_value + '%'
+                : data.discount_value + ' EUR');
+            if (data.reason) addRow('Reason', data.reason);
+        }
+
+        // Cart items
+        if (data.cart_items && data.cart_items.length > 0) {
+            const cartHeader = document.createElement('div');
+            cartHeader.style.cssText = 'margin-top:12px;padding-top:12px;border-top:1px solid var(--color-border);font-weight:600;font-size:0.9em;margin-bottom:8px;';
+            cartHeader.textContent = 'Cart Items';
+            statusDisplay.appendChild(cartHeader);
+
+            data.cart_items.forEach(item => {
+                addRow(item.name, (item.price || 0).toFixed(2) + ' EUR x' + (item.quantity || 1));
+            });
+
+            addRow('Cart Subtotal', (data.cart_subtotal || 0).toFixed(2) + ' EUR');
+            if (data.discount_amount_eur) {
+                addRow('Discount Amount', '-' + data.discount_amount_eur.toFixed(2) + ' EUR');
+            }
+            if (data.new_total_after_discount !== undefined) {
+                addRow('New Total', data.new_total_after_discount.toFixed(2) + ' EUR');
+            }
+        }
+
+        customerInfoDiv.style.display = 'block';
+        errorMessageDiv.style.display = 'none';
     }
 
     function clearMessages() {

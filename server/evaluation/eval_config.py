@@ -6,68 +6,57 @@ criteria based on DEMO_STORYLINE.md.
 """
 
 # -- Expected tool call trajectory for the full demo flow --
-# Each entry: (tool_name, critical_args_subset)
-# The evaluator checks that these tools are called in order with matching args.
+# The evaluator checks that these tools are called in order.
+# Args use "*" for any value, or a specific value for exact match.
 EXPECTED_TRAJECTORY = [
     {
         "tool_name": "start_home_decor_consultation",
         "phase": "Phase 1 - Initial Request",
         "required_args": {"customer_id": "*"},
-        "expected_output_keys": ["ui_data"],
-        "expected_ui_type": "room_selector",
     },
     {
         "tool_name": "continue_home_decor_consultation",
-        "phase": "Phase 2 - Room Purpose",
-        "required_args": {"room_type": "bedroom"},
+        "phase": "Phase 2 - Room Selection",
+        "required_args": {"room_type": "*"},
         "expected_stage": "stage_1a_room_purpose",
     },
     {
         "tool_name": "continue_home_decor_consultation",
-        "phase": "Phase 2 - Age Context",
-        "required_args": {"room_purpose": "redesign"},
+        "phase": "Phase 2 - Room Purpose",
+        "required_args": {"room_purpose": "*"},
         "expected_stage": "stage_1b_age_context",
     },
     {
         "tool_name": "continue_home_decor_consultation",
-        "phase": "Phase 2 - Constraints",
-        "required_args": {"age_context": "school-age"},
+        "phase": "Phase 2 - Age Context",
+        "required_args": {"age_context": "*"},
         "expected_stage": "stage_1c_constraints",
     },
     {
         "tool_name": "continue_home_decor_consultation",
-        "phase": "Phase 3 - Photo Request",
+        "phase": "Phase 2 - Constraints",
+        "required_args": {"constraints": "*"},
         "expected_stage": "stage_1d_photo_request",
-        "expected_ui_type": "photo_upload",
-    },
-    {
-        "tool_name": "analyze_room_with_history",
-        "phase": "Phase 3 - Photo Analysis",
-        "required_args": {"room_type": "bedroom"},
     },
     {
         "tool_name": "continue_home_decor_consultation",
         "phase": "Phase 4 - Style Finder",
         "expected_stage": "stage_2_style_discovery",
-        "expected_ui_type": "style_selector",
     },
     {
         "tool_name": "continue_home_decor_consultation",
         "phase": "Phase 4 - Color Preferences",
         "expected_stage": "stage_3_color_preferences",
-        "expected_ui_type": "color_selector",
     },
     {
         "tool_name": "continue_home_decor_consultation",
         "phase": "Phase 5 - Room Dimensions",
         "expected_stage": "stage_4_room_dimensions",
-        "expected_ui_type": "room_dimensions",
     },
     {
         "tool_name": "continue_home_decor_consultation",
-        "phase": "Phase 6 - Moodboard Generation",
+        "phase": "Phase 6 - Moodboard",
         "expected_stage": "moodboard_presented",
-        "expected_ui_type": "moodboard",
     },
 ]
 

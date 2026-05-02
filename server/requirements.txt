@@ -1,47 +1,25 @@
-# #websockets==14.1
-# #google-auth==2.37.0
-# #certifi==2024.12.14
-# #requests==2.32.3
-# #google-genai==0.5.0
-# #aiohttp==3.11.11
-# #python-dotenv==1.0.1
-# #google-api-python-client==2.122.0
-# #google-auth-oauthlib==1.2.0
-# google-cloud-secret-manager==2.19.0
-# db-dtypes
-# google-cloud-alloydb
-# google-cloud-alloydb-connector
-# immutabledict
-# pg8000
-# sqlglot
-# immutabledict
-# google-cloud-firestore
-# google-adk
-# google-genai>=0.5.0
-# google-adk>=0.1.0
-# websockets>=12.0
-# google-cloud-secret-manager
-# google-cloud-firestore
-# python-dotenv
-# requests
+# Core application
+google-genai>=1.0.0
+google-adk>=1.28.0
+websockets>=14.0
+aiohttp>=3.9.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+numpy>=1.26.0
+Pillow>=10.0.0
+pydantic>=2.0.0
 
-# Main application dependencies
-google-genai>=0.5.0
-google-adk==1.28.0
-websockets>=12.0
+# Google Cloud services
+google-cloud-secret-manager>=2.19.0
+google-cloud-firestore>=2.16.0
+google-cloud-storage>=2.14.0
+google-auth>=2.28.0
+google-api-python-client>=2.120.0
 
-# Google Cloud dependencies
-google-cloud-secret-manager
-google-cloud-firestore
-google-cloud-alloydb
-google-cloud-alloydb-connector
+# Vertex AI evaluation
+vertexai>=1.60.0
 
-# Database and utility dependencies
-db-dtypes
-pg8000
-sqlglot
-immutabledict
-
-# Other dependencies
-python-dotenv
-requests
+# Dev/test dependencies
+pytest>=8.0.0
+black>=24.0.0
+mypy>=1.8.0

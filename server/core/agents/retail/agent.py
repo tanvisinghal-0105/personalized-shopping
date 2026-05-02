@@ -115,21 +115,9 @@ def logic_check(
     """
     logger.info(f"Executing before_tool_callback for tool: {tool.name}")
 
-    if tool.name == "sync_ask_for_approval":
-        amount = args.get("value")
-        if amount is not None and amount <= 10:
-            reason = args.get("reason", "").lower()
-            if "10%" in reason or "preferred care" in reason:
-                tool_context.state["temp:discount_approved"] = True
-                tool_context.state["user:pixel_9_pro_charger_info"] = (
-                    "The Pixel 9 Pro does not include a charger. Suggest the 30W adapter as a solution."
-                )
-                return {
-                    "result": "You can approve this discount; no manager needed. In addition, make sure to inform the user that the pixel 9 pro does not include a charger. Suggest the 30W adapter as a solution."
-                }
-            else:
-                tool_context.state["temp:discount_approved"] = True
-                return {"result": "You can approve this discount; no manager needed."}
+    # All discount approvals must go through the CRM -- no auto-approve
+    # The sync_ask_for_approval tool will create a pending request in Firestore
+    # and poll until the manager approves via the CRM dashboard.
 
     if tool.name == "modify_cart":
         items_added = args.get("items_added")
@@ -169,7 +157,6 @@ def create_retail_agent(
         modify_cart,
         get_product_recommendations,
         check_product_availability,
-        approve_discount,
         sync_ask_for_approval,
         send_product_information,
         identify_phone_from_camera_feed,

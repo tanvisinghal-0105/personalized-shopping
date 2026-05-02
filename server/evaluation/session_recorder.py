@@ -101,6 +101,8 @@ class SessionRecorder:
         }
         self.tool_calls.append(tool_entry)
         self.events.append({"type": "tool_call", **tool_entry})
+        # Auto-save after each tool call so data isn't lost if connection drops
+        self._autosave()
 
     def record_moodboard(
         self, products: list, style_preferences: list, color_preferences: list
@@ -125,6 +127,14 @@ class SessionRecorder:
                 "timestamp": time.time(),
             }
         )
+
+    def _autosave(self):
+        """Save current state to disk after each tool call.
+        This ensures data is not lost if the WebSocket drops unexpectedly."""
+        try:
+            self.save()
+        except Exception:
+            pass
 
     def save(self):
         """Persist the session log locally and optionally to GCS."""

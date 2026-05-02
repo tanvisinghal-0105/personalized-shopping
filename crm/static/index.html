@@ -203,13 +203,9 @@
                             <span style="font-size:12px;color:#555570;">${s.start_time || ''}</span>
                         </div>
                         <div class="buttons">
-                            <button class="button primary" onclick="runEvaluation('${s.file}', true)">
-                                <span class="material-symbols-outlined">cloud</span>
-                                Evaluate (Vertex AI + Custom)
-                            </button>
-                            <button class="button secondary" onclick="runEvaluation('${s.file}', false)">
-                                <span class="material-symbols-outlined">calculate</span>
-                                Evaluate (Custom Metrics Only)
+                            <button class="button primary" onclick="runEvaluation('${s.file}', false)">
+                                <span class="material-symbols-outlined">analytics</span>
+                                Run Evaluation
                             </button>
                             ${s.has_eval_results ? `<button class="button secondary" onclick="viewEvalResults('${s.file}')"><span class="material-symbols-outlined">visibility</span>View Results</button>` : ''}
                         </div>

@@ -4,6 +4,7 @@ from typing import Optional, List, Dict, Any
 import requests
 import json
 from ...logger import logger
+from ...retry import vertex_ai_retry, imagen_retry, firestore_retry
 from datetime import datetime, timedelta
 
 from google.cloud import firestore
@@ -105,14 +106,42 @@ def sync_ask_for_approval(
         f"Requesting manager approval for customer {customer_id}: {type}={value}, reason={reason}, product_id={product_id}"
     )
 
+    # Fetch current cart items to include in the approval request
+    cart_items = []
+    cart_subtotal = 0
+    if db is not None:
+        try:
+            cart_doc = db.collection("carts").document(customer_id).get()
+            if cart_doc.exists:
+                cart_data = cart_doc.to_dict()
+                items_raw = cart_data.get("items", {})
+                if isinstance(items_raw, dict):
+                    cart_items = [
+                        {"name": v.get("name", k), "price": v.get("price", 0), "quantity": v.get("quantity", 1)}
+                        for k, v in items_raw.items()
+                    ]
+                elif isinstance(items_raw, list):
+                    cart_items = [
+                        {"name": i.get("name", ""), "price": i.get("price", 0), "quantity": i.get("quantity", 1)}
+                        for i in items_raw
+                    ]
+                cart_subtotal = cart_data.get("subtotal", 0)
+        except Exception as e:
+            logger.warning(f"Failed to fetch cart for approval: {e}")
+
+    discount_amount = value if type == "flat" else round(cart_subtotal * value / 100, 2)
+
     payload = {
         "customer_id": customer_id,
         "discount_type": type,
         "discount_value": value,
-        "product_id": product_id,
+        "discount_amount_eur": discount_amount,
         "reason": reason,
         "approval_status": "pending",
         "requested_at": datetime.now().isoformat(),
+        "cart_items": cart_items,
+        "cart_subtotal": cart_subtotal,
+        "new_total_after_discount": round(cart_subtotal - discount_amount, 2),
     }
 
     if db is not None:
@@ -1639,6 +1668,7 @@ _STYLE_PROMPTS = {
 }
 
 
+@imagen_retry
 def _generate_single_style_preview(
     room_photo_b64: str,
     style_entry: dict,
@@ -3350,16 +3380,41 @@ def visualize_room_with_products(
     angle = random.choice(camera_angles)
     mood = random.choice(time_moods)
 
+    # Build room layout description from photo analysis if available
+    room_layout_hint = ""
+    if collected.get("photo_analysis"):
+        room_layout_hint = (
+            f"The room has a window on one wall, "
+            f"with the bed against the main wall. "
+            f"The room layout is compact and cosy. "
+        )
+
+    # Include constraint about existing furniture to keep
+    keep_constraint = ""
+    raw_constraints = collected.get("constraints", {})
+    if raw_constraints:
+        if isinstance(raw_constraints, dict) and raw_constraints.get("keep"):
+            keep_constraint = f"The room must include a {', '.join(raw_constraints['keep'])} as existing furniture. "
+        elif isinstance(raw_constraints, str) and ("shelf" in raw_constraints.lower() or "keep" in raw_constraints.lower()):
+            keep_constraint = f"The room must include a cube shelf / modular bookshelf as existing furniture. "
+        elif isinstance(raw_constraints, list):
+            keep_constraint = f"The room must include: {', '.join(str(c) for c in raw_constraints)} as existing furniture. "
+
     prompt = (
-        f"Ultra-realistic interior design photograph of a {room_label} "
-        f"styled with {style_text}.{dim_text} "
-        f"The room contains these specific items: {'; '.join(product_placement)}. "
+        f"Beautiful aspirational interior design photograph of a child's {room_label} "
+        f"designed in {style_text} style.{dim_text} "
+        f"{room_layout_hint}"
+        f"The room features a single window with natural light, wooden flooring, and light-coloured walls. "
+        f"{keep_constraint}"
+        f"The room is furnished with these specific items, all clearly visible: "
+        f"{'; '.join(product_placement)}. "
         f"{angle}. "
         f"{mood}, complemented by interior lighting. "
-        f"Realistic textures on all surfaces -- visible wood grain, fabric weave, ceramic glaze. "
-        f"Styled like a real lived-in home, not a showroom. "
-        f"Professional architectural photography, 4K resolution, depth of field, "
-        f"soft shadows, colour-accurate, editorial interior design magazine quality."
+        f"The room feels warm, inviting, and inspirational -- a dream bedroom that a child would love. "
+        f"Realistic textures on all surfaces -- visible wood grain, fabric weave, soft textiles. "
+        f"Styled like a real cosy home, not a catalogue or showroom. "
+        f"Professional architectural photography for an interior design magazine, "
+        f"4K resolution, depth of field, soft shadows, colour-accurate."
     )
 
     logger.info(f"[ROOM VIZ] Prompt: {prompt[:300]}...")
@@ -3374,9 +3429,72 @@ def visualize_room_with_products(
 
         client = genai.Client()
 
-        # Always use Imagen 4 Ultra for fresh generation -- produces much
-        # better results than Imagen 3 Capability inpainting which only
-        # makes minimal edits (stickers/decals) instead of real redesigns.
+        # Try Imagen 3 inpainting first if room photo is available.
+        # This preserves the actual room layout. Falls back to Imagen 4 Ultra.
+        if image_data and not generated_image_b64:
+            logger.info("[ROOM VIZ] Using Imagen 3 inpainting on customer's room photo")
+
+            # Focus the prompt on adding furniture rather than redesigning
+            item_names = [p["name"] for p in products_to_show[:6]]
+            constraints = collected.get("constraints", {})
+            keep_items = ""
+            if constraints:
+                if isinstance(constraints, dict):
+                    keep_list = constraints.get("keep", [])
+                    if keep_list:
+                        keep_items = f"CRITICAL: The existing {', '.join(keep_list)} MUST remain in the room -- do not remove, replace, or hide it. It should be clearly visible. "
+                elif isinstance(constraints, str):
+                    if "shelf" in constraints.lower() or "keep" in constraints.lower():
+                        keep_items = f"CRITICAL: The customer wants to keep existing furniture: {constraints}. Do NOT remove it. "
+                elif isinstance(constraints, list):
+                    keep_items = f"CRITICAL: Keep these existing items in the room: {', '.join(str(c) for c in constraints)}. Do NOT remove them. "
+
+            edit_prompt = (
+                f"Add the following new furniture and decor items into this room: "
+                f"{'; '.join(item_names)}. "
+                f"Place each item naturally in the room: "
+                f"{'; '.join(product_placement[:6])}. "
+                f"Style the room in a {style_text} theme. "
+                f"Keep the existing room structure, walls, window, and flooring exactly as they are. "
+                f"{keep_items}"
+                f"The new furniture must look photorealistic with correct perspective and shadows. "
+                f"Interior design magazine quality photograph."
+            )
+
+            photo_bytes = base64.b64decode(image_data)
+
+            try:
+                from PIL import Image as PILImage
+                from io import BytesIO
+
+                # Use Gemini 3 Pro Image (Nano Banana Pro) for intelligent editing
+                # It uses Gemini's reasoning to understand the room and place items naturally
+                pil_image = PILImage.open(BytesIO(photo_bytes))
+
+                response = client.models.generate_content(
+                    model="gemini-3-pro-image-preview",
+                    contents=[pil_image, edit_prompt],
+                    config=genai_types.GenerateContentConfig(
+                        response_modalities=["TEXT", "IMAGE"],
+                    ),
+                )
+
+                # Extract the generated image from the response
+                if response and response.candidates:
+                    for part in response.candidates[0].content.parts:
+                        if hasattr(part, "inline_data") and part.inline_data:
+                            img_bytes = part.inline_data.data
+                            generated_image_b64 = base64.b64encode(img_bytes).decode("utf-8")
+                            logger.info(f"[ROOM VIZ] Gemini 3 Pro Image edit successful ({len(img_bytes)} bytes)")
+                            break
+
+                if not generated_image_b64:
+                    logger.warning("[ROOM VIZ] Gemini 3 Pro Image returned no image, falling back to Imagen 4 Ultra")
+
+            except Exception as edit_err:
+                logger.warning(f"[ROOM VIZ] Gemini 3 Pro Image edit failed: {edit_err}, falling back to Imagen 4 Ultra")
+
+        # Fallback: Imagen 4 Ultra fresh generation
         if not generated_image_b64:
             # --- Fresh generation: no base photo ---
             logger.info(
