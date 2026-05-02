@@ -163,23 +163,21 @@ def create_retail_agent(
             f"Product catalog has {len(context.get('product_catalog_raw', []))} products"
         )
 
-    default_tools = [
-        send_call_companion_link,
-        approve_discount,
-        sync_ask_for_approval,
+    # Core tools -- always loaded (cart, recommendations, basic operations)
+    core_tools = [
         access_cart_information,
         modify_cart,
         get_product_recommendations,
         check_product_availability,
-        schedule_service_appointment,
+        approve_discount,
+        sync_ask_for_approval,
         send_product_information,
-        get_available_service_times,
-        generate_qr_code,
-        process_exchange_request,
-        get_trade_in_value,
-        lookup_warranty_details,
         identify_phone_from_camera_feed,
         display_product_search_results,
+    ]
+
+    # Home decor tools -- loaded for bedroom/decor consultations
+    home_decor_tools = [
         start_home_decor_consultation,
         continue_home_decor_consultation,
         create_style_moodboard,
@@ -189,6 +187,21 @@ def create_retail_agent(
         get_customer_order_history,
         visualize_room_with_products,
     ]
+
+    # Rarely used tools -- only loaded when explicitly needed
+    extended_tools = [
+        send_call_companion_link,
+        schedule_service_appointment,
+        get_available_service_times,
+        generate_qr_code,
+        process_exchange_request,
+        get_trade_in_value,
+        lookup_warranty_details,
+    ]
+
+    # For home decor demos, load core + home decor (skip extended)
+    # This reduces tool definitions from 24 to 17, saving ~10K tokens
+    default_tools = core_tools + home_decor_tools
     default_sub_agents = []
 
     final_tools = SessionUtils.dedupe_lists(default_tools, tools)

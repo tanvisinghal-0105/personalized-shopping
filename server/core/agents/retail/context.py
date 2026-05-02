@@ -1633,22 +1633,47 @@ class RetailContext:
 # Format product catalog as readable markdown table for the model
 
 
-def _format_product_catalog():
-    """Format the product catalog as a readable markdown table."""
-    lines = [
-        "| Product ID | SKU | Name | Category | Price (EUR) | In Stock |",
-        "|------------|-----|------|----------|-------------|----------|",
-    ]
+def _format_product_catalog_slim():
+    """Format a slim product catalog summary to reduce context tokens.
+
+    Instead of listing all 130 products (~12K tokens), provides a
+    category summary (~500 tokens) and tells the model to use tools
+    for product lookup.
+    """
+    # Count by category
+    categories = {}
     for product in RetailContext.PRODUCT_CATALOG:
-        in_stock = "Yes" if product.get("in_stock", True) else "No"
+        cat = product.get("category", "Other")
+        if cat not in categories:
+            categories[cat] = {"count": 0, "price_min": float("inf"), "price_max": 0}
+        categories[cat]["count"] += 1
+        price = product.get("price", 0)
+        categories[cat]["price_min"] = min(categories[cat]["price_min"], price)
+        categories[cat]["price_max"] = max(categories[cat]["price_max"], price)
+
+    lines = [
+        f"Product catalog: {len(RetailContext.PRODUCT_CATALOG)} products across {len(categories)} categories.",
+        "",
+        "| Category | Products | Price Range (EUR) |",
+        "|----------|----------|-------------------|",
+    ]
+    for cat, info in sorted(categories.items()):
         lines.append(
-            f"| {product['product_id']} | {product['sku']} | {product['name']} | {product['category']} | €{product['price']:.2f} | {in_stock} |"
+            f"| {cat} | {info['count']} | {info['price_min']:.0f} - {info['price_max']:.0f} |"
         )
+
+    lines.append("")
+    lines.append(
+        "Use get_product_recommendations, check_product_availability, or "
+        "display_product_search_results tools to find specific products. "
+        "Do NOT list products from memory -- always use tools for accurate data."
+    )
+
     return "\n".join(lines)
 
 
-# Populate the available_products field with formatted catalog
-RetailContext.CUSTOMER_PROFILE["available_products"] = _format_product_catalog()
+# Populate the available_products field with slim catalog summary
+RetailContext.CUSTOMER_PROFILE["available_products"] = _format_product_catalog_slim()
 
 
 def create_customer_profile(

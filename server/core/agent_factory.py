@@ -8,6 +8,9 @@ from datetime import datetime
 
 from .logger import logger
 
+# Build product search index at import time (once per server start)
+_search_index_built = False
+
 
 def get_agent_config(customer_id=None, first_name=None, last_name=None, email=None):
     """
@@ -23,6 +26,17 @@ def get_agent_config(customer_id=None, first_name=None, last_name=None, email=No
         dict: Agent configuration with app_name, root_agent, and context
     """
     agent_config = {"app_name": None, "root_agent": None, "context": None}
+
+    # Build semantic search index on first call
+    global _search_index_built
+    if not _search_index_built:
+        try:
+            from core.agents.retail.product_search import build_index
+
+            build_index(RetailContext.PRODUCT_CATALOG)
+            _search_index_built = True
+        except Exception as e:
+            logger.warning(f"[PRODUCT SEARCH] Failed to build index: {e}")
 
     logger.info("===== get_agent_config() called =====")
     print("===== get_agent_config() called =====")

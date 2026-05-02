@@ -3374,67 +3374,9 @@ def visualize_room_with_products(
 
         client = genai.Client()
 
-        if image_data:
-            # --- Inpainting: edit the customer's uploaded room photo ---
-            logger.info(
-                "[ROOM VIZ] Using customer's room photo as base for Imagen 3 Capability editing"
-            )
-
-            # Vary the edit instruction slightly for different results on regeneration
-            arrangement_hints = [
-                "Place items to create a balanced, symmetrical arrangement",
-                "Arrange items in a cosy, layered composition",
-                "Position items to maximise open floor space",
-                "Group items to create distinct functional zones",
-                "Arrange items to draw the eye towards the window",
-            ]
-            arrangement = random.choice(arrangement_hints)
-
-            edit_prompt = (
-                f"Completely redesign this room in a {style_text} style. "
-                f"Keep the same room shape, window positions, and camera angle. "
-                f"Remove all existing furniture and decor. Replace with the following new items: "
-                f"{'; '.join(product_placement[:6])}. "
-                f"{arrangement}. "
-                f"Repaint walls and change flooring to match the {style_text} aesthetic. "
-                f"The transformation must be dramatic and clearly visible. "
-                f"IMPORTANT: Place items only on appropriate surfaces -- hang wall art and clocks on walls NOT on windows, "
-                f"lay rugs flat on the floor, place furniture on the ground. Windows must remain clear and unobstructed. "
-                f"All new items must have correct perspective, realistic scale, and matching shadows. "
-                f"Show the full room from wall to wall, do not crop or zoom in. "
-                f"Ultra-realistic interior design photograph, 4K resolution, professional lighting."
-            )
-
-            # Decode the base64 photo
-            photo_bytes = base64.b64decode(image_data)
-            reference_image = genai_types.RawReferenceImage(
-                reference_id=1,
-                reference_image=genai_types.Image(image_bytes=photo_bytes),
-            )
-
-            image_response = client.models.edit_image(
-                model="imagen-3.0-capability-001",
-                prompt=edit_prompt,
-                reference_images=[reference_image],
-                config=genai_types.EditImageConfig(
-                    number_of_images=1,
-                    safety_filter_level="block_some",
-                    person_generation="dont_allow",
-                ),
-            )
-
-            if image_response and image_response.generated_images:
-                img_bytes = image_response.generated_images[0].image.image_bytes
-                generated_image_b64 = base64.b64encode(img_bytes).decode("utf-8")
-                logger.info(
-                    f"[ROOM VIZ] Imagen 3 Capability inpainting successful ({len(img_bytes)} bytes)"
-                )
-            else:
-                logger.warning(
-                    "[ROOM VIZ] Imagen 3 Capability returned no images, falling back to generation"
-                )
-                image_data = None  # Clear so fallback generates fresh
-
+        # Always use Imagen 4 Ultra for fresh generation -- produces much
+        # better results than Imagen 3 Capability inpainting which only
+        # makes minimal edits (stickers/decals) instead of real redesigns.
         if not generated_image_b64:
             # --- Fresh generation: no base photo ---
             logger.info(

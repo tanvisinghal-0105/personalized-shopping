@@ -246,6 +246,51 @@ async def _generate_and_send_style_previews(
     logger.info("[STYLE PREVIEW ASYNC] All style previews done")
 
 
+async def _handle_direct_visualization(websocket: Any, data: dict, session_id: str) -> None:
+    """Handle room visualization directly without going through the Gemini agent.
+
+    This avoids adding visualization data to the agent context window,
+    preventing context bloat and session timeouts after moodboard generation.
+    """
+    from core.agents.retail.tools import visualize_room_with_products
+
+    viz_data = data.get("data", {})
+    customer_id = viz_data.get("customer_id", "CY-DEFAULT")
+    decor_session_id = viz_data.get("session_id", "")
+    product_ids = viz_data.get("product_ids", [])
+
+    logger.info(
+        f"[DIRECT VIZ] customer={customer_id}, session={decor_session_id}, "
+        f"products={product_ids}"
+    )
+
+    try:
+        result = await asyncio.to_thread(
+            visualize_room_with_products,
+            customer_id=customer_id,
+            session_id=decor_session_id,
+            product_ids=product_ids,
+        )
+
+        # Send the visualization result directly to the frontend
+        await websocket.send(
+            json.dumps({"type": "tool_result", "data": result})
+        )
+        logger.info("[DIRECT VIZ] Visualization sent to frontend")
+
+    except Exception as e:
+        logger.error(f"[DIRECT VIZ] Visualization failed: {e}")
+        await websocket.send(
+            json.dumps({
+                "type": "tool_result",
+                "data": {
+                    "status": "error",
+                    "message": f"Visualization failed: {str(e)}",
+                },
+            })
+        )
+
+
 async def handle_agent_responses(
     websocket: Any,
     live_events: Any,
@@ -848,6 +893,14 @@ IMPORTANT: Briefly tell the customer what you see, then IMMEDIATELY call continu
                         )
                     )
                     logger.info("Text sent to Agent")
+                elif msg_type == "visualize_room":
+                    # Direct visualization -- bypasses Gemini agent entirely
+                    # This avoids context bloat and agent round-trip latency
+                    logger.info("[DIRECT VIZ] Received visualization request, bypassing agent")
+                    asyncio.create_task(
+                        _handle_direct_visualization(websocket, data, session_id)
+                    )
+
                 elif msg_type == "end":
                     logger.info("Received end signal from client.")
                 else:

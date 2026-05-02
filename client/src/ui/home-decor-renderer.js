@@ -989,10 +989,15 @@ export class HomeDecorRenderer {
         }
       }, 60000);
 
-      const idsJson = JSON.stringify(vizState.selectedIds);
-      this.api.sendTextMessage(
-        `Please call visualize_room_with_products with customer_id="${this.getCurrentCustomerId()}", session_id="${this.currentSessionId}", product_ids=${idsJson}`
-      );
+      // Send directly to backend -- bypasses Gemini agent to avoid context bloat
+      this.api.sendMessage({
+        type: 'visualize_room',
+        data: {
+          customer_id: this.getCurrentCustomerId(),
+          session_id: this.currentSessionId,
+          product_ids: vizState.selectedIds,
+        }
+      });
     });
 
     const instructions = document.createElement('p');
@@ -1272,10 +1277,14 @@ export class HomeDecorRenderer {
       }, 60000);
 
       const productIds = (uiData.products_shown || []).map(p => p.product_id);
-      const idsJson = JSON.stringify(productIds);
-      this.api.sendTextMessage(
-        `Please call visualize_room_with_products with customer_id="${this.getCurrentCustomerId()}", session_id="${this.currentSessionId}", product_ids=${idsJson}`
-      );
+      this.api.sendMessage({
+        type: 'visualize_room',
+        data: {
+          customer_id: this.getCurrentCustomerId(),
+          session_id: this.currentSessionId,
+          product_ids: productIds,
+        }
+      });
     });
     actions.appendChild(regenerateBtn);
 
