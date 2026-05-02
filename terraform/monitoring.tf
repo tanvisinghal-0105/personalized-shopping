@@ -152,3 +152,39 @@ resource "google_monitoring_dashboard" "shopping" {
     }
   })
 }
+
+# ================================================================== #
+#  BILLING BUDGET ALERT
+# ================================================================== #
+
+resource "google_billing_budget" "monthly_budget" {
+  count           = var.billing_account != "" ? 1 : 0
+  billing_account = var.billing_account
+  display_name    = "Cymbal StyleSync Monthly Budget"
+
+  amount {
+    specified_amount {
+      currency_code = "USD"
+      units         = "500"
+    }
+  }
+
+  threshold_rules {
+    threshold_percent = 0.5
+  }
+  threshold_rules {
+    threshold_percent = 0.8
+  }
+  threshold_rules {
+    threshold_percent = 1.0
+  }
+}
+
+# ================================================================== #
+#  CLOUD TRACE
+# ================================================================== #
+
+resource "google_project_service" "cloudtrace" {
+  project = var.project_id
+  service = "cloudtrace.googleapis.com"
+}

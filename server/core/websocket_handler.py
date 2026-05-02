@@ -936,9 +936,7 @@ IMPORTANT: Briefly tell the customer what you see, then IMMEDIATELY call continu
                     # Sanitize and check AI safety (local + Model Armor)
                     clean_text = sanitize_text_input(raw_text)
                     safety = check_ai_safety(clean_text)
-                    armor_result = sanitize_with_model_armor(
-                        clean_text, is_prompt=True
-                    )
+                    armor_result = sanitize_with_model_armor(clean_text, is_prompt=True)
                     if not safety["safe"] or not armor_result["safe"]:
                         all_concerns = safety.get("concerns", []) + armor_result.get(
                             "findings", []
@@ -946,9 +944,7 @@ IMPORTANT: Briefly tell the customer what you see, then IMMEDIATELY call continu
                         logger.warning(
                             f"[SECURITY] Unsafe input blocked: {all_concerns}"
                         )
-                        audit_log(
-                            "unsafe_input_blocked", {"concerns": all_concerns}
-                        )
+                        audit_log("unsafe_input_blocked", {"concerns": all_concerns})
                     get_metrics().increment("total_requests")
                     logger.info("Client -> Agent: Sending text data...")
                     live_request_queue.send_content(
@@ -1120,7 +1116,7 @@ async def handle_client(websocket: Any) -> None:
         # Update health status
         health.update("websocket", True, f"Active session: {session_id}")
 
-        # Clear cart for fresh session
+        # Initialize cart with default items for fresh session
         if customer_id:
             try:
                 from google.cloud import firestore as _fs
@@ -1129,12 +1125,19 @@ async def handle_client(websocket: Any) -> None:
                 _db.collection("carts").document(customer_id).set(
                     {
                         "cart_id": f"CART-{customer_id}",
-                        "items": {},
-                        "subtotal": 0,
+                        "items": {
+                            "GENERIC-PIXEL-CASE": {
+                                "sku": "1122334",
+                                "name": "Generic Google Pixel Case",
+                                "quantity": 1,
+                                "price": 19,
+                            }
+                        },
+                        "subtotal": 19,
                         "last_updated": datetime.datetime.now().isoformat(),
                     }
                 )
-                logger.info(f"Cart cleared for new session: {customer_id}")
+                logger.info(f"Cart initialized for session: {customer_id}")
             except Exception as e:
                 logger.warning(f"Could not clear cart: {e}")
 

@@ -1,5 +1,5 @@
 """
-Observability: metrics, health checks, and monitoring.
+Observability: metrics, health checks, monitoring, and distributed tracing.
 
 Provides:
 - Application health status
@@ -7,6 +7,7 @@ Provides:
 - Latency tracking
 - Error rate monitoring
 - Resource usage reporting
+- Distributed tracing via OpenTelemetry + Cloud Trace
 """
 
 import time
@@ -16,6 +17,43 @@ from typing import Dict
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
+
+# OpenTelemetry tracing (lazy-loaded, optional dependency)
+_tracer = None
+
+
+def init_tracing(service_name: str = "shopping-backend") -> None:
+    """Initialize OpenTelemetry tracing with Cloud Trace exporter.
+
+    Uses lazy initialization so the server still works if the
+    opentelemetry packages are not installed.
+    """
+    global _tracer
+    try:
+        from opentelemetry import trace
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor
+        from opentelemetry.sdk.resources import Resource
+        from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
+
+        resource = Resource.create({"service.name": service_name})
+        provider = TracerProvider(resource=resource)
+        provider.add_span_processor(BatchSpanProcessor(CloudTraceSpanExporter()))
+        trace.set_tracer_provider(provider)
+        _tracer = trace.get_tracer(service_name)
+        logger.info("OpenTelemetry tracing initialized with Cloud Trace exporter")
+    except ImportError:
+        logger.warning(
+            "OpenTelemetry packages not installed -- tracing disabled. "
+            "Install opentelemetry-sdk and opentelemetry-exporter-gcp-trace to enable."
+        )
+    except Exception as exc:
+        logger.warning("Failed to initialize tracing: %s", exc)
+
+
+def get_tracer():
+    """Return the global tracer, or None if tracing is not available."""
+    return _tracer
 
 
 class HealthStatus:

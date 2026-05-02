@@ -49,6 +49,10 @@ async def metrics_handler(request):
 
 async def main() -> None:
     """Starts the WebSocket server with HTTP health endpoint."""
+    from core.observability import init_tracing
+
+    init_tracing()
+
     port = int(os.environ.get("PORT", "8081"))
     health_port = int(os.environ.get("HEALTH_PORT", str(port)))
 

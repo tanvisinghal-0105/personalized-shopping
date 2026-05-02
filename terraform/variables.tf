@@ -32,3 +32,9 @@ variable "access_policy_id" {
   type        = string
   default     = ""
 }
+
+variable "billing_account" {
+  description = "GCP billing account ID for budget alerts"
+  type        = string
+  default     = ""
+}

@@ -127,28 +127,38 @@
 
                 <!-- ADK Agent Orchestration -->
                 <div style="margin-bottom:10px;">
-                    <div style="font-size:9px;color:#a855f7;font-weight:600;text-align:center;margin-bottom:6px;">ADK AGENT ORCHESTRATION <span style="color:#555570;font-weight:400;font-size:8px;">(see Agentic Workflow below for detailed 9-stage flow)</span></div>
+                    <div style="font-size:9px;color:#a855f7;font-weight:600;text-align:center;margin-bottom:6px;">ADK MULTI-AGENT ORCHESTRATION <span style="color:#555570;font-weight:400;font-size:8px;">(see Agentic Workflow below for detailed flow)</span></div>
 
-                    <!-- Main flow: Input -> Intent -> Agent -> Tools -->
+                    <!-- Main flow: Input -> Intent -> Root Agent -> Sub-Agents -->
                     <div style="display:flex;align-items:center;gap:3px;font-size:8px;margin-bottom:8px;">
-                        <div style="background:rgba(168,85,247,0.06);border-radius:4px;padding:4px 5px;text-align:center;flex:0.8;">
+                        <div style="background:rgba(168,85,247,0.06);border-radius:4px;padding:4px 5px;text-align:center;flex:0.7;">
                             <div style="color:#a855f7;font-weight:600;">WebSocket</div>
                             <div style="color:#555570;">audio/text/image</div>
                         </div>
                         <span class="material-symbols-outlined" style="font-size:10px;color:#555570;">arrow_forward</span>
-                        <div style="background:rgba(168,85,247,0.06);border-radius:4px;padding:4px 5px;text-align:center;flex:0.8;">
+                        <div style="background:rgba(168,85,247,0.06);border-radius:4px;padding:4px 5px;text-align:center;flex:0.7;">
                             <div style="color:#a855f7;font-weight:600;">Intent Detect</div>
                             <div style="color:#555570;">voice transcription</div>
                         </div>
                         <span class="material-symbols-outlined" style="font-size:10px;color:#555570;">arrow_forward</span>
-                        <div style="background:rgba(168,85,247,0.1);border-radius:4px;padding:4px 5px;text-align:center;flex:1;border:1px solid rgba(168,85,247,0.2);">
-                            <div style="color:#a855f7;font-weight:700;">ADK Agent</div>
+                        <div style="background:rgba(168,85,247,0.1);border-radius:4px;padding:4px 5px;text-align:center;flex:0.8;border:1px solid rgba(168,85,247,0.2);">
+                            <div style="color:#a855f7;font-weight:700;">Root Agent</div>
                             <div style="color:#555570;">Gemini Live 2.5 Flash</div>
                         </div>
                         <span class="material-symbols-outlined" style="font-size:10px;color:#555570;">arrow_forward</span>
-                        <div style="background:rgba(168,85,247,0.06);border-radius:4px;padding:4px 5px;text-align:center;flex:0.8;">
-                            <div style="color:#a855f7;font-weight:600;">Session State</div>
-                            <div style="color:#555570;">9-stage guard</div>
+                        <div style="display:flex;flex-direction:column;gap:2px;flex:1.2;">
+                            <div style="background:rgba(0,240,255,0.06);border-radius:3px;padding:2px 5px;text-align:center;">
+                                <span style="color:#00f0ff;font-weight:600;font-size:7px;">Shopping Agent</span>
+                                <span style="color:#555570;font-size:6px;"> (6 tools)</span>
+                            </div>
+                            <div style="background:rgba(168,85,247,0.06);border-radius:3px;padding:2px 5px;text-align:center;">
+                                <span style="color:#c084fc;font-weight:600;font-size:7px;">Home Decor Agent</span>
+                                <span style="color:#555570;font-size:6px;"> (8 tools)</span>
+                            </div>
+                            <div style="background:rgba(52,168,83,0.06);border-radius:3px;padding:2px 5px;text-align:center;">
+                                <span style="color:#86efac;font-weight:600;font-size:7px;">Services Agent</span>
+                                <span style="color:#555570;font-size:6px;"> (7 tools)</span>
+                            </div>
                         </div>
                     </div>
 
@@ -276,12 +286,12 @@
         <div class="pill" style="border-color:rgba(66,133,244,0.15);">
             <span class="material-symbols-outlined" style="color:#4285f4;">monitoring</span>
             <span>Cloud Monitoring</span>
-            <span style="color:#555570;">Dashboards (request count, latency p95, instance count, memory)</span>
+            <span style="color:#555570;">Dashboards + Cloud Trace (OpenTelemetry)</span>
         </div>
         <div class="pill" style="border-color:rgba(251,188,4,0.15);">
             <span class="material-symbols-outlined" style="color:#fbbc04;">notifications</span>
-            <span>Alerts</span>
-            <span style="color:#555570;">Error rate > 5%, P95 > 5s</span>
+            <span>Alerts + Budget</span>
+            <span style="color:#555570;">Error rate > 5%, P95 > 5s, $500/mo budget</span>
         </div>
         <div class="pill" style="border-color:rgba(52,168,83,0.15);">
             <span class="material-symbols-outlined" style="color:#34a853;">build</span>
@@ -293,10 +303,15 @@
             <span>Audit Logs</span>
             <span style="color:#555570;">Firestore + Vertex AI data access logs</span>
         </div>
+        <div class="pill" style="border-color:rgba(234,67,53,0.15);">
+            <span class="material-symbols-outlined" style="color:#ea4335;">shield</span>
+            <span>Model Armor</span>
+            <span style="color:#555570;">Input/output sanitization (PI, jailbreak, RAI, PII)</span>
+        </div>
         <div class="pill" style="border-color:rgba(168,85,247,0.15);">
             <span class="material-symbols-outlined" style="color:#a855f7;">deployed_code</span>
             <span>Terraform</span>
-            <span style="color:#555570;">10 files: Cloud Run, GCS, VPC, IAM, WAF, monitoring</span>
+            <span style="color:#555570;">12 files: Cloud Run, GCS, VPC, IAM, WAF, monitoring, billing</span>
         </div>
     </div>
 

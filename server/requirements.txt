@@ -9,6 +9,11 @@ numpy>=1.26.0
 Pillow>=10.0.0
 pydantic>=2.0.0
 
+# OpenTelemetry / Cloud Trace
+opentelemetry-api>=1.20.0
+opentelemetry-sdk>=1.20.0
+opentelemetry-exporter-gcp-trace>=1.6.0
+
 # Google Cloud services
 google-cloud-secret-manager>=2.19.0
 google-cloud-firestore>=2.16.0
