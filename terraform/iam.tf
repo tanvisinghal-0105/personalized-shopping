@@ -34,6 +34,13 @@ resource "google_project_iam_member" "backend_secrets" {
   member  = "serviceAccount:${google_service_account.backend.email}"
 }
 
+# Cloud Trace access for distributed tracing
+resource "google_project_iam_member" "backend_cloudtrace" {
+  project = var.project_id
+  role    = "roles/cloudtrace.agent"
+  member  = "serviceAccount:${google_service_account.backend.email}"
+}
+
 # GCS access for reading product images and writing eval logs
 resource "google_storage_bucket_iam_member" "backend_storage_read" {
   bucket = google_storage_bucket.shopping_assets.name

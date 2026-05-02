@@ -145,11 +145,18 @@ def sync_ask_for_approval(
         "discount_value": value,
         "discount_amount_eur": discount_amount,
         "reason": reason,
+        "product_id": product_id,
         "approval_status": "pending",
         "requested_at": datetime.now().isoformat(),
         "cart_items": cart_items,
         "cart_subtotal": cart_subtotal,
         "new_total_after_discount": round(cart_subtotal - discount_amount, 2),
+        "pending_approval": {
+            "type": type,
+            "value": value,
+            "product_id": product_id,
+            "reason": reason,
+        },
     }
 
     if db is not None:
@@ -405,25 +412,39 @@ def modify_cart(
             item["price"] * item["quantity"]
             for item in current_mock_backend_cart["items"].values()
         )
-        # Apply price match adjustment specifically for OtterBox if present (as
-        # done in example checkout)
-        if (
-            "GOOGLE-PIXEL9PRO-CASE" in current_mock_backend_cart["items"]
-            and has_manager_approval
-        ):
-            original_price = PRODUCT_CATALOG["GOOGLE-PIXEL9PRO-CASE"]["price"]
-            matched_price = 45  # From example
-            price_diff = original_price - matched_price
-            new_subtotal -= (
-                price_diff
-                * current_mock_backend_cart["items"]["GOOGLE-PIXEL9PRO-CASE"][
-                    "quantity"
-                ]
-            )
-            # Reflect matched price in item data for clarity
-            current_mock_backend_cart["items"]["GOOGLE-PIXEL9PRO-CASE"][
-                "price"
-            ] = matched_price
+        # Apply approved discount/price match to cart items
+        if has_manager_approval and db is not None:
+            try:
+                customer_doc = db.collection("customers").document(customer_id).get()
+                if customer_doc.exists:
+                    customer_data = customer_doc.to_dict()
+                    approval = customer_data.get("pending_approval", {})
+                    approved_product = approval.get("product_id", "")
+                    approved_value = approval.get("value", 0)
+                    if (
+                        approved_product
+                        and approved_product in current_mock_backend_cart["items"]
+                        and approved_value > 0
+                    ):
+                        original_price = current_mock_backend_cart["items"][
+                            approved_product
+                        ]["price"]
+                        price_diff = original_price - approved_value
+                        new_subtotal -= (
+                            price_diff
+                            * current_mock_backend_cart["items"][approved_product][
+                                "quantity"
+                            ]
+                        )
+                        current_mock_backend_cart["items"][approved_product][
+                            "price"
+                        ] = approved_value
+                        logger.info(
+                            f"Price match applied: {approved_product} "
+                            f"{original_price} -> {approved_value}"
+                        )
+            except Exception as e:
+                logger.warning(f"Failed to read approval data: {e}")
 
         # Update the mock backend cart state using dynamic customer_id (save as dict)
         cart_to_save = {
@@ -480,6 +501,98 @@ def modify_cart(
             "items_removed": False,
             "updated_cart": current_cart_state,
         }
+
+
+def identify_phone_from_camera_feed(
+    image_data: Optional[str] = None, customer_id: Optional[str] = None
+) -> dict:
+    """Identifies a phone model from a camera feed using Gemini Vision API.
+
+    Args:
+        image_data: Optional base64 encoded image data from the camera feed.
+        customer_id: Optional customer ID for context.
+
+    Returns:
+        A dictionary containing the identified phone model and a message.
+    """
+    logger.info(
+        f"Attempting to identify phone from camera feed. Customer ID: {customer_id}"
+    )
+
+    if image_data:
+        if image_data.startswith("data:"):
+            image_base64 = image_data.split(",")[1] if "," in image_data else image_data
+        else:
+            image_base64 = image_data
+
+        if len(image_base64) < 1000:
+            return {
+                "status": "failure",
+                "identified_phone_model": "Unknown Device (low quality image)",
+                "message": "The image was too small for identification.",
+                "image_data_processed": True,
+            }
+
+        try:
+            from google import genai
+            from google.genai import types
+            import base64
+
+            client = genai.Client()
+            image_bytes = base64.b64decode(image_base64)
+
+            prompt = (
+                "Analyze this image and identify the smartphone model if visible. "
+                "Look for brand logos, camera module design, shape, and any visible text. "
+                'Respond with ONLY the model name, e.g. "Google Pixel 9 Pro". '
+                'If uncertain, respond "Unknown Phone Model".'
+            )
+
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[
+                    types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+                    prompt,
+                ],
+                config=types.GenerateContentConfig(
+                    temperature=0.1,
+                    max_output_tokens=100,
+                ),
+            )
+
+            identified_model = response.text.strip().replace('"', "").replace("'", "")
+            logger.info(f"Gemini Vision identified: {identified_model}")
+
+            if "unknown" in identified_model.lower():
+                return {
+                    "status": "partial",
+                    "identified_phone_model": identified_model,
+                    "message": "I can see a device but had trouble identifying it. Could you hold it closer?",
+                    "image_data_processed": True,
+                }
+
+            return {
+                "status": "success",
+                "identified_phone_model": identified_model,
+                "message": f"Based on the camera feed, this looks like a {identified_model}.",
+                "image_data_processed": True,
+            }
+
+        except Exception as e:
+            logger.error(f"Error using Gemini Vision for phone identification: {e}")
+            return {
+                "status": "error",
+                "identified_phone_model": "Unknown Device",
+                "message": f"Identification error: {str(e)[:100]}",
+                "image_data_processed": False,
+            }
+
+    return {
+        "status": "error",
+        "identified_phone_model": "Unknown - No Image Data",
+        "message": "No image data provided. You can see the camera feed directly in your visual context -- analyze it without calling this tool.",
+        "image_data_processed": False,
+    }
 
 
 def get_product_recommendations(

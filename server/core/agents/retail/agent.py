@@ -16,6 +16,7 @@ from .tools import (
     sync_ask_for_approval,
     access_cart_information,
     modify_cart,
+    identify_phone_from_camera_feed,
     get_product_recommendations,
     check_product_availability,
     schedule_service_appointment,
@@ -44,6 +45,17 @@ SHOPPING_AGENT_INSTRUCTION = (
     "You are the Shopping sub-agent for Cymbal retail store. "
     "You handle product browsing, cart management, recommendations, "
     "availability checks, and discount approvals.\n\n"
+    "**IMPORTANT - Product Knowledge:**\n"
+    "You have access to the full product catalog in your context. "
+    "When a customer asks for a product recommendation (e.g. 'something "
+    "stronger', 'a better case', 'a premium option'), look up the relevant "
+    "product directly from the available_products catalog and recommend it "
+    "by name, price, and product_id. Do NOT call display_product_search_results "
+    "for simple recommendations -- just tell the customer about the product "
+    "and offer to add it to cart.\n\n"
+    "For example, if a customer has a Generic Google Pixel Case and asks for "
+    "something more protective, recommend the Google Pixel 9 Pro Defender "
+    "Series Case (GOOGLE-PIXEL9PRO-CASE, 59.99 EUR) directly.\n\n"
     "**Capabilities:**\n"
     "1. Access and display the customer's shopping cart using "
     "`access_cart_information`.\n"
@@ -58,7 +70,8 @@ SHOPPING_AGENT_INSTRUCTION = (
     "customer interests or current cart.\n"
     "4. Check stock with `check_product_availability`.\n"
     "5. Show visual product cards using `display_product_search_results` "
-    "when customers want to browse a category.\n"
+    "ONLY when customers want to browse an entire category (e.g. 'show me "
+    "all TVs', 'what laptops do you have').\n"
     "6. Handle discount requests ONLY via `sync_ask_for_approval` -- "
     "you cannot approve discounts yourself.\n\n"
     "**Constraints:**\n"
@@ -314,6 +327,7 @@ def _create_shopping_agent(model: Any) -> Agent:
         tools=[
             access_cart_information,
             modify_cart,
+            identify_phone_from_camera_feed,
             get_product_recommendations,
             check_product_availability,
             display_product_search_results,
