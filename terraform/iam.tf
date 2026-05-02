@@ -1,15 +1,15 @@
 # Service account for the backend (WebSocket server)
 resource "google_service_account" "backend" {
-  account_id   = "shopping-backend-sa"
-  display_name = "Shopping Backend Service Account"
+  account_id   = "live-agent-backend"
+  display_name = "Backend Service Account"
   description  = "Service account for the shopping assistant backend"
 }
 
-# Service account for the CRM dashboard
-resource "google_service_account" "crm" {
-  account_id   = "shopping-crm-sa"
-  display_name = "Shopping CRM Service Account"
-  description  = "Service account for the CRM dashboard"
+# Service account for the frontend (CRM + Shopping UI)
+resource "google_service_account" "frontend" {
+  account_id   = "cymbal-frontend"
+  display_name = "Frontend Service Account"
+  description  = "Service account for the CRM dashboard and shopping UI"
 }
 
 # Backend IAM roles
@@ -47,17 +47,17 @@ resource "google_storage_bucket_iam_member" "backend_storage_write" {
   member = "serviceAccount:${google_service_account.backend.email}"
 }
 
-# CRM IAM roles
+# Frontend IAM roles
 # Firestore access for approval workflow
-resource "google_project_iam_member" "crm_firestore" {
+resource "google_project_iam_member" "frontend_firestore" {
   project = var.project_id
   role    = "roles/datastore.user"
-  member  = "serviceAccount:${google_service_account.crm.email}"
+  member  = "serviceAccount:${google_service_account.frontend.email}"
 }
 
 # GCS read access for eval logs
-resource "google_storage_bucket_iam_member" "crm_storage_read" {
+resource "google_storage_bucket_iam_member" "frontend_storage_read" {
   bucket = google_storage_bucket.shopping_assets.name
   role   = "roles/storage.objectViewer"
-  member = "serviceAccount:${google_service_account.crm.email}"
+  member = "serviceAccount:${google_service_account.frontend.email}"
 }

@@ -1,11 +1,13 @@
-# Frontend - Static client served via nginx
+# Frontend - CRM dashboard + Shopping UI (FastAPI)
 resource "google_cloud_run_v2_service" "frontend" {
-  name     = "shopping-frontend"
+  name     = "cymbal-frontend"
   location = var.region
 
   template {
+    service_account = google_service_account.frontend.email
+
     containers {
-      image = "gcr.io/${var.project_id}/live-agent-frontend:latest"
+      image = "gcr.io/${var.project_id}/cymbal-frontend:latest"
 
       ports {
         container_port = 8080
@@ -14,15 +16,27 @@ resource "google_cloud_run_v2_service" "frontend" {
       resources {
         limits = {
           cpu    = "1"
-          memory = "256Mi"
+          memory = "512Mi"
         }
+      }
+
+      env {
+        name  = "PROJECT_ID"
+        value = var.project_id
+      }
+      env {
+        name  = "GCS_BUCKET_NAME"
+        value = google_storage_bucket.shopping_assets.name
+      }
+      env {
+        name  = "LOG_LEVEL"
+        value = "INFO"
       }
     }
 
-    # Auto-scaling: scale to zero when idle, max 3 for frontend
     scaling {
       min_instance_count = 0
-      max_instance_count = 3
+      max_instance_count = 10
     }
   }
 
@@ -34,7 +48,7 @@ resource "google_cloud_run_v2_service" "frontend" {
 
 # Backend - WebSocket server with Gemini Live API
 resource "google_cloud_run_v2_service" "backend" {
-  name     = "shopping-backend"
+  name     = "live-agent-backend"
   location = var.region
 
   template {
@@ -55,6 +69,10 @@ resource "google_cloud_run_v2_service" "backend" {
       }
 
       env {
+        name  = "PROJECT_ID"
+        value = var.project_id
+      }
+      env {
         name  = "GOOGLE_CLOUD_PROJECT"
         value = var.project_id
       }
@@ -69,6 +87,10 @@ resource "google_cloud_run_v2_service" "backend" {
       env {
         name  = "GCS_BUCKET_NAME"
         value = google_storage_bucket.shopping_assets.name
+      }
+      env {
+        name  = "LOG_LEVEL"
+        value = "INFO"
       }
     }
 
@@ -95,60 +117,9 @@ resource "google_cloud_run_v2_service" "backend" {
   }
 }
 
-# CRM - FastAPI dashboard
-resource "google_cloud_run_v2_service" "crm" {
-  name     = "shopping-crm"
-  location = var.region
-
-  template {
-    service_account = google_service_account.crm.email
-
-    containers {
-      image = "gcr.io/${var.project_id}/live-agent-crm:latest"
-
-      ports {
-        container_port = 8082
-      }
-
-      resources {
-        limits = {
-          cpu    = "1"
-          memory = "512Mi"
-        }
-      }
-
-      env {
-        name  = "GOOGLE_CLOUD_PROJECT"
-        value = var.project_id
-      }
-      env {
-        name  = "GCS_BUCKET_NAME"
-        value = google_storage_bucket.shopping_assets.name
-      }
-    }
-
-    scaling {
-      min_instance_count = 0
-      max_instance_count = 2
-    }
-  }
-
-  traffic {
-    type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
-    percent = 100
-  }
-}
-
-# Allow unauthenticated access to frontend and CRM
+# Allow unauthenticated access to frontend
 resource "google_cloud_run_v2_service_iam_member" "frontend_public" {
   name     = google_cloud_run_v2_service.frontend.name
-  location = var.region
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-}
-
-resource "google_cloud_run_v2_service_iam_member" "crm_public" {
-  name     = google_cloud_run_v2_service.crm.name
   location = var.region
   role     = "roles/run.invoker"
   member   = "allUsers"

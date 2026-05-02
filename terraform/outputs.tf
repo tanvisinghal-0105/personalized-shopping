@@ -9,18 +9,13 @@ output "gcs_assets_url" {
 }
 
 output "frontend_url" {
-  description = "Frontend Cloud Run URL"
+  description = "Frontend Cloud Run URL (CRM + Shopping UI)"
   value       = google_cloud_run_v2_service.frontend.uri
 }
 
 output "backend_url" {
-  description = "Backend Cloud Run URL"
+  description = "Backend Cloud Run URL (WebSocket + Gemini Live)"
   value       = google_cloud_run_v2_service.backend.uri
-}
-
-output "crm_url" {
-  description = "CRM Cloud Run URL"
-  value       = google_cloud_run_v2_service.crm.uri
 }
 
 output "backend_service_account" {
@@ -28,7 +23,7 @@ output "backend_service_account" {
   value       = google_service_account.backend.email
 }
 
-output "crm_service_account" {
-  description = "CRM service account email"
-  value       = google_service_account.crm.email
+output "frontend_service_account" {
+  description = "Frontend service account email"
+  value       = google_service_account.frontend.email
 }
