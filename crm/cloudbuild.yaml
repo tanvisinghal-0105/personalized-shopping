@@ -1,24 +1,28 @@
 timeout: 600s
 substitutions:
   _REGION: us-central1
-  _SERVICE_NAME: cymbal-crm
-  _SERVICE_ACCOUNT: live-agent-backend@${PROJECT_ID}.iam.gserviceaccount.com
+  _SERVICE_NAME: cymbal-frontend
+  _SERVICE_ACCOUNT: live-agent-backend@capstone-tanvi-01-447109.iam.gserviceaccount.com
 
 steps:
-# Step 1: Syntax + formatting checks (parallel)
+# Step 1: Validate assets + formatting checks
 - name: 'python:3.12-slim'
   entrypoint: 'bash'
   args:
   - '-c'
   - |
-    pip install -q uv
-    uv pip install --system -q black
+    pip install -q 'black==25.1.0'
+    echo "========== ASSET CHECK =========="
+    if grep -r '\./assets/' client/index.html client/src/ 2>/dev/null; then
+      echo "ERROR: Found local ./assets/ references. All assets should use GCS URLs."
+      exit 1
+    fi
+    echo "Asset references OK"
     echo "========== SYNTAX CHECK =========="
-    find . -name "*.py" -exec python -c "import ast; ast.parse(open('{}').read())" \;
+    find crm/ -name "*.py" -exec python -c "import ast; ast.parse(open('{}').read())" \;
     echo "Syntax validation passed"
     echo "========== BLACK =========="
-    python -m black --check --diff core/ main.py
-  dir: 'crm'
+    python -m black --check --diff crm/core/ crm/main.py
   id: 'checks'
 
 # Step 2: Build with git SHA tag
@@ -30,7 +34,9 @@ steps:
   - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA'
   - '-t'
   - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:latest'
-  - './crm'
+  - '-f'
+  - 'frontend.Dockerfile'
+  - '.'
   id: 'build'
   waitFor: ['checks']
 
@@ -58,6 +64,8 @@ steps:
   - '--platform'
   - 'managed'
   - '--allow-unauthenticated'
+  - '--port'
+  - '8080'
   - '--set-env-vars'
   - 'PROJECT_ID=${PROJECT_ID},LOG_LEVEL=INFO,GCS_BUCKET_NAME=${PROJECT_ID}-shopping-assets'
   - '--service-account'
@@ -66,6 +74,10 @@ steps:
   - '1'
   - '--memory'
   - '512Mi'
+  - '--min-instances'
+  - '0'
+  - '--max-instances'
+  - '10'
   id: 'deploy'
   waitFor: ['push-sha']
 

@@ -11,9 +11,8 @@ steps:
   args:
   - '-c'
   - |
-    pip install -q uv
-    uv pip install --system -q pytest black mypy
-    uv pip install --system -q -r requirements.txt
+    pip install -q pytest black mypy
+    pip install -q -r requirements.txt
     echo "========== PYTEST =========="
     python -m pytest tests/ -v --tb=short
   dir: 'server'
@@ -25,8 +24,7 @@ steps:
   args:
   - '-c'
   - |
-    pip install -q uv
-    uv pip install --system -q black
+    pip install -q 'black==25.1.0'
     echo "========== BLACK =========="
     python -m black --check --diff core/ evaluation/ tests/ config/ server.py scripts/
   dir: 'server'
@@ -39,9 +37,8 @@ steps:
   args:
   - '-c'
   - |
-    pip install -q uv
-    uv pip install --system -q mypy
-    uv pip install --system -q -r requirements.txt
+    pip install -q mypy
+    pip install -q -r requirements.txt
     echo "========== MYPY =========="
     python -m mypy evaluation/ tests/ --ignore-missing-imports --explicit-package-bases --no-error-summary || true
   dir: 'server'

@@ -16,10 +16,11 @@ google-cloud-storage>=2.14.0
 google-auth>=2.28.0
 google-api-python-client>=2.120.0
 
-# Vertex AI evaluation
-vertexai>=1.60.0
+# Vertex AI evaluation (pinned: 1.60+ conflicts with google-adk transitive deps)
+vertexai>=1.43.0,<1.60.0
+tqdm>=4.66.0
 
 # Dev/test dependencies
 pytest>=8.0.0
-black>=24.0.0
+black==25.1.0
 mypy>=1.8.0

@@ -11,6 +11,7 @@ from enum import Enum
 
 # -- Enums --
 
+
 class ConsultationStage(str, Enum):
     ROOM_IDENTIFICATION = "stage_1_room_identification"
     ROOM_PURPOSE = "stage_1a_room_purpose"
@@ -46,6 +47,7 @@ class EvalGrade(str, Enum):
 
 # -- Cart Models --
 
+
 class CartItem(BaseModel):
     product_id: str
     name: str = ""
@@ -62,6 +64,7 @@ class Cart(BaseModel):
 
 # -- Approval Models --
 
+
 class ApprovalRequest(BaseModel):
     customer_id: str
     discount_type: DiscountType
@@ -76,6 +79,7 @@ class ApprovalRequest(BaseModel):
 
 
 # -- Evaluation Models --
+
 
 class EvalVerdict(BaseModel):
     question: str
@@ -113,8 +117,10 @@ class SessionEvalResult(BaseModel):
 
 # -- Product Models --
 
+
 class ProductSlim(BaseModel):
     """Slim product representation for context-efficient catalog."""
+
     product_id: str
     name: str
     category: str = ""

@@ -1,10 +1,16 @@
 export class GeminiAPI {
     constructor(endpoint = null, customerInfo = null) {
-        // If no endpoint is provided, try to construct it from the current URL
+        // If no endpoint is provided, auto-detect from current URL
         if (!endpoint) {
-            // Use the backend URL directly
-            //endpoint = 'wss://live-agent-backend-lyja7bi4gq-uc.a.run.app'; // deployed backend
-            endpoint = 'ws://localhost:8081'; // local development
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            if (isLocal) {
+                endpoint = 'ws://localhost:8081';
+            } else {
+                // In production, derive backend WebSocket URL from frontend hostname
+                // cymbal-frontend-xxx -> live-agent-backend-xxx
+                const backendHost = window.location.hostname.replace('cymbal-frontend', 'live-agent-backend');
+                endpoint = `wss://${backendHost}`;
+            }
         }
 
         // Append customer info as query parameters if provided

@@ -117,12 +117,20 @@ def sync_ask_for_approval(
                 items_raw = cart_data.get("items", {})
                 if isinstance(items_raw, dict):
                     cart_items = [
-                        {"name": v.get("name", k), "price": v.get("price", 0), "quantity": v.get("quantity", 1)}
+                        {
+                            "name": v.get("name", k),
+                            "price": v.get("price", 0),
+                            "quantity": v.get("quantity", 1),
+                        }
                         for k, v in items_raw.items()
                     ]
                 elif isinstance(items_raw, list):
                     cart_items = [
-                        {"name": i.get("name", ""), "price": i.get("price", 0), "quantity": i.get("quantity", 1)}
+                        {
+                            "name": i.get("name", ""),
+                            "price": i.get("price", 0),
+                            "quantity": i.get("quantity", 1),
+                        }
                         for i in items_raw
                     ]
                 cart_subtotal = cart_data.get("subtotal", 0)
@@ -3395,7 +3403,9 @@ def visualize_room_with_products(
     if raw_constraints:
         if isinstance(raw_constraints, dict) and raw_constraints.get("keep"):
             keep_constraint = f"The room must include a {', '.join(raw_constraints['keep'])} as existing furniture. "
-        elif isinstance(raw_constraints, str) and ("shelf" in raw_constraints.lower() or "keep" in raw_constraints.lower()):
+        elif isinstance(raw_constraints, str) and (
+            "shelf" in raw_constraints.lower() or "keep" in raw_constraints.lower()
+        ):
             keep_constraint = f"The room must include a cube shelf / modular bookshelf as existing furniture. "
         elif isinstance(raw_constraints, list):
             keep_constraint = f"The room must include: {', '.join(str(c) for c in raw_constraints)} as existing furniture. "
@@ -3484,15 +3494,23 @@ def visualize_room_with_products(
                     for part in response.candidates[0].content.parts:
                         if hasattr(part, "inline_data") and part.inline_data:
                             img_bytes = part.inline_data.data
-                            generated_image_b64 = base64.b64encode(img_bytes).decode("utf-8")
-                            logger.info(f"[ROOM VIZ] Gemini 3 Pro Image edit successful ({len(img_bytes)} bytes)")
+                            generated_image_b64 = base64.b64encode(img_bytes).decode(
+                                "utf-8"
+                            )
+                            logger.info(
+                                f"[ROOM VIZ] Gemini 3 Pro Image edit successful ({len(img_bytes)} bytes)"
+                            )
                             break
 
                 if not generated_image_b64:
-                    logger.warning("[ROOM VIZ] Gemini 3 Pro Image returned no image, falling back to Imagen 4 Ultra")
+                    logger.warning(
+                        "[ROOM VIZ] Gemini 3 Pro Image returned no image, falling back to Imagen 4 Ultra"
+                    )
 
             except Exception as edit_err:
-                logger.warning(f"[ROOM VIZ] Gemini 3 Pro Image edit failed: {edit_err}, falling back to Imagen 4 Ultra")
+                logger.warning(
+                    f"[ROOM VIZ] Gemini 3 Pro Image edit failed: {edit_err}, falling back to Imagen 4 Ultra"
+                )
 
         # Fallback: Imagen 4 Ultra fresh generation
         if not generated_image_b64:

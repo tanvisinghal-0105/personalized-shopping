@@ -1,196 +1,114 @@
-# Cymbal Personalized Shopping Assistant
+# Cymbal StyleSync
 
-A multimodal AI voice shopping assistant powered by Google Gemini Live API with real-time audio, video, and text interactions. Features an end-to-end home decor consultation flow with AI-generated room visualizations using Imagen 3.
+**AI Hyperpersonalization Platform** -- a voice-first shopping assistant powered by Google Gemini Live API with real-time audio, room visualization, and intelligent product recommendations.
 
-Built with Google ADK (Agents Development Kit), Vertex AI, Firestore, and Cloud Run.
+Built by [@tanvisinghal](https://github.com/tanvisinghal-0105)
 
-## Architecture
+## What Makes This Different
 
-```
-                    WebSocket (audio/video/text)
-  Client (8000) <------------------------------> Backend (8081)
-  HTML/JS/CSS                                     ADK Agent + Gemini Live API
-                                                  25+ Tools (cart, decor, viz)
-                                                       |
-                                          +------------+------------+
-                                          |            |            |
-                                     Firestore    Vertex AI    Imagen 3
-                                     (carts,      (Gemini,     (room viz,
-                                      profiles)    eval)       style gen)
-                                          |
-                                    CRM (8082)
-                                    FastAPI + Eval Dashboard
-```
+This project handles the **Gemini Live API for real-time audio** in production -- which is hard to get right. The stability comes from patterns built specifically for live audio sessions:
 
-## Key Features
+- **Direct visualization pipeline** -- room rendering bypasses the Gemini agent entirely, preventing context bloat and session timeouts
+- **Retry with exponential backoff** -- all Vertex AI, Imagen, and Firestore calls automatically retry on transient failures
+- **Lazy tool loading** -- only 17 of 25 tools loaded per session, cutting ~11K tokens from initial context
+- **Slim product catalog** -- 130 products summarized as category table (12K tokens -> 200 tokens) with semantic search for retrieval
+- **Session auto-save** -- evaluation recordings save after every tool call, not just on disconnect
+- **Async style previews** -- room photo restyled into 6 themes in parallel via background tasks, streamed to frontend as they complete
 
-- **Voice-first shopping** -- real-time audio conversation with Gemini Live native audio
-- **Home decor consultation** -- guided multi-phase flow: room selection, style finder, photo analysis, moodboard generation
-- **Child-themed style finder** -- 6 themed room styles (Underwater World, Forest Adventure, etc.) with AI-generated previews from the customer's own room photo
-- **Room visualization** -- Imagen 3 inpainting renders selected products into the customer's actual room
-- **Order history cross-referencing** -- identifies existing furniture from past purchases using Gemini Vision
-- **Evaluation framework** -- 5-layer custom + Vertex AI evaluation for voice agent quality
-- **CRM dashboard** -- approval workflow and evaluation results viewer
-
-## Repository Structure
-
-```
-personalized_shopping/
-  client/                   # Frontend -- static HTML/JS/CSS
-    src/api/                #   WebSocket API client
-    src/ui/                 #   Home decor renderer, voice orb
-    assets/                 #   Product images, style previews (203 files)
-  server/                   # Backend -- WebSocket server
-    core/agents/retail/     #   ADK agent, 25+ tools, intent detector
-    config/                 #   Environment config, GCS settings
-    evaluation/             #   Eval framework (recorder, metrics, Vertex AI)
-    tests/                  #   Unit tests (40 tests, pytest)
-    scripts/                #   Image generation, GCS upload utilities
-  crm/                      # CRM Dashboard -- FastAPI
-    core/app.py             #   REST API + eval endpoints
-    static/                 #   Dashboard UI (dark theme)
-  terraform/                # GCP Infrastructure as Code
-    cloud_run.tf            #   3 Cloud Run services
-    gcs.tf                  #   Storage bucket with lifecycle rules
-    iam.tf                  #   Service accounts + IAM bindings
-    vpc.tf                  #   VPC connector for Cloud Run
-  docs/                     # Documentation
-    DEMO_STORYLINE.md       #   Expected demo dialog script
-    DEMO_GUIDE.md           #   Full demo walkthrough
-    DEPLOYMENT_GUIDE.md     #   Cloud deployment instructions
-  TESTS.md                  # Testing guide
-  Makefile                  # Dev commands
-```
-
-## Quick Start
-
-### Prerequisites
-
-- Python 3.11+
-- Google Cloud project with Vertex AI enabled
-- `gcloud auth application-default login` completed
-
-### Local Development
+## Quick Start (5 minutes)
 
 ```bash
-# 1. Clone and configure
+# 1. Clone
 git clone git@github.com:tanvisinghal-0105/personalized-shopping.git
 cd personalized-shopping
-cd server && cp .env.example .env
-# Edit .env with your project ID and config
+
+# 2. Auth
+gcloud auth application-default login
+
+# 3. Configure
+cd server
+cp .env.example .env
 pip install -r requirements.txt
 
-# 2. Start all services
-make backend    # Backend on :8081
-make frontend   # Frontend on :8000
-# CRM: cd crm && python main.py  # CRM on :8082
+# Edit .env with your project details:
+#   GOOGLE_CLOUD_PROJECT=your-project-id
+#   GOOGLE_CLOUD_LOCATION=us-central1
+#   GOOGLE_GENAI_USE_VERTEXAI=1
+#   GCS_BUCKET_NAME=your-project-id-shopping-assets
 
-# 3. Open http://localhost:8000
+# 4. Start backend (WebSocket server for Gemini Live)
+python server.py &
+# Backend runs on :8081 (WebSocket) and :8082 (health endpoint)
+
+# 5. Start CRM dashboard (serves both the shopping UI and CRM)
+cd ../crm
+pip install fastapi uvicorn google-cloud-firestore python-dotenv
+python main.py &
+# CRM runs on :8082 -- this is the main entry point
+
+# 6. Open http://localhost:8082
 ```
 
-### Environment Configuration
+That's it. The platform opens with the Shopping Assistant tab. Sign in and start talking.
+
+### Stopping servers
+```bash
+pkill -f "python server.py"
+pkill -f "python main.py"
+```
+
+### Restarting everything
+```bash
+pkill -f "python server.py"; pkill -f "python main.py"
+sleep 2
+cd server && python server.py &
+cd ../crm && python main.py &
+```
+
+## Deploy to Cloud Run
 
 ```bash
-# server/.env
-GOOGLE_GENAI_USE_VERTEXAI=1
-GOOGLE_CLOUD_PROJECT=your-project-id
-GOOGLE_CLOUD_LOCATION=us-central1
-GCS_BUCKET_NAME=your-project-id-shopping-assets
+# Authenticate
+gcloud auth application-default login
+
+# Create GCS bucket for assets (one-time)
+gcloud storage buckets create gs://YOUR_PROJECT-shopping-assets --location=us-central1
+gcloud storage cp -r client/assets/* gs://YOUR_PROJECT-shopping-assets/assets/
+
+# Deploy services (CI runs pytest + black + mypy before each deploy)
+gcloud builds submit --config server/cloudbuild.yaml    # Backend
+gcloud builds submit --config crm/cloudbuild.yaml       # CRM + UI
+
+# Deploy infrastructure (VPC, IAM, monitoring, security)
+cd terraform
+terraform init
+terraform plan -var="project_id=YOUR_PROJECT"
+terraform apply -var="project_id=YOUR_PROJECT"
 ```
+
+## Project Structure
+
+```
+server/          Backend (WebSocket + Gemini Live + ADK Agent)
+crm/             Cymbal StyleSync Dashboard (FastAPI, 5 tabs)
+client/          Shopping UI (embedded in CRM)
+terraform/       GCP infra (Cloud Run, GCS, VPC, IAM, monitoring)
+```
+
+## The Demo Flow
+
+1. "I need help redesigning Mila's bedroom"
+2. Room purpose -> Age -> Constraints -> Photo upload
+3. AI analyzes room + cross-references order history
+4. Style Finder with AI-generated previews from the room photo
+5. Color + dimensions -> Moodboard with 10 curated products
+6. Room visualization (Nano Banana Pro editing + Imagen 4 fallback)
+7. Add to cart -> Ask for discount -> Manager approves via CRM
+
+Full script: [docs/DEMO_STORYLINE.md](docs/DEMO_STORYLINE.md)
 
 ## Testing
 
-Run the full test suite:
 ```bash
-cd server
-python -m pytest tests/ -v          # 40 unit tests
-python -m evaluation.run_eval       # Eval framework on recorded sessions
+cd server && python -m pytest tests/ -v    # 103 tests
 ```
-
-Or use the Claude Code skill: `/test-suite`
-
-See [TESTS.md](TESTS.md) for the complete testing guide.
-
-## Evaluation Framework
-
-The project includes a custom 5-layer evaluation framework for voice agent quality:
-
-| Layer | Metrics | Engine |
-|-------|---------|--------|
-| Speech Quality | WER, latency to first byte | Custom |
-| Agent Trajectory | Tool call order, argument accuracy | Custom + Vertex AI |
-| Conversation Quality | Relevance, naturalness, child-appropriateness | Vertex AI PointwiseMetric |
-| Moodboard Quality | Style/color match, furniture balance | Custom |
-| End-to-End Session | Task completion, turn efficiency | Custom |
-
-Sessions are auto-recorded during live demos. Run evaluation from the CRM dashboard (Evaluation tab) or CLI:
-```bash
-cd server
-python -m evaluation.run_eval --no-vertex    # Custom metrics only
-python -m evaluation.run_eval                # Full eval with Vertex AI
-```
-
-## Infrastructure
-
-Terraform manages the full GCP stack:
-```bash
-cd terraform
-terraform init
-terraform plan
-terraform apply
-```
-
-Resources provisioned:
-- 3 Cloud Run services (frontend, backend, CRM)
-- GCS bucket with lifecycle rules (eval log retention, generated image cleanup)
-- IAM service accounts (Vertex AI, Firestore, Secret Manager, Storage)
-- VPC connector for Cloud Run internal networking
-
-## CI/CD Pipelines
-
-Each service has a Cloud Build pipeline that runs **tests before deploy** and tags images with the git commit SHA for traceability.
-
-| Pipeline | Pre-deploy Checks | Image Tag |
-|----------|-------------------|-----------|
-| `server/cloudbuild.yaml` | pytest (40 tests) + syntax validation | `$SHORT_SHA` + `latest` |
-| `client/cloudbuild.yaml` | Asset URL validation (no local refs) | `$SHORT_SHA` + `latest` |
-| `crm/cloudbuild.yaml` | Python syntax validation | `$SHORT_SHA` + `latest` |
-| `terraform/cloudbuild.yaml` | `terraform validate` + `plan` + `apply` | N/A |
-
-```bash
-# Deploy individual services
-gcloud builds submit --config server/cloudbuild.yaml      # tests + build + deploy
-gcloud builds submit --config client/cloudbuild.yaml      # validate + build + deploy
-gcloud builds submit --config crm/cloudbuild.yaml         # syntax + build + deploy
-gcloud builds submit --config terraform/cloudbuild.yaml   # validate + plan + apply
-```
-
-### Code Quality
-```bash
-cd server
-python -m pytest tests/ -v          # Unit tests
-python -m black . --check           # Code formatting
-python -m mypy core/ --ignore-missing-imports   # Type checking
-```
-
-## Demo Flow
-
-The home decor consultation follows this storyline (see [docs/DEMO_STORYLINE.md](docs/DEMO_STORYLINE.md)):
-
-1. **Initial request** -- "I need help redesigning Mila's bedroom"
-2. **Context gathering** -- room purpose, age, constraints (what furniture to keep)
-3. **Photo analysis** -- upload room photos or use live camera (1 FPS)
-4. **Style finder** -- child-themed tiles with AI-generated previews from the room photo
-5. **Color + dimensions** -- preferences and room size
-6. **Moodboard** -- 10 curated products matched by style, color, age
-7. **Room visualization** -- Imagen 3 renders products into the actual room
-8. **Cart + checkout** -- add items, get complementary suggestions
-9. **Discount approval** -- customer asks for bundle discount, AI escalates to manager via CRM, manager approves in real-time
-
-## Component Documentation
-
-- [Client README](client/README.md) -- Frontend details
-- [Server README](server/README.md) -- Backend configuration
-- [CRM README](crm/README.md) -- CRM dashboard
-- [Demo Storyline](docs/DEMO_STORYLINE.md) -- Expected dialog script
-- [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) -- Cloud deployment

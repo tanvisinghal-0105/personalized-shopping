@@ -19,6 +19,7 @@ resource "google_cloud_run_v2_service" "frontend" {
       }
     }
 
+    # Auto-scaling: scale to zero when idle, max 3 for frontend
     scaling {
       min_instance_count = 0
       max_instance_count = 3

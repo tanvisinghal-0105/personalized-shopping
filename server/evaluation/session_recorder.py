@@ -28,6 +28,16 @@ class SessionRecorder:
         self.tool_calls = []
         self.transcriptions = []
         self.turn_count = 0
+        self.cost_usd = 0.0
+        self.token_usage = {"input_tokens": 0, "output_tokens": 0}
+
+    def record_token_usage(
+        self, input_tokens: int = 0, output_tokens: int = 0, cost_usd: float = 0.0
+    ):
+        """Record token usage from Gemini responses for cost tracking."""
+        self.token_usage["input_tokens"] += input_tokens
+        self.token_usage["output_tokens"] += output_tokens
+        self.cost_usd += cost_usd
 
     def record_user_input(self, transcription: str, timestamp: Optional[float] = None):
         ts = timestamp or time.time()
@@ -152,6 +162,8 @@ class SessionRecorder:
             "tool_calls": self.tool_calls,
             "transcriptions": self.transcriptions,
             "events": self.events,
+            "cost_usd": round(self.cost_usd, 6),
+            "token_usage": self.token_usage,
         }
         filename = f"session_{self.session_id}_{int(self.start_time)}.json"
         filepath = os.path.join(EVAL_LOG_DIR, filename)

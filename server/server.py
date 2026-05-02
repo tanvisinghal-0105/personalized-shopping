@@ -15,8 +15,34 @@ from core.logger import logger
 
 async def health_handler(request):
     """Health check endpoint for Cloud Run / K8s liveness probes."""
+    from core.observability import get_health, get_metrics
+
+    health_status = get_health().get_status()
+    metrics_data = get_metrics().get_metrics()
+
     return web.Response(
-        text=json.dumps({"status": "healthy", "service": "shopping-backend"}),
+        text=json.dumps(
+            {
+                "status": health_status["status"],
+                "service": "shopping-backend",
+                "components": health_status.get("components", {}),
+                "uptime_seconds": metrics_data.get("uptime_seconds", 0),
+                "total_connections": metrics_data.get("counters", {}).get(
+                    "total_connections", 0
+                ),
+                "error_rate_pct": metrics_data.get("error_rate_pct", 0),
+            }
+        ),
+        content_type="application/json",
+    )
+
+
+async def metrics_handler(request):
+    """Metrics endpoint for monitoring dashboards."""
+    from core.observability import get_metrics
+
+    return web.Response(
+        text=json.dumps(get_metrics().get_metrics()),
         content_type="application/json",
     )
 
@@ -31,11 +57,13 @@ async def main() -> None:
     # Start HTTP health check server (same port via aiohttp)
     app = web.Application()
     app.router.add_get("/health", health_handler)
+    app.router.add_get("/metrics", metrics_handler)
     runner = web.AppRunner(app)
     await runner.setup()
-    health_site = web.TCPSite(runner, "0.0.0.0", health_port + 1)
+    health_http_port = health_port + 2  # 8083 to avoid conflict with CRM on 8082
+    health_site = web.TCPSite(runner, "0.0.0.0", health_http_port)
     await health_site.start()
-    logger.info(f"Health endpoint running on 0.0.0.0:{health_port + 1}/health")
+    logger.info(f"Health endpoint running on 0.0.0.0:{health_http_port}/health")
 
     # Start WebSocket server
     logger.info(f"Starting WebSocket server on 0.0.0.0:{port}...")

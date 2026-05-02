@@ -21,6 +21,9 @@ from google.genai.types import (
 
 from core.agent_factory import get_agent_config
 from .logger import logger
+from .observability import get_health, get_metrics
+from .security import sanitize_text_input, check_ai_safety, audit_log
+from .auth import authenticate_websocket
 from evaluation.session_recorder import get_recorder, finish_recorder
 from config.config import (
     CONFIG,
@@ -246,7 +249,9 @@ async def _generate_and_send_style_previews(
     logger.info("[STYLE PREVIEW ASYNC] All style previews done")
 
 
-async def _handle_direct_visualization(websocket: Any, data: dict, session_id: str) -> None:
+async def _handle_direct_visualization(
+    websocket: Any, data: dict, session_id: str
+) -> None:
     """Handle room visualization directly without going through the Gemini agent.
 
     This avoids adding visualization data to the agent context window,
@@ -254,10 +259,12 @@ async def _handle_direct_visualization(websocket: Any, data: dict, session_id: s
     """
     from core.agents.retail.tools import visualize_room_with_products
 
+    from core.security import validate_customer_id, validate_product_ids
+
     viz_data = data.get("data", {})
     customer_id = viz_data.get("customer_id", "CY-DEFAULT")
     decor_session_id = viz_data.get("session_id", "")
-    product_ids = viz_data.get("product_ids", [])
+    product_ids = validate_product_ids(viz_data.get("product_ids", []))
 
     logger.info(
         f"[DIRECT VIZ] customer={customer_id}, session={decor_session_id}, "
@@ -273,9 +280,7 @@ async def _handle_direct_visualization(websocket: Any, data: dict, session_id: s
         )
 
         # Send the visualization result directly to the frontend
-        await websocket.send(
-            json.dumps({"type": "tool_result", "data": result})
-        )
+        await websocket.send(json.dumps({"type": "tool_result", "data": result}))
         logger.info("[DIRECT VIZ] Visualization sent to frontend")
 
     except Exception as e:
@@ -291,17 +296,21 @@ async def _handle_direct_visualization(websocket: Any, data: dict, session_id: s
             "timeout": "Image generation took too long. Try selecting fewer products.",
             "service_unavailable": "Image service is temporarily unavailable. Please try again.",
         }
-        user_msg = user_messages.get(error_type, f"Visualization failed. Please try again.")
+        user_msg = user_messages.get(
+            error_type, f"Visualization failed. Please try again."
+        )
 
         await websocket.send(
-            json.dumps({
-                "type": "tool_result",
-                "data": {
-                    "status": "error",
-                    "message": user_msg,
-                    "error_type": error_type,
-                },
-            })
+            json.dumps(
+                {
+                    "type": "tool_result",
+                    "data": {
+                        "status": "error",
+                        "message": user_msg,
+                        "error_type": error_type,
+                    },
+                }
+            )
         )
 
 
@@ -500,6 +509,25 @@ DO NOT respond with text. DO NOT ask questions. JUST CALL THE TOOL NOW."""
                     )
                     full_text = ""
                     continue
+
+            # Track token usage for cost monitoring
+            if hasattr(event, "usage_metadata") and event.usage_metadata:
+                um = event.usage_metadata
+                input_tokens = getattr(um, "prompt_token_count", 0) or 0
+                total_tokens = getattr(um, "total_token_count", 0) or 0
+                output_tokens = max(0, total_tokens - input_tokens)
+                if input_tokens > 0:
+                    try:
+                        recorder = get_recorder(str(session_id))
+                        cost = (input_tokens / 1000 * 0.00015) + (
+                            output_tokens / 1000 * 0.0006
+                        )
+                        recorder.record_token_usage(input_tokens, output_tokens, cost)
+                        logger.info(
+                            f"[COST] Tokens: in={input_tokens}, out={output_tokens}, cost=${cost:.6f}"
+                        )
+                    except Exception as e:
+                        logger.warning(f"[COST] Failed to record tokens: {e}")
 
             if event.content is None:
                 logger.info(f"None content - turn_complete:{event.turn_complete}")
@@ -899,18 +927,32 @@ IMPORTANT: Briefly tell the customer what you see, then IMMEDIATELY call continu
                     continue
 
                 elif msg_type == "text":
+                    raw_text = data.get("data", "")
+                    # Sanitize and check AI safety
+                    clean_text = sanitize_text_input(raw_text)
+                    safety = check_ai_safety(clean_text)
+                    if not safety["safe"]:
+                        logger.warning(
+                            f"[SECURITY] Unsafe input blocked: {safety['concerns']}"
+                        )
+                        audit_log(
+                            "unsafe_input_blocked", {"concerns": safety["concerns"]}
+                        )
+                    get_metrics().increment("total_requests")
                     logger.info("Client -> Agent: Sending text data...")
                     live_request_queue.send_content(
                         Content(
                             role="user",
-                            parts=[Part.from_text(text=data.get("data"))],
+                            parts=[Part.from_text(text=clean_text)],
                         )
                     )
                     logger.info("Text sent to Agent")
                 elif msg_type == "visualize_room":
                     # Direct visualization -- bypasses Gemini agent entirely
                     # This avoids context bloat and agent round-trip latency
-                    logger.info("[DIRECT VIZ] Received visualization request, bypassing agent")
+                    logger.info(
+                        "[DIRECT VIZ] Received visualization request, bypassing agent"
+                    )
                     asyncio.create_task(
                         _handle_direct_visualization(websocket, data, session_id)
                     )
@@ -1024,17 +1066,36 @@ async def handle_client(websocket: Any) -> None:
     Handles a new client connection by creating and managing an agent session.
     """
     session_id = str(id(websocket))
+    metrics = get_metrics()
+    health = get_health()
+    metrics.increment("total_connections")
     logger.info(f"New client connected. Session ID: {session_id}")
 
     try:
+        # Authenticate the connection
+        headers = (
+            dict(websocket.request.headers)
+            if hasattr(websocket.request, "headers")
+            else {}
+        )
+        user = authenticate_websocket(headers)
+        if user is None:
+            logger.warning(
+                f"[AUTH] Unauthorized WebSocket connection rejected: {session_id}"
+            )
+            await websocket.close(1008, "Unauthorized")
+            return
+        audit_log(
+            "websocket_connect",
+            {"session_id": session_id, "user": user.get("email", "unknown")},
+        )
+
         # Extract customer info from query parameters
         from urllib.parse import urlparse, parse_qs
 
         parsed_url = urlparse(websocket.request.path)
         query_params = parse_qs(parsed_url.query) if parsed_url.query else {}
 
-        # Get customer info from query parameters (each value is a list, take
-        # first element)
         customer_id = query_params.get("customer_id", [None])[0]
         first_name = query_params.get("first_name", [None])[0]
         last_name = query_params.get("last_name", [None])[0]
@@ -1044,6 +1105,9 @@ async def handle_client(websocket: Any) -> None:
             logger.info(
                 f"Customer info received: {first_name} {last_name} ({customer_id}) - {email}"
             )
+
+        # Update health status
+        health.update("websocket", True, f"Active session: {session_id}")
 
         # Clear cart for fresh session
         if customer_id:

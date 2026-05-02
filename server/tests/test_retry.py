@@ -37,7 +37,10 @@ class TestClassifyError:
         assert classify_error(Exception("deadline exceeded")) == "timeout"
 
     def test_credentials_expired(self):
-        assert classify_error(Exception("Reauthentication is needed")) == "credentials_expired"
+        assert (
+            classify_error(Exception("Reauthentication is needed"))
+            == "credentials_expired"
+        )
 
     def test_not_found(self):
         assert classify_error(Exception("404 not found")) == "not_found"

@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',-apple-system,sans-serif; background:#05060f; color:#e4e4f0; padding:24px; min-height:100vh; }
+
+  /* Boundaries */
+  .gcp-boundary { border:2px solid rgba(66,133,244,0.25); border-radius:16px; padding:28px 24px 20px; position:relative; background:rgba(66,133,244,0.015); }
+  .gcp-boundary::before { content:attr(data-label); position:absolute; top:-11px; left:20px; background:#05060f; padding:0 10px; font-size:11px; font-weight:700; color:#4285f4; letter-spacing:1.2px; text-transform:uppercase; }
+  .vpc-boundary { border:2px dashed rgba(34,197,94,0.25); border-radius:12px; padding:24px 20px 16px; position:relative; background:rgba(34,197,94,0.01); margin:16px 0; }
+  .vpc-boundary::before { content:attr(data-label); position:absolute; top:-10px; left:16px; background:#05060f; padding:0 8px; font-size:10px; font-weight:600; color:#22c55e; text-transform:uppercase; letter-spacing:1px; }
+  .security-boundary { border:1px solid rgba(234,67,53,0.2); border-radius:10px; padding:16px 14px 12px; position:relative; background:rgba(234,67,53,0.015); }
+  .security-boundary::before { content:attr(data-label); position:absolute; top:-9px; left:12px; background:#05060f; padding:0 6px; font-size:9px; font-weight:600; color:#ea4335; text-transform:uppercase; letter-spacing:0.8px; }
+
+  /* Service boxes */
+  .svc { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:8px; padding:10px; text-align:center; font-size:11px; }
+  .svc .icon { width:28px; height:28px; margin:0 auto 4px; border-radius:6px; display:flex; align-items:center; justify-content:center; }
+  .svc .icon .material-symbols-outlined { font-size:18px; }
+  .svc .name { color:#e4e4f0; font-weight:600; font-size:12px; }
+  .svc .sub { color:#555570; font-size:10px; margin-top:1px; line-height:1.3; }
+
+  /* Flow lines */
+  .flow-v { display:flex; flex-direction:column; align-items:center; gap:2px; padding:4px 0; }
+  .flow-v .line { width:2px; height:14px; background:linear-gradient(to bottom,rgba(0,240,255,0.3),rgba(168,85,247,0.3)); }
+  .flow-v .label { font-size:9px; color:#555570; background:#05060f; padding:1px 6px; border:1px solid rgba(255,255,255,0.05); border-radius:3px; }
+  .flow-h { display:flex; align-items:center; gap:4px; }
+  .flow-h .line { flex:1; height:2px; background:linear-gradient(to right,rgba(0,240,255,0.2),rgba(168,85,247,0.2)); }
+  .flow-h .arrow { color:#00f0ff; font-size:14px; }
+
+  /* Section headers */
+  .section-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1.2px; margin-bottom:10px; text-align:center; }
+
+  /* Pill tags */
+  .pill { display:inline-flex; align-items:center; gap:4px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:5px; padding:4px 8px; font-size:9px; color:#8888a8; }
+  .pill .material-symbols-outlined { font-size:12px; }
+
+  /* Grid helpers */
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .flex-center { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; }
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div style="text-align:center;margin-bottom:20px;">
+    <h2 style="font-size:1.3em;font-weight:700;">Cymbal StyleSync</h2>
+    <p style="color:#555570;font-size:11px;">AI Hyperpersonalization Platform - Detailed Architecture</p>
+</div>
+
+<div style="max-width:1020px;margin:0 auto;">
+
+<!-- ===== USERS ===== -->
+<div class="flex-center" style="margin-bottom:4px;">
+    <div class="svc" style="min-width:120px;">
+        <div class="icon" style="background:rgba(0,240,255,0.08);"><span class="material-symbols-outlined" style="color:#00f0ff;">person</span></div>
+        <div class="name">Customer</div>
+        <div class="sub">Voice / Text / Photo</div>
+    </div>
+    <div class="svc" style="min-width:120px;">
+        <div class="icon" style="background:rgba(245,158,11,0.08);"><span class="material-symbols-outlined" style="color:#f59e0b;">admin_panel_settings</span></div>
+        <div class="name">Store Manager</div>
+        <div class="sub">CRM / Approvals</div>
+    </div>
+</div>
+
+<div class="flow-v"><div class="line"></div><div class="label">HTTPS / WSS</div><div class="line"></div></div>
+
+<!-- ===== CLOUD ARMOR + IAP ===== -->
+<div class="flex-center" style="margin-bottom:4px;">
+    <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(234,67,53,0.05);border:1px solid rgba(234,67,53,0.2);border-radius:7px;padding:5px 14px;font-size:10px;">
+        <span class="material-symbols-outlined" style="font-size:14px;color:#ea4335;">shield</span>
+        <span style="color:#ea4335;font-weight:600;">Cloud Armor WAF</span>
+        <span style="color:#555570;">Rate limit 100/min</span>
+        <span style="color:#555570;">|</span>
+        <span class="material-symbols-outlined" style="font-size:14px;color:#ea4335;">verified_user</span>
+        <span style="color:#ea4335;font-weight:600;">IAP</span>
+        <span style="color:#555570;">@google.com</span>
+    </div>
+</div>
+
+<div class="flow-v"><div class="line"></div></div>
+
+<!-- ===== GCP BOUNDARY ===== -->
+<div class="gcp-boundary" data-label="Google Cloud Platform">
+
+    <!-- Cloud Run Services -->
+    <div class="grid-2" style="margin-bottom:12px;">
+
+        <!-- CRM + Frontend -->
+        <div class="svc" style="border-color:rgba(0,240,255,0.12);padding:14px;text-align:left;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+                <span class="material-symbols-outlined" style="color:#4285f4;font-size:16px;">cloud</span>
+                <span style="color:#4285f4;font-weight:600;font-size:12px;">Cloud Run</span>
+                <span style="color:#555570;font-size:9px;">CRM + Frontend</span>
+            </div>
+            <div class="grid-3" style="gap:6px;">
+                <div style="background:rgba(0,240,255,0.03);border-radius:5px;padding:5px;font-size:9px;text-align:center;">
+                    <div style="color:#00f0ff;font-weight:600;">Shopping UI</div>
+                    <div style="color:#555570;">iframe</div>
+                </div>
+                <div style="background:rgba(245,158,11,0.03);border-radius:5px;padding:5px;font-size:9px;text-align:center;">
+                    <div style="color:#f59e0b;font-weight:600;">CRM</div>
+                    <div style="color:#555570;">FastAPI</div>
+                </div>
+                <div style="background:rgba(168,85,247,0.03);border-radius:5px;padding:5px;font-size:9px;text-align:center;">
+                    <div style="color:#a855f7;font-weight:600;">Eval API</div>
+                    <div style="color:#555570;">REST</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backend -->
+        <div class="svc" style="border-color:rgba(168,85,247,0.12);padding:14px;text-align:left;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+                <span class="material-symbols-outlined" style="color:#4285f4;font-size:16px;">cloud</span>
+                <span style="color:#a855f7;font-weight:600;font-size:12px;">Cloud Run</span>
+                <span style="color:#555570;font-size:9px;">Backend (Session Affinity)</span>
+            </div>
+
+            <!-- Security boundary wrapping the backend internals -->
+            <div class="security-boundary" data-label="Security Layer: Auth + Sanitization + PII + Injection Guard + Audit">
+
+                <!-- ADK Agent Orchestration -->
+                <div style="margin-bottom:10px;">
+                    <div style="font-size:9px;color:#a855f7;font-weight:600;text-align:center;margin-bottom:6px;">ADK AGENT ORCHESTRATION <span style="color:#555570;font-weight:400;font-size:8px;">(see Agentic Workflow below for detailed 9-stage flow)</span></div>
+
+                    <!-- Main flow: Input -> Intent -> Agent -> Tools -->
+                    <div style="display:flex;align-items:center;gap:3px;font-size:8px;margin-bottom:8px;">
+                        <div style="background:rgba(168,85,247,0.06);border-radius:4px;padding:4px 5px;text-align:center;flex:0.8;">
+                            <div style="color:#a855f7;font-weight:600;">WebSocket</div>
+                            <div style="color:#555570;">audio/text/image</div>
+                        </div>
+                        <span class="material-symbols-outlined" style="font-size:10px;color:#555570;">arrow_forward</span>
+                        <div style="background:rgba(168,85,247,0.06);border-radius:4px;padding:4px 5px;text-align:center;flex:0.8;">
+                            <div style="color:#a855f7;font-weight:600;">Intent Detect</div>
+                            <div style="color:#555570;">voice transcription</div>
+                        </div>
+                        <span class="material-symbols-outlined" style="font-size:10px;color:#555570;">arrow_forward</span>
+                        <div style="background:rgba(168,85,247,0.1);border-radius:4px;padding:4px 5px;text-align:center;flex:1;border:1px solid rgba(168,85,247,0.2);">
+                            <div style="color:#a855f7;font-weight:700;">ADK Agent</div>
+                            <div style="color:#555570;">Gemini Live 2.5 Flash</div>
+                        </div>
+                        <span class="material-symbols-outlined" style="font-size:10px;color:#555570;">arrow_forward</span>
+                        <div style="background:rgba(168,85,247,0.06);border-radius:4px;padding:4px 5px;text-align:center;flex:0.8;">
+                            <div style="color:#a855f7;font-weight:600;">Session State</div>
+                            <div style="color:#555570;">9-stage guard</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Supporting modules -->
+                <div class="grid-4" style="gap:4px;">
+                    <div style="background:rgba(0,240,255,0.03);border-radius:4px;padding:4px;font-size:8px;text-align:center;">
+                        <div style="color:#00f0ff;font-weight:600;">Product Search</div>
+                        <div style="color:#555570;">Embeddings index</div>
+                    </div>
+                    <div style="background:rgba(0,240,255,0.03);border-radius:4px;padding:4px;font-size:8px;text-align:center;">
+                        <div style="color:#00f0ff;font-weight:600;">Cost Tracker</div>
+                        <div style="color:#555570;">Tokens + USD</div>
+                    </div>
+                    <div style="background:rgba(0,240,255,0.03);border-radius:4px;padding:4px;font-size:8px;text-align:center;">
+                        <div style="color:#00f0ff;font-weight:600;">Retry + Backoff</div>
+                        <div style="color:#555570;">429/503 handling</div>
+                    </div>
+                    <div style="background:rgba(0,240,255,0.03);border-radius:4px;padding:4px;font-size:8px;text-align:center;">
+                        <div style="color:#00f0ff;font-weight:600;">Direct Viz</div>
+                        <div style="color:#555570;">Bypasses agent</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VPC NETWORK -->
+    <div class="vpc-boundary" data-label="VPC Private Network (10.8.0.0/28)">
+        <div class="grid-2" style="gap:16px;">
+
+            <!-- AI Models -->
+            <div>
+                <div class="section-label" style="color:#4285f4;">Gemini Enterprise Agent Platform</div>
+                <div class="grid-2" style="gap:6px;">
+                    <div class="svc">
+                        <div class="icon" style="background:rgba(66,133,244,0.08);"><span class="material-symbols-outlined" style="color:#4285f4;">smart_toy</span></div>
+                        <div class="name">Gemini Live API</div>
+                        <div class="sub">2.5 Flash Native Audio<br>Bidirectional PCM stream<br>Tool calls + transcription</div>
+                    </div>
+                    <div class="svc">
+                        <div class="icon" style="background:rgba(52,168,83,0.08);"><span class="material-symbols-outlined" style="color:#34a853;">image</span></div>
+                        <div class="name">Nano Banana Pro</div>
+                        <div class="sub">Gemini 3 Pro Image<br>Room photo editing<br>Style preview generation</div>
+                    </div>
+                    <div class="svc">
+                        <div class="icon" style="background:rgba(251,188,4,0.08);"><span class="material-symbols-outlined" style="color:#fbbc04;">palette</span></div>
+                        <div class="name">Imagen 4 Ultra</div>
+                        <div class="sub">Text-to-image fallback<br>Room visualization<br>4:3 aspect ratio</div>
+                    </div>
+                    <div class="svc">
+                        <div class="icon" style="background:rgba(234,67,53,0.08);"><span class="material-symbols-outlined" style="color:#ea4335;">search</span></div>
+                        <div class="name">Text Embeddings</div>
+                        <div class="sub">text-embedding-005<br>130 products indexed<br>Cosine similarity search</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Services -->
+            <div>
+                <div class="section-label" style="color:#fbbc04;">Data Services</div>
+                <div class="grid-2" style="gap:6px;">
+                    <div class="svc">
+                        <div class="icon" style="background:rgba(251,188,4,0.08);"><span class="material-symbols-outlined" style="color:#fbbc04;">database</span></div>
+                        <div class="name">Firestore</div>
+                        <div class="sub">carts, customers<br>audit_logs<br>Approval status polling</div>
+                    </div>
+                    <div class="svc">
+                        <div class="icon" style="background:rgba(66,133,244,0.08);"><span class="material-symbols-outlined" style="color:#4285f4;">cloud_upload</span></div>
+                        <div class="name">Cloud Storage</div>
+                        <div class="sub">214 product assets<br>Eval session logs<br>Generated images (7d TTL)</div>
+                    </div>
+                    <div class="svc">
+                        <div class="icon" style="background:rgba(234,67,53,0.08);"><span class="material-symbols-outlined" style="color:#ea4335;">key</span></div>
+                        <div class="name">Secret Manager</div>
+                        <div class="sub">API keys<br>Service credentials</div>
+                    </div>
+                    <div class="svc">
+                        <div class="icon" style="background:rgba(52,168,83,0.08);"><span class="material-symbols-outlined" style="color:#34a853;">verified_user</span></div>
+                        <div class="name">IAM</div>
+                        <div class="sub">2 service accounts<br>Least-privilege roles<br>Vertex AI + Firestore</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Evaluation Framework -->
+    <div style="border:1px solid rgba(168,85,247,0.15);border-radius:10px;padding:14px;margin:12px 0;position:relative;background:rgba(168,85,247,0.015);">
+        <div style="position:absolute;top:-9px;left:16px;background:#05060f;padding:0 8px;font-size:9px;font-weight:600;color:#a855f7;text-transform:uppercase;letter-spacing:0.8px;">Evaluation Framework (6 Layers)</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
+            <div style="display:flex;align-items:center;gap:3px;">
+                <div class="pill"><span class="material-symbols-outlined" style="color:#00f0ff;">mic</span> Speech Quality</div>
+                <span style="color:#555570;font-size:8px;">WER + latency</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:3px;">
+                <div class="pill"><span class="material-symbols-outlined" style="color:#a855f7;">route</span> Trajectory</div>
+                <span style="color:#555570;font-size:8px;">Tool order + args</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:3px;">
+                <div class="pill"><span class="material-symbols-outlined" style="color:#4285f4;">chat</span> Conversation</div>
+                <span style="color:#555570;font-size:8px;">Vertex AI PointwiseMetric</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:3px;">
+                <div class="pill"><span class="material-symbols-outlined" style="color:#fbbc04;">grid_view</span> Moodboard</div>
+                <span style="color:#555570;font-size:8px;">Style + color match</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:3px;">
+                <div class="pill"><span class="material-symbols-outlined" style="color:#34a853;">check_circle</span> Session</div>
+                <span style="color:#555570;font-size:8px;">Task completion</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:3px;">
+                <div class="pill"><span class="material-symbols-outlined" style="color:#ea4335;">image</span> Image</div>
+                <span style="color:#555570;font-size:8px;">Rubric-based (DSG/BAS)</span>
+            </div>
+        </div>
+        <div style="font-size:8px;color:#555570;text-align:center;margin-top:6px;">
+            Feeds from: ADK Agent (tool calls) + WebSocket (transcriptions) + Gemini (token usage) + Imagen (generated images) + Session State (stages)
+        </div>
+    </div>
+
+    <!-- Operations Bar -->
+    <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:8px;">
+        <div class="pill" style="border-color:rgba(66,133,244,0.15);">
+            <span class="material-symbols-outlined" style="color:#4285f4;">monitoring</span>
+            <span>Cloud Monitoring</span>
+            <span style="color:#555570;">Dashboards (request count, latency p95, instance count, memory)</span>
+        </div>
+        <div class="pill" style="border-color:rgba(251,188,4,0.15);">
+            <span class="material-symbols-outlined" style="color:#fbbc04;">notifications</span>
+            <span>Alerts</span>
+            <span style="color:#555570;">Error rate > 5%, P95 > 5s</span>
+        </div>
+        <div class="pill" style="border-color:rgba(52,168,83,0.15);">
+            <span class="material-symbols-outlined" style="color:#34a853;">build</span>
+            <span>Cloud Build</span>
+            <span style="color:#555570;">pytest + black + mypy -> Docker -> Cloud Run</span>
+        </div>
+        <div class="pill" style="border-color:rgba(234,67,53,0.15);">
+            <span class="material-symbols-outlined" style="color:#ea4335;">description</span>
+            <span>Audit Logs</span>
+            <span style="color:#555570;">Firestore + Vertex AI data access logs</span>
+        </div>
+        <div class="pill" style="border-color:rgba(168,85,247,0.15);">
+            <span class="material-symbols-outlined" style="color:#a855f7;">deployed_code</span>
+            <span>Terraform</span>
+            <span style="color:#555570;">10 files: Cloud Run, GCS, VPC, IAM, WAF, monitoring</span>
+        </div>
+    </div>
+
+</div><!-- end gcp-boundary -->
+
+<!-- Tech stack -->
+<div style="text-align:center;margin-top:14px;padding:8px;border:1px dashed rgba(255,255,255,0.05);border-radius:6px;">
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;font-size:9px;color:#555570;">
+        <span>Python 3.12</span><span>Google ADK</span><span>FastAPI</span><span>WebSockets</span><span>Terraform</span><span>Pydantic</span><span>pytest (103)</span><span>Cloud Build</span>
+    </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- SECTION 2: AGENTIC WORKFLOW FLOWCHART                              -->
+<!-- ================================================================== -->
+<div style="margin-top:40px;text-align:center;">
+    <h2 style="font-size:1.3em;font-weight:700;">Agentic Workflow</h2>
+    <p style="color:#555570;font-size:11px;">Home Decor Consultation - 9-Stage Flow with Tool Calls and Service Integration</p>
+</div>
+
+<div style="max-width:1020px;margin:16px auto 0;">
+
+    <!-- Legend -->
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;font-size:9px;">
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:10px;height:10px;border-radius:3px;background:rgba(168,85,247,0.3);border:1px solid rgba(168,85,247,0.5);"></div><span style="color:#a855f7;">Tool Call</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:10px;height:10px;border-radius:3px;background:rgba(0,240,255,0.3);border:1px solid rgba(0,240,255,0.5);"></div><span style="color:#00f0ff;">Frontend UI</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:10px;height:10px;border-radius:3px;background:rgba(66,133,244,0.3);border:1px solid rgba(66,133,244,0.5);"></div><span style="color:#4285f4;">Gemini Live</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:10px;height:10px;border-radius:3px;background:rgba(251,188,4,0.3);border:1px solid rgba(251,188,4,0.5);"></div><span style="color:#fbbc04;">Firestore</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:10px;height:10px;border-radius:3px;background:rgba(52,168,83,0.3);border:1px solid rgba(52,168,83,0.5);"></div><span style="color:#34a853;">Image Generation</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:10px;height:10px;border-radius:3px;background:rgba(245,158,11,0.3);border:1px solid rgba(245,158,11,0.5);"></div><span style="color:#f59e0b;">Conditional Branch</span></div>
+    </div>
+
+    <!-- Main flowchart container -->
+    <div style="border:2px solid rgba(168,85,247,0.2);border-radius:16px;padding:24px 20px;position:relative;background:rgba(168,85,247,0.01);">
+        <div style="position:absolute;top:-11px;left:20px;background:#05060f;padding:0 10px;font-size:11px;font-weight:700;color:#a855f7;letter-spacing:1.2px;text-transform:uppercase;">Home Decor Consultation Flow</div>
+
+        <!-- ENTRY POINT -->
+        <div style="display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+            <div style="background:rgba(66,133,244,0.08);border:1px solid rgba(66,133,244,0.25);border-radius:20px;padding:8px 20px;display:flex;align-items:center;gap:8px;">
+                <span class="material-symbols-outlined" style="color:#4285f4;font-size:16px;">person</span>
+                <div style="font-size:11px;">
+                    <div style="color:#4285f4;font-weight:700;">Customer Initiates</div>
+                    <div style="color:#555570;font-size:9px;">Voice / Text via WebSocket -- "I want to redecorate my bedroom"</div>
+                </div>
+                <span class="material-symbols-outlined" style="color:#555570;font-size:14px;">arrow_forward</span>
+                <div style="background:rgba(66,133,244,0.12);border-radius:6px;padding:4px 10px;">
+                    <div style="color:#4285f4;font-weight:600;font-size:10px;">Gemini Live 2.5 Flash</div>
+                    <div style="color:#555570;font-size:8px;">Intent detection + tool dispatch</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flow-v"><div class="line"></div><div class="label">Agent decides to call tool</div><div class="line"></div></div>
+
+        <!-- STAGE 1: Room Identification -->
+        <div style="display:grid;grid-template-columns:140px 1fr 200px;gap:10px;align-items:start;margin-bottom:4px;">
+            <!-- Stage label -->
+            <div style="text-align:right;padding-top:6px;">
+                <div style="font-size:11px;font-weight:700;color:#a855f7;">Stage 1</div>
+                <div style="font-size:8px;color:#555570;">Room Identification</div>
+            </div>
+            <!-- Tool call box -->
+            <div style="background:rgba(168,85,247,0.04);border:1px solid rgba(168,85,247,0.15);border-radius:8px;padding:10px;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                    <span class="material-symbols-outlined" style="color:#a855f7;font-size:14px;">functions</span>
+                    <span style="color:#a855f7;font-weight:700;font-size:11px;">start_home_decor_consultation()</span>
+                </div>
+                <div style="font-size:9px;color:#555570;margin-bottom:6px;">Creates HomeDecorSessionState in memory. Returns room_selector UI component.</div>
+                <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                    <span style="background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.15);border-radius:4px;padding:2px 6px;font-size:8px;color:#00f0ff;">display_type: room_selector</span>
+                    <span style="background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.15);border-radius:4px;padding:2px 6px;font-size:8px;color:#00f0ff;">interaction_mode: single_select</span>
+                </div>
+            </div>
+            <!-- Service connections -->
+            <div style="display:flex;flex-direction:column;gap:4px;padding-top:4px;">
+                <div style="display:flex;align-items:center;gap:4px;font-size:8px;">
+                    <span class="material-symbols-outlined" style="font-size:12px;color:#00f0ff;">web</span>
+                    <span style="color:#00f0ff;">WebSocket sends room tiles to UI</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:4px;font-size:8px;">
+                    <span class="material-symbols-outlined" style="font-size:12px;color:#a855f7;">memory</span>
+                    <span style="color:#555570;">Session state: in-memory</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flow-v"><div class="line"></div><div class="label">Customer selects room (e.g. Bedroom)</div><div class="line"></div></div>
+
+        <!-- STAGE 1a: Room Purpose (conditional) -->
+        <div style="display:grid;grid-template-columns:140px 1fr 200px;gap:10px;align-items:start;margin-bottom:4px;">
+            <div style="text-align:right;padding-top:6px;">
+                <div style="font-size:11px;font-weight:700;color:#f59e0b;">Stage 1a</div>
+                <div style="font-size:8px;color:#555570;">Room Purpose</div>
+                <div style="font-size:7px;color:#f59e0b;margin-top:2px;">Bedroom only</div>
+            </div>
+            <div style="background:rgba(245,158,11,0.03);border:1px dashed rgba(245,158,11,0.2);border-radius:8px;padding:10px;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                    <span class="material-symbols-outlined" style="color:#a855f7;font-size:14px;">functions</span>
+                    <span style="color:#a855f7;font-weight:700;font-size:11px;">continue_home_decor_consultation()</span>
+                    <span style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:1px 5px;font-size:7px;color:#f59e0b;">CONDITIONAL</span>
+                </div>
+                <div style="font-size:9px;color:#555570;">Asks: Decoration refresh or full redesign? Determines furniture inclusion in moodboard.</div>
+                <div style="display:flex;gap:4px;margin-top:4px;">
+                    <span style="background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.15);border-radius:4px;padding:2px 6px;font-size:8px;color:#00f0ff;">decoration -- decor only</span>
+                    <span style="background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.15);border-radius:4px;padding:2px 6px;font-size:8px;color:#00f0ff;">redesign -- decor + furniture</span>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;padding-top:4px;">
+                <div style="display:flex;align-items:center;gap:4px;font-size:8px;">
+                    <span class="material-symbols-outlined" style="font-size:12px;color:#4285f4;">smart_toy</span>
+                    <span style="color:#555570;">Gemini speaks options aloud</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flow-v"><div class="line"></div></div>
+
+        <!-- STAGE 1b: Age Context (conditional) -->
+        <div style="display:grid;grid-template-columns:140px 1fr 200px;gap:10px;align-items:start;margin-bottom:4px;">
+            <div style="text-align:right;padding-top:6px;">
+                <div style="font-size:11px;font-weight:700;color:#f59e0b;">Stage 1b</div>
+                <div style="font-size:8px;color:#555570;">Age Context</div>
+                <div style="font-size:7px;color:#f59e0b;margin-top:2px;">Child bedrooms only</div>
+            </div>
+            <div style="background:rgba(245,158,11,0.03);border:1px dashed rgba(245,158,11,0.2);border-radius:8px;padding:10px;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                    <span class="material-symbols-outlined" style="color:#a855f7;font-size:14px;">functions</span>
+                    <span style="color:#a855f7;font-weight:700;font-size:11px;">continue_home_decor_consultation()</span>
+                    <span style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:1px 5px;font-size:7px;color:#f59e0b;">CONDITIONAL</span>
+                </div>
+                <div style="font-size:9px;color:#555570;">Age tiers: toddler / school-age / teen / adult. Filters age-appropriate furniture and unlocks child-themed styles.</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;padding-top:4px;">
+                <div style="display:flex;align-items:center;gap:4px;font-size:8px;">
+                    <span class="material-symbols-outlined" style="font-size:12px;color:#a855f7;">child_care</span>
+                    <span style="color:#555570;">Changes prompt: address child directly</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flow-v"><div class="line"></div></div>
+
+        <!-- STAGE 1c: Constraints (conditional) -->
+        <div style="display:grid;grid-template-columns:140px 1fr 200px;gap:10px;align-items:start;margin-bottom:4px;">
+            <div style="text-align:right;padding-top:6px;">
+                <div style="font-size:11px;font-weight:700;color:#f59e0b;">Stage 1c</div>
+                <div style="font-size:8px;color:#555570;">Constraints</div>
+                <div style="font-size:7px;color:#f59e0b;margin-top:2px;">Redesign only</div>
+            </div>
+            <div style="background:rgba(245,158,11,0.03);border:1px dashed rgba(245,158,11,0.2);border-radius:8px;padding:10px;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                    <span class="material-symbols-outlined" style="color:#a855f7;font-size:14px;">functions</span>
+                    <span style="color:#a855f7;font-weight:700;font-size:11px;">continue_home_decor_consultation()</span>
+                    <span style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:1px 5px;font-size:7px;color:#f59e0b;">CONDITIONAL</span>
+                </div>
+                <div style="font-size:9px;color:#555570;">Collects which existing furniture to keep. Passed to visualization prompt as constraints.</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;padding-top:4px;">
+                <div style="display:flex;align-items:center;gap:4px;font-size:8px;">
+                    <span class="material-symbols-outlined" style="font-size:12px;color:#34a853;">image</span>
+                    <span style="color:#555570;">Imagen will preserve these items</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flow-v"><div class="line"></div></div>
+
+        <!-- STAGE 1d: Photo Request (conditional) -->
+        <div style="display:grid;grid-template-columns:140px 1fr 200px;gap:10px;align-items:start;margin-bottom:4px;">
+            <div style="text-align:right;padding-top:6px;">
+                <div style="font-size:11px;font-weight:700;color:#f59e0b;">Stage 1d</div>
+                <div style="font-size:8px;color:#555570;">Photo Upload</div>
+                <div style="font-size:7px;color:#f59e0b;margin-top:2px;">Redesign only</div>
+            </div>
+            <div style="background:rgba(245,158,11,0.03);border:1px dashed rgba(245,158,11,0.2);border-radius:8px;padding:10px;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                    <span class="material-symbols-outlined" style="color:#a855f7;font-size:14px;">functions</span>
+                    <span style="color:#a855f7;font-weight:700;font-size:11px;">continue_home_decor_consultation()</span>
+                    <span style="color:#555570;font-size:8px;">then</span>
+                    <span style="color:#34a853;font-weight:700;font-size:11px;">analyze_room_with_history()</span>
+                </div>
+                <div style="font-size:9px;color:#555570;margin-bottom:6px;">Photo intercepted at WebSocket layer (bypasses agent). Triggers room analysis + order history cross-reference.</div>
+                <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                    <span style="background:rgba(66,133,244,0.06);border:1px solid rgba(66,133,244,0.15);border-radius:4px;padding:2px 6px;font-size:8px;color:#4285f4;">Gemini Vision -- room analysis</span>
+                    <span style="background:rgba(251,188,4,0.06);border:1px solid rgba(251,188,4,0.15);border-radius:4px;padding:2px 6px;font-size:8px;color:#fbbc04;">Firestore -- order history lookup</span>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;padding-top:4px;">
+                <div style="display:flex;align-items:center;gap:4px;font-size:8px;">
+                    <span class="material-symbols-outlined" style="font-size:12px;color:#fbbc04;">history</span>
+                    <span style="color:#fbbc04;">Cross-refs past purchases</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:4px;font-size:8px;">
+                    <span class="material-symbols-outlined" style="font-size:12px;color:#ea4335;">warning</span>
+                    <span style="color:#555570;">Flags outgrown furniture</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flow-v"><div class="line"></div><div class="label">Conditional stages complete</div><div class="line"></div></div>
+
+        <!-- STAGE 2: Style Discovery -->
+        <div style="display:grid;grid-template-columns:140px 1fr 200px;gap:10px;align-items:start;margin-bottom:4px;">
+            <div style="text-align:right;padding-top:6px;">
+                <div style="font-size:11px;font-weight:700;color:#a855f7;">Stage 2</div>
+                <div style="font-size:8px;color:#555570;">Style Discovery</div>
+            </div>
+            <div style="background:rgba(168,85,247,0.04);border:1px solid rgba(168,85,247,0.15);border-radius:8px;padding:10px;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                    <span class="material-symbols-outlined" style="color:#a855f7;font-size:14px;">functions</span>
+                    <span style="color:#a855f7;font-weight:700;font-size:11px;">continue_home_decor_consultation()</span>
+                </div>
+                <div style="font-size:9px;color:#555570;margin-bottom:6px;">Returns style_selector UI. Adults: 8 canonical styles. Children: 6 themed worlds. Multi-select with live previews.</div>
+                <div style="display:flex;gap:6px;">
+                    <!-- Adult styles -->
+                    <div style="flex:1;background:rgba(168,85,247,0.03);border-radius:5px;padding:5px;">
+                        <div style="font-size:7px;color:#a855f7;font-weight:600;margin-bottom:3px;text-align:center;">Adult Styles</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:2px;justify-content:center;">
+                            <span style="font-size:7px;color:#555570;background:rgba(255,255,255,0.03);border-radius:3px;padding:1px 4px;">Modern</span>
+                            <span style="font-size:7px;color:#555570;background:rgba(255,255,255,0.03);border-radius:3px;padding:1px 4px;">Minimalist</span>
+                            <span style="font-size:7px;color:#555570;background:rgba(255,255,255,0.03);border-radius:3px;padding:1px 4px;">Bohemian</span>
+                            <span style="font-size:7px;color:#555570;background:rgba(255,255,255,0.03);border-radius:3px;padding:1px 4px;">Coastal</span>
+                            <span style="font-size:7px;color:#555570;background:rgba(255,255,255,0.03);border-radius:3px;padding:1px 4px;">Industrial</span>
+                            <span style="font-size:7px;color:#555570;background:rgba(255,255,255,0.03);border-radius:3px;padding:1px 4px;">Scandinavian</span>
+                            <span style="font-size:7px;color:#555570;background:rgba(255,255,255,0.03);border-radius:3px;padding:1px 4px;">Traditional</span>
+                            <span style="font-size:7px;color:#555570;background:rgba(255,255,255,0.03);border-radius:3px;padding:1px 4px;">Rustic</span>
+                        </div>
+                    </div>
+                    <!-- Child themes -->
+                    <div style="flex:1;background:rgba(245,158,11,0.03);border-radius:5px;padding:5px;">
+                        <div style="font-size:7px;color:#f59e0b;font-weight:600;margin-bottom:3px;text-align:center;">Child Themes</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:2px;justify-content:center;">
+                            <span style="font-size:7px;color:#555570;background:rgba(255,255,255,0.03);border-radius:3px;padding:1px 4px;">Underwater</span>
+                            <span style="font-size:7px;color:#555570;background:rgba(255,255,255,0.03);border-radius:3px;padding:1px 4px;">Forest</span>
+                            <span style="font-size:7px;color:#555570;background:rgba(255,255,255,0.03);border-radius:3px;padding:1px 4px;">Northern Lights</span>
+                            <span style="font-size:7px;color:#555570;background:rgba(255,255,255,0.03);border-radius:3px;padding:1px 4px;">Space</span>
+                            <span style="font-size:7px;color:#555570;background:rgba(255,255,255,0.03);border-radius:3px;padding:1px 4px;">Safari</span>
+                            <span style="font-size:7px;color:#555570;background:rgba(255,255,255,0.03);border-radius:3px;padding:1px 4px;">Rainbow</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;padding-top:4px;">
+                <div style="display:flex;align-items:center;gap:4px;font-size:8px;">
+                    <span class="material-symbols-outlined" style="font-size:12px;color:#34a853;">image</span>
+                    <span style="color:#34a853;">Gemini 3 Pro generates previews</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:4px;font-size:8px;">
+                    <span class="material-symbols-outlined" style="font-size:12px;color:#00f0ff;">web</span>
+                    <span style="color:#00f0ff;">style_preview_update via WS</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flow-v"><div class="line"></div><div class="label">Customer picks styles</div><div class="line"></div></div>
+
+        <!-- STAGE 3: Color Preferences -->
+        <div style="display:grid;grid-template-columns:140px 1fr 200px;gap:10px;align-items:start;margin-bottom:4px;">
+            <div style="text-align:right;padding-top:6px;">
+                <div style="font-size:11px;font-weight:700;color:#a855f7;">Stage 3</div>
+                <div style="font-size:8px;color:#555570;">Color Preferences</div>
+            </div>
+            <div style="background:rgba(168,85,247,0.04);border:1px solid rgba(168,85,247,0.15);border-radius:8px;padding:10px;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                    <span class="material-symbols-outlined" style="color:#a855f7;font-size:14px;">functions</span>
+                    <span style="color:#a855f7;font-weight:700;font-size:11px;">continue_home_decor_consultation()</span>
+                </div>
+                <div style="font-size:9px;color:#555570;margin-bottom:6px;">Returns color_selector UI. Optional stage -- customer can skip. Fuzzy color family matching (e.g. "navy" matches "blue" family).</div>
+                <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                    <span style="background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.15);border-radius:4px;padding:2px 6px;font-size:8px;color:#00f0ff;">display_type: color_selector</span>
+                    <span style="background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.15);border-radius:4px;padding:2px 6px;font-size:8px;color:#00f0ff;">interaction_mode: multi_select</span>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;padding-top:4px;">
+                <div style="display:flex;align-items:center;gap:4px;font-size:8px;">
+                    <span class="material-symbols-outlined" style="font-size:12px;color:#a855f7;">palette</span>
+                    <span style="color:#555570;">+15 score per color match</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flow-v"><div class="line"></div><div class="label">Customer picks colors or skips</div><div class="line"></div></div>
+
+        <!-- STAGE 4: Room Dimensions -->
+        <div style="display:grid;grid-template-columns:140px 1fr 200px;gap:10px;align-items:start;margin-bottom:4px;">
+            <div style="text-align:right;padding-top:6px;">
+                <div style="font-size:11px;font-weight:700;color:#a855f7;">Stage 4</div>
+                <div style="font-size:8px;color:#555570;">Room Dimensions</div>
+            </div>
+            <div style="background:rgba(168,85,247,0.04);border:1px solid rgba(168,85,247,0.15);border-radius:8px;padding:10px;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                    <span class="material-symbols-outlined" style="color:#a855f7;font-size:14px;">functions</span>
+                    <span style="color:#a855f7;font-weight:700;font-size:11px;">continue_home_decor_consultation()</span>
+                </div>
+                <div style="font-size:9px;color:#555570;margin-bottom:6px;">Returns room_dimensions UI with presets (Small / Medium / Large) and custom input option. Used by Imagen for realistic scale.</div>
+                <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                    <span style="background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.15);border-radius:4px;padding:2px 6px;font-size:8px;color:#00f0ff;">display_type: room_dimensions</span>
+                    <span style="background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.15);border-radius:4px;padding:2px 6px;font-size:8px;color:#00f0ff;">presets + custom_input</span>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;padding-top:4px;">
+                <div style="display:flex;align-items:center;gap:4px;font-size:8px;">
+                    <span class="material-symbols-outlined" style="font-size:12px;color:#34a853;">straighten</span>
+                    <span style="color:#555570;">Feeds Imagen prompt dimensions</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flow-v"><div class="line"></div><div class="label">All preferences collected</div><div class="line"></div></div>
+
+        <!-- STAGE 5 (FINAL): Moodboard Generation -->
+        <div style="display:grid;grid-template-columns:140px 1fr 200px;gap:10px;align-items:start;margin-bottom:4px;">
+            <div style="text-align:right;padding-top:6px;">
+                <div style="font-size:11px;font-weight:700;color:#34a853;">Moodboard</div>
+                <div style="font-size:8px;color:#555570;">Final Generation</div>
+            </div>
+            <div style="background:rgba(52,168,83,0.04);border:1px solid rgba(52,168,83,0.2);border-radius:8px;padding:10px;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                    <span class="material-symbols-outlined" style="color:#34a853;font-size:14px;">functions</span>
+                    <span style="color:#34a853;font-weight:700;font-size:11px;">create_style_moodboard()</span>
+                </div>
+                <div style="font-size:9px;color:#555570;margin-bottom:8px;">Scores all Home Decor products by style (+10), color (+15), room compatibility (+5). Selects top matches.</div>
+
+                <!-- Scoring algorithm visualization -->
+                <div style="background:rgba(52,168,83,0.03);border-radius:6px;padding:8px;margin-bottom:6px;">
+                    <div style="font-size:8px;color:#34a853;font-weight:600;margin-bottom:4px;">Product Scoring Algorithm</div>
+                    <div style="display:flex;gap:8px;font-size:8px;">
+                        <div style="flex:1;">
+                            <div style="color:#555570;margin-bottom:2px;">Decoration mode:</div>
+                            <div style="color:#86efac;">6 decor items</div>
+                        </div>
+                        <div style="flex:1;">
+                            <div style="color:#555570;margin-bottom:2px;">Redesign mode:</div>
+                            <div style="color:#86efac;">40% furniture (max 4) + 60% decor (max 6)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                    <span style="background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.15);border-radius:4px;padding:2px 6px;font-size:8px;color:#00f0ff;">display_type: moodboard</span>
+                    <span style="background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.15);border-radius:4px;padding:2px 6px;font-size:8px;color:#00f0ff;">show_visualize_button: true</span>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;padding-top:4px;">
+                <div style="display:flex;align-items:center;gap:4px;font-size:8px;">
+                    <span class="material-symbols-outlined" style="font-size:12px;color:#00f0ff;">shopping_cart</span>
+                    <span style="color:#00f0ff;">Products with images + prices</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:4px;font-size:8px;">
+                    <span class="material-symbols-outlined" style="font-size:12px;color:#34a853;">search</span>
+                    <span style="color:#555570;">Embedding similarity search</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flow-v"><div class="line"></div><div class="label">Customer clicks "Visualize My Room"</div><div class="line"></div></div>
+
+        <!-- ROOM VISUALIZATION (Optional) -->
+        <div style="display:grid;grid-template-columns:140px 1fr 200px;gap:10px;align-items:start;margin-bottom:4px;">
+            <div style="text-align:right;padding-top:6px;">
+                <div style="font-size:11px;font-weight:700;color:#34a853;">Visualization</div>
+                <div style="font-size:8px;color:#555570;">Room Rendering</div>
+                <div style="font-size:7px;color:#555570;margin-top:2px;">Optional post-moodboard</div>
+            </div>
+            <div style="background:rgba(52,168,83,0.04);border:1px solid rgba(52,168,83,0.2);border-radius:8px;padding:10px;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                    <span class="material-symbols-outlined" style="color:#34a853;font-size:14px;">functions</span>
+                    <span style="color:#34a853;font-weight:700;font-size:11px;">visualize_room_with_products()</span>
+                    <span style="background:rgba(168,85,247,0.08);border-radius:4px;padding:1px 5px;font-size:7px;color:#a855f7;">DIRECT -- bypasses agent</span>
+                </div>
+                <div style="font-size:9px;color:#555570;margin-bottom:8px;">Two-tier image generation with product placement hints, randomized camera angles, and time-of-day mood.</div>
+
+                <!-- Two-tier approach -->
+                <div style="display:flex;gap:6px;">
+                    <div style="flex:1;background:rgba(52,168,83,0.05);border:1px solid rgba(52,168,83,0.12);border-radius:5px;padding:6px;">
+                        <div style="font-size:8px;color:#34a853;font-weight:700;margin-bottom:3px;">Primary: Gemini 3 Pro Image</div>
+                        <div style="font-size:7px;color:#555570;">Inpainting on customer's actual room photo. Preserves walls, flooring, windows. Adds products naturally.</div>
+                        <div style="font-size:7px;color:#555570;margin-top:2px;font-style:italic;">Requires room photo from Stage 1d</div>
+                    </div>
+                    <div style="flex:1;background:rgba(251,188,4,0.05);border:1px solid rgba(251,188,4,0.12);border-radius:5px;padding:6px;">
+                        <div style="font-size:8px;color:#fbbc04;font-weight:700;margin-bottom:3px;">Fallback: Imagen 4 Ultra</div>
+                        <div style="font-size:7px;color:#555570;">Fresh photorealistic generation. 4:3 aspect ratio. Safety: blocks_some, no people. Architectural photography style.</div>
+                        <div style="font-size:7px;color:#555570;margin-top:2px;font-style:italic;">When no photo or inpainting fails</div>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:4px;margin-top:6px;">
+                    <span style="background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.15);border-radius:4px;padding:2px 6px;font-size:8px;color:#00f0ff;">display_type: room_visualization</span>
+                    <span style="background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.15);border-radius:4px;padding:2px 6px;font-size:8px;color:#00f0ff;">image_base64 + products_shown</span>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;padding-top:4px;">
+                <div style="display:flex;align-items:center;gap:4px;font-size:8px;">
+                    <span class="material-symbols-outlined" style="font-size:12px;color:#34a853;">image</span>
+                    <span style="color:#34a853;">Vertex AI image generation</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:4px;font-size:8px;">
+                    <span class="material-symbols-outlined" style="font-size:12px;color:#4285f4;">cloud_upload</span>
+                    <span style="color:#555570;">GCS storage (7d TTL)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flow-v"><div class="line"></div><div class="label">Customer adds products to cart</div><div class="line"></div></div>
+
+        <!-- POST-CONSULTATION: Cart + Approval -->
+        <div style="display:grid;grid-template-columns:140px 1fr 200px;gap:10px;align-items:start;">
+            <div style="text-align:right;padding-top:6px;">
+                <div style="font-size:11px;font-weight:700;color:#00f0ff;">Post-Flow</div>
+                <div style="font-size:8px;color:#555570;">Cart + Approval</div>
+            </div>
+            <div style="background:rgba(0,240,255,0.03);border:1px solid rgba(0,240,255,0.12);border-radius:8px;padding:10px;">
+                <div style="font-size:9px;color:#555570;margin-bottom:6px;">Core agent tools take over. Products from moodboard flow into standard cart/approval workflow.</div>
+                <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                    <div style="background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.12);border-radius:4px;padding:3px 6px;font-size:8px;">
+                        <span style="color:#00f0ff;font-weight:600;">modify_cart()</span>
+                        <span style="color:#555570;"> -- Firestore carts/{id}</span>
+                    </div>
+                    <div style="background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.12);border-radius:4px;padding:3px 6px;font-size:8px;">
+                        <span style="color:#00f0ff;font-weight:600;">access_cart_information()</span>
+                    </div>
+                    <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.12);border-radius:4px;padding:3px 6px;font-size:8px;">
+                        <span style="color:#f59e0b;font-weight:600;">sync_ask_for_approval()</span>
+                        <span style="color:#555570;"> -- Manager discount flow</span>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;padding-top:4px;">
+                <div style="display:flex;align-items:center;gap:4px;font-size:8px;">
+                    <span class="material-symbols-outlined" style="font-size:12px;color:#fbbc04;">database</span>
+                    <span style="color:#fbbc04;">Firestore cart persistence</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:4px;font-size:8px;">
+                    <span class="material-symbols-outlined" style="font-size:12px;color:#f59e0b;">approval</span>
+                    <span style="color:#f59e0b;">CRM approval polling</span>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- end flowchart container -->
+
+    <!-- Data flow summary -->
+    <div style="margin-top:16px;border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px;">
+        <div style="font-size:10px;font-weight:700;color:#555570;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;text-align:center;">Service Integration Map</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+            <!-- Gemini Live -->
+            <div style="background:rgba(66,133,244,0.03);border:1px solid rgba(66,133,244,0.1);border-radius:6px;padding:8px;">
+                <div style="font-size:9px;color:#4285f4;font-weight:700;margin-bottom:4px;">Gemini Live 2.5 Flash</div>
+                <div style="font-size:8px;color:#555570;line-height:1.4;">
+                    Bidirectional PCM audio stream. Handles intent detection, voice transcription, tool dispatch. Agent sees analysis results, not raw images.
+                </div>
+            </div>
+            <!-- Firestore -->
+            <div style="background:rgba(251,188,4,0.03);border:1px solid rgba(251,188,4,0.1);border-radius:6px;padding:8px;">
+                <div style="font-size:9px;color:#fbbc04;font-weight:700;margin-bottom:4px;">Firestore</div>
+                <div style="font-size:8px;color:#555570;line-height:1.4;">
+                    carts/{customer_id} for persistence. customers/{id} for discount approvals. Order history for room analysis cross-reference.
+                </div>
+            </div>
+            <!-- Image Generation -->
+            <div style="background:rgba(52,168,83,0.03);border:1px solid rgba(52,168,83,0.1);border-radius:6px;padding:8px;">
+                <div style="font-size:9px;color:#34a853;font-weight:700;margin-bottom:4px;">Image Generation</div>
+                <div style="font-size:8px;color:#555570;line-height:1.4;">
+                    Gemini 3 Pro: inpainting on photos + style previews. Imagen 4 Ultra: fresh room generation fallback. Images stored in GCS with 7d TTL.
+                </div>
+            </div>
+            <!-- Frontend -->
+            <div style="background:rgba(0,240,255,0.03);border:1px solid rgba(0,240,255,0.1);border-radius:6px;padding:8px;">
+                <div style="font-size:9px;color:#00f0ff;font-weight:700;margin-bottom:4px;">Frontend (WebSocket)</div>
+                <div style="font-size:8px;color:#555570;line-height:1.4;">
+                    9 message types: tool_call, tool_result, text, image, audio, interrupted, style_preview_update, style_preview_done, trigger_photo_analysis.
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</div>
+</body>
+</html>

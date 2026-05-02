@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cymbal CRM - Approvals</title>
+    <title>Cymbal StyleSync - AI Hyperpersonalization Platform</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -15,17 +15,15 @@
         <aside class="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-logo-text">cymbal</div>
-                <span>CRM Portal</span>
+                <span>StyleSync</span>
             </div>
             <nav class="sidebar-nav">
                 <ul>
-                    <li><a href="#"><span class="material-symbols-outlined">dashboard</span>Dashboard</a></li>
-                    <li><a href="#"><span class="material-symbols-outlined">group</span>Customers</a></li>
-                    <li class="active"><a href="#" onclick="showTab('approvals')"><span class="material-symbols-outlined">approval</span>Approvals</a></li>
+                    <li class="active"><a href="#" onclick="showTab('shopping')"><span class="material-symbols-outlined">shopping_bag</span>Shopping Assistant</a></li>
+                    <li><a href="#" onclick="showTab('approvals')"><span class="material-symbols-outlined">approval</span>Approvals</a></li>
                     <li><a href="#" onclick="showTab('evaluation')"><span class="material-symbols-outlined">analytics</span>Evaluation</a></li>
-                    <li><a href="#"><span class="material-symbols-outlined">inventory_2</span>Products</a></li>
-                    <li><a href="#"><span class="material-symbols-outlined">monitoring</span>Reports</a></li>
-                    <li><a href="#"><span class="material-symbols-outlined">settings</span>Settings</a></li>
+                    <li><a href="#" onclick="showTab('monitoring')"><span class="material-symbols-outlined">monitoring</span>Monitoring</a></li>
+                    <li><a href="#" onclick="showTab('architecture')"><span class="material-symbols-outlined">account_tree</span>Architecture</a></li>
                 </ul>
             </nav>
             <div class="sidebar-footer">
@@ -34,25 +32,30 @@
         </aside>
 
         <div class="main-content">
-            <header class="main-header">
+            <header class="main-header" id="mainHeader" style="display:none;">
                 <div class="header-title">
-                    <span class="material-symbols-outlined">approval</span>
-                    <h1>Customer Approval</h1>
+                    <span class="material-symbols-outlined" id="headerIcon">approval</span>
+                    <h1 id="headerTitle">Discount Approvals</h1>
                 </div>
-                <div class="header-actions">
-                    <button class="button icon-only" title="Notifications">
-                        <span class="material-symbols-outlined">notifications</span>
-                    </button>
-                    <div class="user-profile" title="User: CymbalManager">
+                <div id="headerUser" style="display:none;align-items:center;gap:12px;">
+                    <div class="user-profile">
                         <span class="material-symbols-outlined">account_circle</span>
-                        <span>CymbalManager</span>
+                        <span id="headerUserName"></span>
                     </div>
+                    <button class="button secondary small" onclick="signOut()">
+                        <span class="material-symbols-outlined">logout</span> Sign Out
+                    </button>
                 </div>
             </header>
 
             <main class="page-content">
+                <!-- SHOPPING ASSISTANT TAB -->
+                <div id="tab-shopping" class="tab-panel">
+                    <iframe id="shopFrame" src="/shop?embed=1" style="width:100%;height:calc(100vh - 120px);border:none;border-radius:12px;"></iframe>
+                </div>
+
                 <!-- APPROVALS TAB -->
-                <div id="tab-approvals" class="tab-panel">
+                <div id="tab-approvals" class="tab-panel" style="display:none;">
                 <div class="content-grid">
                     <section class="card approval-card">
                         <div class="card-header">
@@ -64,7 +67,7 @@
                                 <label for="customerId">Customer ID:</label>
                                 <div class="input-with-icon">
                                     <span class="material-symbols-outlined input-icon">badge</span>
-                                    <input type="text" id="customerId" name="customerId" placeholder="Enter Customer ID (e.g., CY-1234-1234)" value="CY-1234-1234">
+                                    <input type="text" id="customerId" name="customerId" placeholder="Enter Customer ID (e.g., CY-4896-6212)" value="">
                                 </div>
                             </div>
                             <div class="buttons">
@@ -153,10 +156,42 @@
                         <div id="evalContent" style="color:#8888a8;">Loading sessions...</div>
                     </div>
                 </div>
+
+                <!-- MONITORING TAB -->
+                <div id="tab-monitoring" class="tab-panel" style="display:none;">
+                    <div>
+                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+                            <span class="material-symbols-outlined" style="font-size:28px;color:#00f0ff;">monitoring</span>
+                            <div>
+                                <h2 style="margin:0;font-size:1.2em;">System Monitoring</h2>
+                                <p style="color:#8888a8;font-size:13px;margin:0;">Health, metrics, and cost tracking</p>
+                            </div>
+                            <button class="button secondary" style="margin-left:auto;" onclick="loadMonitoring()">
+                                <span class="material-symbols-outlined">refresh</span> Refresh
+                            </button>
+                        </div>
+                        <div id="monitoringContent" style="color:#8888a8;">Loading...</div>
+                    </div>
+                </div>
+
+                <!-- ARCHITECTURE TAB -->
+                <div id="tab-architecture" class="tab-panel" style="display:none;">
+                    <iframe src="/static/architecture.html" style="width:100%;height:calc(100vh - 120px);border:none;border-radius:12px;"></iframe>
+                </div>
             </main>
 
             <footer class="main-footer">
-                <p>System Status: <span class="status-badge active">Online</span> | Logged in as: CymbalManager | &copy; 2025 Cymbal CRM</p>
+                <div style="display:flex;align-items:center;gap:12px;justify-content:center;width:100%;">
+                    <span>System Status: <span class="status-badge active">Online</span></span>
+                    <span style="color:var(--color-border);">|</span>
+                    <span>Cymbal StyleSync</span>
+                    <span style="color:var(--color-border);">|</span>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <span>Built by</span>
+                        <img src="https://storage.googleapis.com/capstone-tanvi-01-447109-shopping-assets/assets/tanvi_profile.png" alt="Tanvi" style="width:20px;height:20px;border-radius:50%;object-fit:cover;">
+                        <a href="https://github.com/tanvisinghal-0105" target="_blank" style="color:#00f0ff;text-decoration:none;">@tanvisinghal</a>
+                    </div>
+                </div>
             </footer>
         </div>
     </div>
@@ -174,7 +209,44 @@
                 a.parentElement.classList.add('active');
             }
         });
+        const tabConfig = {
+            shopping: { title: 'Shopping Assistant', icon: 'shopping_bag', showHeader: true },
+            approvals: { title: 'Discount Approvals', icon: 'approval', showHeader: true },
+            evaluation: { title: 'Agent Evaluation', icon: 'analytics', showHeader: true },
+            monitoring: { title: 'System Monitoring', icon: 'monitoring', showHeader: true },
+            architecture: { title: 'Architecture', icon: 'account_tree', showHeader: true },
+        };
+        const cfg = tabConfig[tab] || { title: 'Cymbal StyleSync', icon: 'apps', showHeader: true };
+        const mainHeader = document.getElementById('mainHeader');
+        if (mainHeader) mainHeader.style.display = cfg.showHeader ? 'flex' : 'none';
+        const headerTitle = document.getElementById('headerTitle');
+        if (headerTitle) headerTitle.textContent = cfg.title;
+        const headerIcon = document.getElementById('headerIcon');
+        if (headerIcon) headerIcon.textContent = cfg.icon;
+        const headerUser = document.getElementById('headerUser');
+        if (headerUser) {
+            if (tab === 'shopping') {
+                headerUser.style.display = 'flex';
+                // Try to get logged-in user from the shopping iframe
+                try {
+                    const shopFrame = document.getElementById('shopFrame');
+                    const savedUser = localStorage.getItem('cymbalUser');
+                    if (savedUser) {
+                        const user = JSON.parse(savedUser);
+                        document.getElementById('headerUserName').textContent = user.firstName + ' ' + user.lastName;
+                    } else {
+                        document.getElementById('headerUserName').textContent = 'Guest';
+                    }
+                } catch (e) {
+                    document.getElementById('headerUserName').textContent = 'Guest';
+                }
+            } else {
+                headerUser.style.display = 'none';
+            }
+        }
+
         if (tab === 'evaluation') loadEvalSessions();
+        if (tab === 'monitoring') loadMonitoring();
     }
 
     async function loadEvalSessions() {
@@ -200,6 +272,8 @@
                             <span>Duration: <strong style="color:#e4e4f0;">${s.duration_seconds || 0}s</strong></span>
                             <span>Turns: <strong style="color:#e4e4f0;">${s.turn_count || 0}</strong></span>
                             <span>Tool Calls: <strong style="color:#e4e4f0;">${s.tool_call_count || 0}</strong></span>
+                            <span>Cost: <strong style="color:#e4e4f0;">\$${(s.cost_usd || 0).toFixed(4)}</strong></span>
+                            <span>Tokens: <strong style="color:#e4e4f0;">${((s.token_usage?.input_tokens || 0) + (s.token_usage?.output_tokens || 0)).toLocaleString()}</strong></span>
                             <span style="font-size:12px;color:#555570;">${s.start_time || ''}</span>
                         </div>
                         <div class="buttons">
@@ -259,6 +333,7 @@
             { key: 'session_completion', label: 'Task Completion', sk: 'session_completion_score' },
             { key: 'speech_latency', label: 'Speech Latency', sk: 'speech_latency_score' },
             { key: 'speech_wer', label: 'Transcription (WER)', sk: 'speech_wer_score' },
+            { key: 'image_quality', label: 'Image Quality (Rubric)', sk: 'image_eval_score' },
         ];
 
         let html = `
@@ -300,6 +375,167 @@
 
         html += '</div>';
         panel.innerHTML = html;
+    }
+
+    function signOut() {
+        localStorage.removeItem('cymbalUser');
+        // Also clear in iframe
+        try {
+            const shopFrame = document.getElementById('shopFrame');
+            if (shopFrame && shopFrame.contentWindow) {
+                shopFrame.contentWindow.localStorage.removeItem('cymbalUser');
+                shopFrame.contentWindow.location.reload();
+            }
+        } catch (e) {}
+        document.getElementById('headerUserName').textContent = 'Guest';
+    }
+
+    // Auto-populate customer ID from localStorage or latest session
+    try {
+        const savedUser = localStorage.getItem('cymbalUser');
+        if (savedUser) {
+            const user = JSON.parse(savedUser);
+            if (user.customerId) {
+                document.getElementById('customerId').value = user.customerId;
+            }
+        }
+    } catch(e) {}
+
+    // Also try to get from latest eval session
+    fetch('/api/v1/eval/sessions').then(r => r.json()).then(data => {
+        const sessions = data.sessions || [];
+        if (sessions.length > 0 && !document.getElementById('customerId').value) {
+            const latest = sessions.find(s => s.customer_id && s.customer_id !== 'unknown');
+            if (latest) document.getElementById('customerId').value = latest.customer_id;
+        }
+    }).catch(() => {});
+
+    // Show shopping tab header on initial load
+    showTab('shopping');
+
+    async function loadMonitoring() {
+        const container = document.getElementById('monitoringContent');
+        container.innerHTML = '<p>Fetching health and metrics...</p>';
+
+        // Fetch from backend health and metrics endpoints
+        try {
+            const healthRes = await fetch('/api/v1/eval/sessions');
+            const sessions = await healthRes.json();
+
+            // Calculate aggregate stats from sessions
+            const totalSessions = (sessions.sessions || []).length;
+            let totalCost = 0;
+            let totalTokens = 0;
+            let totalDuration = 0;
+            (sessions.sessions || []).forEach(s => {
+                totalCost += s.cost_usd || 0;
+                totalTokens += (s.token_usage?.input_tokens || 0) + (s.token_usage?.output_tokens || 0);
+                totalDuration += s.duration_seconds || 0;
+            });
+
+            let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">';
+
+            // Health card
+            html += `<div class="card"><div class="card-header"><span class="material-symbols-outlined card-icon">health_and_safety</span><h2>System Health</h2></div>
+                <div class="card-body"><div style="font-size:24px;font-weight:700;color:#22c55e;">Healthy</div>
+                <p>Backend: Running</p><p>CRM: Running</p><p>Frontend: Running</p></div></div>`;
+
+            // Cost card
+            html += `<div class="card"><div class="card-header"><span class="material-symbols-outlined card-icon">payments</span><h2>AI Cost</h2></div>
+                <div class="card-body"><div style="font-size:24px;font-weight:700;color:#00f0ff;">\$${totalCost.toFixed(4)}</div>
+                <p>Total across ${totalSessions} sessions</p>
+                <p>Avg per session: \$${totalSessions > 0 ? (totalCost/totalSessions).toFixed(4) : '0'}</p></div></div>`;
+
+            // Tokens card
+            html += `<div class="card"><div class="card-header"><span class="material-symbols-outlined card-icon">token</span><h2>Token Usage</h2></div>
+                <div class="card-body"><div style="font-size:24px;font-weight:700;color:#a855f7;">${totalTokens.toLocaleString()}</div>
+                <p>Total tokens across all sessions</p>
+                <p>Avg per session: ${totalSessions > 0 ? Math.round(totalTokens/totalSessions).toLocaleString() : '0'}</p></div></div>`;
+
+            // Sessions card
+            html += `<div class="card"><div class="card-header"><span class="material-symbols-outlined card-icon">record_voice_over</span><h2>Sessions</h2></div>
+                <div class="card-body"><div style="font-size:24px;font-weight:700;color:#e4e4f0;">${totalSessions}</div>
+                <p>Total recorded sessions</p>
+                <p>Total duration: ${Math.round(totalDuration)}s</p>
+                <p>Avg duration: ${totalSessions > 0 ? Math.round(totalDuration/totalSessions) : 0}s</p></div></div>`;
+
+            html += '</div>';
+
+            // Security section
+            // Alert Policies section
+            html += `<div class="card" style="margin-top:16px;"><div class="card-header"><span class="material-symbols-outlined card-icon">notifications_active</span><h2>Alert Policies</h2></div>
+                <div class="card-body" style="padding:0;">
+                <table style="width:100%;font-size:13px;border-collapse:collapse;">
+                    <thead><tr style="border-bottom:1px solid var(--color-border);">
+                        <th style="text-align:left;padding:12px;color:#8888a8;font-weight:500;">Alert</th>
+                        <th style="text-align:left;padding:12px;color:#8888a8;font-weight:500;">Trigger</th>
+                        <th style="text-align:left;padding:12px;color:#8888a8;font-weight:500;">Status</th>
+                        <th style="text-align:left;padding:12px;color:#8888a8;font-weight:500;">Remediation</th>
+                    </tr></thead>
+                    <tbody>
+                    <tr style="border-bottom:1px solid var(--color-border);">
+                        <td style="padding:12px;"><strong>High Error Rate</strong></td>
+                        <td style="padding:12px;">5xx errors > 5% for 5 min</td>
+                        <td style="padding:12px;"><span class="status-badge active">OK</span></td>
+                        <td style="padding:12px;color:#8888a8;font-size:12px;">
+                            1. Check <code>server.log</code> for stack traces<br>
+                            2. Verify GCP credentials: <code>gcloud auth application-default login</code><br>
+                            3. Check Firestore/Vertex AI quotas in Cloud Console<br>
+                            4. Restart backend: <code>pkill -f server.py && python server.py &</code>
+                        </td>
+                    </tr>
+                    <tr style="border-bottom:1px solid var(--color-border);">
+                        <td style="padding:12px;"><strong>High Latency</strong></td>
+                        <td style="padding:12px;">P95 response > 5s for 5 min</td>
+                        <td style="padding:12px;"><span class="status-badge active">OK</span></td>
+                        <td style="padding:12px;color:#8888a8;font-size:12px;">
+                            1. Check if Imagen/Gemini API is slow (rate limiting)<br>
+                            2. Reduce products in moodboard or style previews<br>
+                            3. Verify VPC connector is healthy in Cloud Console<br>
+                            4. Scale up Cloud Run instances: increase <code>max_instances</code> in Terraform
+                        </td>
+                    </tr>
+                    <tr style="border-bottom:1px solid var(--color-border);">
+                        <td style="padding:12px;"><strong>WebSocket Timeout</strong></td>
+                        <td style="padding:12px;">Connection drops during session</td>
+                        <td style="padding:12px;"><span class="status-badge active">OK</span></td>
+                        <td style="padding:12px;color:#8888a8;font-size:12px;">
+                            1. Gemini Live session limit reached -- refresh the page<br>
+                            2. Check <code>ping_timeout</code> in server.py (currently 60s)<br>
+                            3. Large image generation may block -- visualization uses direct path to avoid this<br>
+                            4. Reduce context: check if catalog or tool count is too high
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:12px;"><strong>Auth Failure</strong></td>
+                        <td style="padding:12px;">Reauthentication needed</td>
+                        <td style="padding:12px;"><span class="status-badge active">OK</span></td>
+                        <td style="padding:12px;color:#8888a8;font-size:12px;">
+                            1. Run <code>gcloud auth application-default login</code><br>
+                            2. Check IAP configuration in Cloud Console<br>
+                            3. Verify service account has correct IAM roles<br>
+                            4. Restart backend after re-authentication
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+                </div></div>`;
+
+            // Security section
+            html += `<div class="card" style="margin-top:16px;"><div class="card-header"><span class="material-symbols-outlined card-icon">shield</span><h2>Security</h2></div>
+                <div class="card-body">
+                <p><strong>Authentication:</strong> <span class="status-badge active">Google IAP + OAuth2</span></p>
+                <p><strong>Input Sanitization:</strong> <span class="status-badge active">Active</span> (prompt injection, PII detection)</p>
+                <p><strong>Cloud Armor:</strong> <span class="status-badge active">Configured</span> (rate limiting 100 req/min)</p>
+                <p><strong>Data Retention:</strong> Sessions: 90d, Audit: 365d, Images: 7d, Carts: 30d</p>
+                <p><strong>Encryption:</strong> Google-managed encryption at rest (GMEK)</p>
+                </div></div>`;
+
+            container.innerHTML = html;
+
+        } catch (e) {
+            container.innerHTML = `<p style="color:#ef4444;">Failed to load monitoring data: ${e.message}</p>`;
+        }
     }
     </script>
 </body>

@@ -57,7 +57,9 @@ def build_index(products: List[dict]) -> None:
     """Pre-compute embeddings for all products at startup."""
     global _embedding_cache
 
-    logger.info(f"[PRODUCT SEARCH] Building embedding index for {len(products)} products...")
+    logger.info(
+        f"[PRODUCT SEARCH] Building embedding index for {len(products)} products..."
+    )
 
     texts = [_build_product_text(p) for p in products]
 

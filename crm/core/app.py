@@ -20,10 +20,18 @@ app = fastapi.FastAPI()
 logger.info("Initializing Firestore client")
 db = firestore.Client()
 
-# Define the path to the static directory
+# Define the path to the static directories
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+client_dir = os.path.join(os.path.dirname(__file__), "..", "..", "client")
 
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
+# Serve the main shopping UI assets (JS/CSS)
+if os.path.isdir(os.path.join(client_dir, "src")):
+    app.mount(
+        "/src",
+        StaticFiles(directory=os.path.join(client_dir, "src")),
+        name="client_src",
+    )
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,15 +42,24 @@ app.add_middleware(
 )
 
 
-# Route to serve index.html from the root
+# Route to serve CRM dashboard from root
 @app.get("/", include_in_schema=False)
 async def read_index():
     index_path = os.path.join(static_dir, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
     else:
-        # Optional: return a 404 or a simple message if index.html is missing
         return fastapi.Response(content="index.html not found", status_code=404)
+
+
+# Route to serve the shopping assistant UI
+@app.get("/shop", include_in_schema=False)
+async def read_shop():
+    shop_path = os.path.join(client_dir, "index.html")
+    if os.path.exists(shop_path):
+        return FileResponse(shop_path)
+    else:
+        return fastapi.Response(content="Shopping UI not found", status_code=404)
 
 
 @app.put("/api/v1/approvals/{customer_id}")
@@ -174,6 +191,8 @@ async def list_eval_sessions():
                     "duration_seconds": data.get("duration_seconds"),
                     "turn_count": data.get("turn_count"),
                     "tool_call_count": data.get("tool_call_count"),
+                    "cost_usd": data.get("cost_usd", 0),
+                    "token_usage": data.get("token_usage", {}),
                     "has_eval_results": has_results,
                 }
             )

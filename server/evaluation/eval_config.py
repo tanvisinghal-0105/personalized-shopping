@@ -5,6 +5,24 @@ Defines the expected conversation trajectory, tool calls, and quality
 criteria based on DEMO_STORYLINE.md.
 """
 
+try:
+    from core.models import ConsultationStage
+except ImportError:
+    # Fallback when imported from outside the server package (e.g., CRM)
+    from enum import Enum
+
+    class ConsultationStage(str, Enum):
+        ROOM_IDENTIFICATION = "stage_1_room_identification"
+        ROOM_PURPOSE = "stage_1a_room_purpose"
+        AGE_CONTEXT = "stage_1b_age_context"
+        CONSTRAINTS = "stage_1c_constraints"
+        PHOTO_REQUEST = "stage_1d_photo_request"
+        STYLE_DISCOVERY = "stage_2_style_discovery"
+        COLOR_PREFERENCES = "stage_3_color_preferences"
+        ROOM_DIMENSIONS = "stage_4_room_dimensions"
+        MOODBOARD_PRESENTED = "moodboard_presented"
+
+
 # -- Expected tool call trajectory for the full demo flow --
 # The evaluator checks that these tools are called in order.
 # Args use "*" for any value, or a specific value for exact match.
@@ -18,45 +36,45 @@ EXPECTED_TRAJECTORY = [
         "tool_name": "continue_home_decor_consultation",
         "phase": "Phase 2 - Room Selection",
         "required_args": {"room_type": "*"},
-        "expected_stage": "stage_1a_room_purpose",
+        "expected_stage": ConsultationStage.ROOM_PURPOSE.value,
     },
     {
         "tool_name": "continue_home_decor_consultation",
         "phase": "Phase 2 - Room Purpose",
         "required_args": {"room_purpose": "*"},
-        "expected_stage": "stage_1b_age_context",
+        "expected_stage": ConsultationStage.AGE_CONTEXT.value,
     },
     {
         "tool_name": "continue_home_decor_consultation",
         "phase": "Phase 2 - Age Context",
         "required_args": {"age_context": "*"},
-        "expected_stage": "stage_1c_constraints",
+        "expected_stage": ConsultationStage.CONSTRAINTS.value,
     },
     {
         "tool_name": "continue_home_decor_consultation",
         "phase": "Phase 2 - Constraints",
         "required_args": {"constraints": "*"},
-        "expected_stage": "stage_1d_photo_request",
+        "expected_stage": ConsultationStage.PHOTO_REQUEST.value,
     },
     {
         "tool_name": "continue_home_decor_consultation",
         "phase": "Phase 4 - Style Finder",
-        "expected_stage": "stage_2_style_discovery",
+        "expected_stage": ConsultationStage.STYLE_DISCOVERY.value,
     },
     {
         "tool_name": "continue_home_decor_consultation",
         "phase": "Phase 4 - Color Preferences",
-        "expected_stage": "stage_3_color_preferences",
+        "expected_stage": ConsultationStage.COLOR_PREFERENCES.value,
     },
     {
         "tool_name": "continue_home_decor_consultation",
         "phase": "Phase 5 - Room Dimensions",
-        "expected_stage": "stage_4_room_dimensions",
+        "expected_stage": ConsultationStage.ROOM_DIMENSIONS.value,
     },
     {
         "tool_name": "continue_home_decor_consultation",
         "phase": "Phase 6 - Moodboard",
-        "expected_stage": "moodboard_presented",
+        "expected_stage": ConsultationStage.MOODBOARD_PRESENTED.value,
     },
 ]
 

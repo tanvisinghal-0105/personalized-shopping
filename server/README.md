@@ -1,3 +1,4 @@
+
 # Cymbal Shopping Assistant - Backend Server
 
 WebSocket-based backend server for Cymbal's AI shopping assistant, powered by Google Gemini Live API with multimodal capabilities.

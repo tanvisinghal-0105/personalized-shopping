@@ -13,6 +13,8 @@ import json
 from datetime import datetime
 from typing import Optional, Dict, List, Any
 
+from .models import ApprovalStatus, DiscountType
+
 logger = logging.getLogger(__name__)
 
 
@@ -91,12 +93,16 @@ def validate_product_ids(product_ids: List[str]) -> List[str]:
         return []
     # Limit count
     if len(product_ids) > MAX_PRODUCT_IDS:
-        logger.warning(f"[SECURITY] Too many product IDs ({len(product_ids)}), truncating to {MAX_PRODUCT_IDS}")
+        logger.warning(
+            f"[SECURITY] Too many product IDs ({len(product_ids)}), truncating to {MAX_PRODUCT_IDS}"
+        )
         product_ids = product_ids[:MAX_PRODUCT_IDS]
     # Validate format (alphanumeric + hyphens only)
     valid = [pid for pid in product_ids if re.match(r"^[A-Za-z0-9\-_]+$", pid)]
     if len(valid) != len(product_ids):
-        logger.warning(f"[SECURITY] Filtered {len(product_ids) - len(valid)} invalid product IDs")
+        logger.warning(
+            f"[SECURITY] Filtered {len(product_ids) - len(valid)} invalid product IDs"
+        )
     return valid
 
 
@@ -107,9 +113,14 @@ def validate_product_ids(product_ids: List[str]) -> List[str]:
 # PII patterns for detection and redaction
 PII_PATTERNS = {
     "email": re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"),
-    "phone": re.compile(r"\b\+?\d{1,3}[-.\s]?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}\b"),
+    "phone": re.compile(
+        r"\b\+?\d{1,3}[-.\s]?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}\b"
+    ),
     "credit_card": re.compile(r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b"),
-    "address": re.compile(r"\b\d{1,5}\s+\w+\s+(street|st|avenue|ave|road|rd|boulevard|blvd|lane|ln|drive|dr)\b", re.IGNORECASE),
+    "address": re.compile(
+        r"\b\d{1,5}\s+\w+\s+(street|st|avenue|ave|road|rd|boulevard|blvd|lane|ln|drive|dr)\b",
+        re.IGNORECASE,
+    ),
 }
 
 
@@ -138,6 +149,7 @@ def hash_pii(value: str) -> str:
 # ================================================================== #
 #  3. AI-SPECIFIC SECURITY
 # ================================================================== #
+
 
 def check_ai_safety(text: str) -> Dict[str, Any]:
     """Check text for AI safety concerns.
@@ -182,7 +194,9 @@ def check_ai_safety(text: str) -> Dict[str, Any]:
 
     if not is_safe:
         logger.warning(f"[AI SAFETY] Concerns detected: {concerns}")
-        audit_log("ai_safety_concern", {"concerns": concerns, "text_preview": text[:200]})
+        audit_log(
+            "ai_safety_concern", {"concerns": concerns, "text_preview": text[:200]}
+        )
 
     return {"safe": is_safe, "concerns": concerns}
 
@@ -242,10 +256,10 @@ def flush_audit_log():
 
 # -- Data retention policy --
 DATA_RETENTION_DAYS = {
-    "session_recordings": 90,   # Eval session logs
-    "audit_logs": 365,          # Compliance audit trail
-    "customer_carts": 30,       # Shopping cart data
-    "generated_images": 7,      # Imagen outputs
+    "session_recordings": 90,  # Eval session logs
+    "audit_logs": 365,  # Compliance audit trail
+    "customer_carts": 30,  # Shopping cart data
+    "generated_images": 7,  # Imagen outputs
 }
 
 

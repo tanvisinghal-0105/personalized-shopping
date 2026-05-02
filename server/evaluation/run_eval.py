@@ -111,7 +111,11 @@ def speech_latency_metric(instance: dict) -> dict:
     if not latencies:
         # If session has tool calls, give a default reasonable score
         if instance.get("tool_call_count", 0) > 0:
-            return {"speech_latency_score": 0.7, "avg_latency_ms": 600, "estimated": True}
+            return {
+                "speech_latency_score": 0.7,
+                "avg_latency_ms": 600,
+                "estimated": True,
+            }
         return {"speech_latency_score": 0.0, "avg_latency_ms": 0}
 
     avg = sum(latencies) / len(latencies)
@@ -530,12 +534,16 @@ def evaluate_session(session_file: str, use_vertex: bool = True) -> dict:
 
     # -- Layer 6: Image Quality (if visualization was generated) --
     viz_events = [
-        e for e in session_data.get("events", [])
-        if e.get("type") == "tool_call" and e.get("tool_name") == "visualize_room_with_products"
+        e
+        for e in session_data.get("events", [])
+        if e.get("type") == "tool_call"
+        and e.get("tool_name") == "visualize_room_with_products"
     ]
     if viz_events:
         print("\n[Layer 6] Image Quality Evaluation...")
-        print("  (Image eval requires the generated image -- skipped for recorded sessions)")
+        print(
+            "  (Image eval requires the generated image -- skipped for recorded sessions)"
+        )
         results["image_quality"] = {
             "image_eval_score": 0.7,
             "note": "Image eval requires live image data. Run from CRM dashboard for full eval.",
