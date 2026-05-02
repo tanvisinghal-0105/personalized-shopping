@@ -683,11 +683,8 @@ async def handle_client_messages(
                     # Handle both data URI format and raw base64
                     image_data_raw = data.get("data")
                     if "," in image_data_raw:
-                        # Data URI format:
-                        # "data:image/jpeg;base64,<base64data>"
                         image_data_str = image_data_raw.split(",")[1]
                     else:
-                        # Raw base64 format
                         image_data_str = image_data_raw
 
                     # Check if there's an active home decor consultation
@@ -697,6 +694,28 @@ async def handle_client_messages(
                     customer_id = session_context.get("customer_id", "CY-DEFAULT")
                     state_manager = get_state_manager()
                     existing_session = state_manager.get_customer_session(customer_id)
+
+                    # Debounce: skip if photos already analyzed for this session
+                    if existing_session and existing_session.get(
+                        "collected_data", {}
+                    ).get("room_photos_analyzed"):
+                        logger.info(
+                            "[IMAGE INTERCEPTOR] Photos already analyzed, storing additional photo only"
+                        )
+                        decor_session_id = existing_session["session_id"]
+                        session_obj = state_manager.get_session(decor_session_id)
+                        if session_obj:
+                            photos_list = session_obj.get("collected_data", {}).get(
+                                "room_photos_list", []
+                            )
+                            photos_list.append(image_data_str)
+                            session_obj["collected_data"][
+                                "room_photos_list"
+                            ] = photos_list
+                            logger.info(
+                                f"[IMAGE INTERCEPTOR] Stored additional photo ({len(photos_list)} total)"
+                            )
+                        continue
 
                     # Allow photo analysis during active consultations AND after moodboard is presented
                     # (for follow-up questions and refinements)

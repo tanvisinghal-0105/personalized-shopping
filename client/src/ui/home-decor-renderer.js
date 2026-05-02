@@ -997,12 +997,21 @@ export class HomeDecorRenderer {
       this.scrollToBottom();
     });
 
-    // Card click handler for selection (only when viz mode is active)
+    // Card click handler for selection (always active for cart, also used for viz)
     allCards.forEach(card => {
       card.addEventListener('click', (e) => {
-        if (!vizState.active) return;
         if (e.target.closest('button')) return; // Don't block Add to Cart
         e.stopPropagation();
+
+        // Auto-show selection indicators on first click
+        if (!vizState.active) {
+          vizState.active = true;
+          vizControls.style.display = 'block';
+          allCards.forEach(c => {
+            const ind = c.querySelector('.viz-indicator');
+            if (ind) ind.style.display = 'flex';
+          });
+        }
 
         const pid = card.dataset.productId;
         const idx = vizState.selectedIds.indexOf(pid);
