@@ -19,6 +19,83 @@ export class HomeDecorRenderer {
     this._selectedDimensions = null;
     this._vizSelectedProducts = [];
     this.photoUploadHandler = new PhotoUploadHandler();
+    this._initLightbox();
+  }
+
+  /**
+   * Create a reusable fullscreen lightbox overlay for images
+   */
+  _initLightbox() {
+    if (document.getElementById('decor-lightbox')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'decor-lightbox';
+    overlay.style.cssText = `
+      display:none; position:fixed; inset:0; z-index:9999;
+      background:rgba(5,6,15,0.92); backdrop-filter:blur(8px);
+      align-items:center; justify-content:center; cursor:zoom-out;
+    `;
+
+    const inner = document.createElement('div');
+    inner.style.cssText = `
+      position:relative; max-width:90vw; max-height:90vh;
+      display:flex; flex-direction:column; align-items:center;
+    `;
+
+    const img = document.createElement('img');
+    img.id = 'decor-lightbox-img';
+    img.style.cssText = `
+      max-width:90vw; max-height:80vh; object-fit:contain;
+      border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,0.6);
+    `;
+
+    const caption = document.createElement('div');
+    caption.id = 'decor-lightbox-caption';
+    caption.style.cssText = `
+      color:#e4e4f0; font-size:14px; margin-top:12px;
+      text-align:center; max-width:600px;
+    `;
+
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:28px;">close</span>';
+    closeBtn.style.cssText = `
+      position:absolute; top:-40px; right:-8px;
+      background:none; border:none; color:#8888a8;
+      cursor:pointer; padding:4px;
+    `;
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._closeLightbox();
+    });
+
+    inner.appendChild(closeBtn);
+    inner.appendChild(img);
+    inner.appendChild(caption);
+    overlay.appendChild(inner);
+
+    overlay.addEventListener('click', () => this._closeLightbox());
+    inner.addEventListener('click', (e) => e.stopPropagation());
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') this._closeLightbox();
+    });
+
+    document.body.appendChild(overlay);
+  }
+
+  _openLightbox(src, captionText) {
+    const overlay = document.getElementById('decor-lightbox');
+    const img = document.getElementById('decor-lightbox-img');
+    const caption = document.getElementById('decor-lightbox-caption');
+    if (!overlay || !img) return;
+    img.src = src;
+    caption.textContent = captionText || '';
+    overlay.style.display = 'flex';
+  }
+
+  _closeLightbox() {
+    const overlay = document.getElementById('decor-lightbox');
+    if (overlay) overlay.style.display = 'none';
   }
 
   /**
@@ -157,7 +234,7 @@ export class HomeDecorRenderer {
 
     // Style grid
     const styleGrid = document.createElement('div');
-    styleGrid.className = 'grid grid-cols-2 md:grid-cols-4 gap-4 my-4';
+    styleGrid.className = 'grid grid-cols-2 md:grid-cols-3 gap-4 my-4';
 
     uiData.style_options.forEach(style => {
       const styleCard = this.createStyleCard(style);
@@ -176,6 +253,15 @@ export class HomeDecorRenderer {
       this.handleStyleSelection();
     });
     bubble.appendChild(continueBtn);
+
+    // Personalisation notice
+    if (uiData.personalizing_in_progress) {
+      const notice = document.createElement('div');
+      notice.id = 'style-personalizing-notice';
+      notice.className = 'text-sm text-[#00f0ff] mt-3 text-center animate-pulse';
+      notice.textContent = 'Personalising styles to your room photo -- images will update shortly...';
+      bubble.appendChild(notice);
+    }
 
     // Instructions
     const instructions = document.createElement('p');
@@ -198,11 +284,11 @@ export class HomeDecorRenderer {
 
     // Image container
     const imageContainer = document.createElement('div');
-    imageContainer.className = 'w-full h-32 bg-[rgba(255,255,255,0.03)] overflow-hidden';
+    imageContainer.className = 'w-full h-48 bg-[rgba(255,255,255,0.03)] overflow-hidden';
 
     // Use image_url from backend if provided, otherwise use a style-based placeholder
     const img = document.createElement('img');
-    img.src = style.image_url || `./assets/${style.id}_style_preview.jpg`;
+    img.src = style.image_url || `https://storage.googleapis.com/capstone-tanvi-01-447109-shopping-assets/assets/${style.id}_style_preview.jpg`;
     img.alt = style.label;
     img.className = 'w-full h-full object-cover';
     img.loading = 'lazy';
@@ -213,6 +299,11 @@ export class HomeDecorRenderer {
       placeholder.textContent = '🏠';
       imageContainer.appendChild(placeholder);
     };
+    // Click image to open lightbox
+    img.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._openLightbox(img.src, `${style.label} - ${style.description || ''}`);
+    });
     imageContainer.appendChild(img);
     card.appendChild(imageContainer);
 
@@ -657,6 +748,10 @@ export class HomeDecorRenderer {
   createMessageWrapper(type = 'decor-ui') {
     const wrapper = document.createElement('div');
     wrapper.classList.add('message-wrapper', 'gemini-message', `${type}-message`);
+    const label = document.createElement('div');
+    label.className = 'flex items-center gap-2 mb-2';
+    label.innerHTML = '<div class="w-6 h-6 rounded-full bg-gradient-to-br from-[#a855f7] to-[#00f0ff] flex-shrink-0"></div><span class="text-xs font-semibold text-[#8888a8]">AI Assistant</span>';
+    wrapper.appendChild(label);
     return wrapper;
   }
 
@@ -936,6 +1031,12 @@ export class HomeDecorRenderer {
         placeholder.textContent = '🏠';
         imageContainer.appendChild(placeholder);
       };
+      // Click image to open lightbox
+      img.style.cursor = 'zoom-in';
+      img.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._openLightbox(img.src, `${product.name} - ${product.category} - ${product.price.toFixed(2)}`);
+      });
       imageContainer.appendChild(img);
     } else {
       const placeholder = document.createElement('div');
@@ -1076,7 +1177,12 @@ export class HomeDecorRenderer {
       img.src = `data:image/jpeg;base64,${uiData.image_base64}`;
       img.alt = 'Room visualization';
       img.className = 'w-full h-auto rounded-xl shadow-lg';
+      img.style.cursor = 'zoom-in';
       img.loading = 'lazy';
+      img.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._openLightbox(img.src, uiData.message || 'Your Room, Reimagined');
+      });
       imageContainer.appendChild(img);
     } else {
       // Fallback: show a styled description card

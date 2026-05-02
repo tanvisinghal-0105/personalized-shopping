@@ -2,7 +2,7 @@
 
 ## Phase 1: Initial Request & Room Selection
 
-**User (Nova):** "I need help redesigning Mila's bedroom. She's starting school soon and we need a desk, a bigger bed, and more storage."
+**User (Nova):** "I need help redesigning Mila's room. we need a desk, a bigger bed, and more storage."
 
 **Expected AI Response:**
 - Detects "redesigning" + "bedroom" intent
@@ -41,6 +41,7 @@
 - Message: "Got it - we'll keep the cube shelf and design around it."
 
 ---
+
 
 ## Phase 3: Photo Analysis & Order History
 
@@ -168,21 +169,59 @@
 **User (Nova):** "Add the bed and desk to my cart."
 
 **Expected AI Response:**
-- Adds items to cart
-- Message: "I've added the Single Bed (White) and Child's Desk (White) to your cart. Total: €398."
+- Calls `modify_cart` to add items
+- Message: "I've added the Single Bed (White) and Child's Desk (White) to your cart. Total: EUR 398."
 
 ---
 
 ### Step 2: Complementary Suggestions
 **Expected AI:** "These would pair beautifully with your selections:
-- Study Chair (Blue) - €79
-- Desk Lamp (Modern White) - €45
+- Study Chair (Blue) - EUR 79
+- Desk Lamp (Modern White) - EUR 45
 Would you like to add any of these?"
 
-**User (Nova):** "Not right now, but I'll save this moodboard."
+**User (Nova):** "Add the chair too. That's quite a lot though -- is there any discount for buying multiple items?"
 
 **Expected AI Response:**
-- Saves moodboard
-- Message: "Perfect! Your moodboard is saved. You can return anytime to add the wardrobe, rug, or other items when you're ready."
+- Adds the chair to cart
+- Message: "I've added the Study Chair. Your cart total is now EUR 477. Let me check about a bundle discount for you!"
+
+---
+
+## Phase 9: Discount & Manager Approval (CRM Workflow)
+
+### Step 1: AI Requests Discount Approval
+**Expected AI Actions (Behind the Scenes):**
+- Detects the customer is asking about a discount
+- Determines this requires manager approval (amount exceeds auto-approve threshold)
+- Calls `sync_ask_for_approval(customer_id="CY-...", type="percentage", value=10, reason="Bundle discount for bedroom redesign: 3 furniture items", product_id="")`
+- This creates a pending approval request in Firestore
+- Message: "I'd love to help with that! I'm checking with my manager about a bundle discount for your bedroom redesign. Just a moment..."
+
+---
+
+### Step 2: Manager Approves via CRM Dashboard
+**Demo Presenter Action:**
+1. Open CRM Dashboard at http://localhost:8082
+2. The **Approvals** tab shows the pending request
+3. Enter the customer ID and click **Get Status** -- shows the pending discount request with details
+4. Click **Approve** to approve the discount
+
+**What happens behind the scenes:**
+- CRM updates `approval_status` from "pending" to "approved" in Firestore
+- The AI agent is polling Firestore and detects the status change
+- The conversation resumes automatically
+
+---
+
+### Step 3: AI Confirms the Discount
+**Expected AI Response (after manager approval):**
+- Detects approved status from Firestore
+- Message: "Great news! My manager has approved a 10% bundle discount for your bedroom redesign! Your updated total is EUR 429 (saving EUR 48). Would you like to proceed with checkout?"
+
+**User (Nova):** "That's wonderful, thank you!"
+
+**Expected AI Response:**
+- Warm closing: "You're very welcome! Mila's new bedroom is going to be amazing. I've saved your moodboard so you can come back anytime to add the rug, wardrobe, or other items when you're ready. Have a lovely day!"
 
 ---

@@ -1,8 +1,11 @@
 from datetime import datetime
 import random
-from config.config import LANGUAGE
+from config.config import LANGUAGE, GCS_ASSETS_BASE_URL
 
 DEFAULT_LANGUAGE = LANGUAGE or "English (United Kingdom)"
+
+# Base URL for product images -- avoids repeating the full GCS path 150+ times
+_IMG = f"{GCS_ASSETS_BASE_URL}/products"
 
 
 class RetailContext:
@@ -17,7 +20,7 @@ class RetailContext:
             "category": "Smartphones",
             "price": 999.00,
             "in_stock": True,
-            "image_url": "./assets/products/apple_iphone_16.jpg",
+            "image_url": f"{_IMG}/apple_iphone_16.jpg",
         },
         {
             "product_id": "APPLE-IPHONE-16-PLUS",
@@ -26,7 +29,7 @@ class RetailContext:
             "category": "Smartphones",
             "price": 1099.00,
             "in_stock": True,
-            "image_url": "./assets/products/apple_iphone_16_plus.jpg",
+            "image_url": f"{_IMG}/apple_iphone_16_plus.jpg",
         },
         {
             "product_id": "APPLE-IPHONE-16-PRO",
@@ -35,7 +38,7 @@ class RetailContext:
             "category": "Smartphones",
             "price": 1199.00,
             "in_stock": True,
-            "image_url": "./assets/products/apple_iphone_16_pro.jpg",
+            "image_url": f"{_IMG}/apple_iphone_16_pro.jpg",
         },
         {
             "product_id": "APPLE-IPHONE-16-PRO-MAX",
@@ -44,7 +47,7 @@ class RetailContext:
             "category": "Smartphones",
             "price": 1399.00,
             "in_stock": True,
-            "image_url": "./assets/products/apple_iphone_16_pro_max.jpg",
+            "image_url": f"{_IMG}/apple_iphone_16_pro_max.jpg",
         },
         # Google Pixel 9 Series - Latest
         {
@@ -54,7 +57,7 @@ class RetailContext:
             "category": "Smartphones",
             "price": 799.00,
             "in_stock": True,
-            "image_url": "./assets/products/google_pixel_9.jpg",
+            "image_url": f"{_IMG}/google_pixel_9.jpg",
         },
         {
             "product_id": "GOOGLE-PIXEL-9-PRO",
@@ -63,7 +66,7 @@ class RetailContext:
             "category": "Smartphones",
             "price": 899.00,
             "in_stock": True,
-            "image_url": "./assets/products/google_pixel_9_pro.jpg",
+            "image_url": f"{_IMG}/google_pixel_9_pro.jpg",
         },
         {
             "product_id": "GOOGLE-PIXEL-9-PRO-XL",
@@ -72,7 +75,7 @@ class RetailContext:
             "category": "Smartphones",
             "price": 1099.00,
             "in_stock": True,
-            "image_url": "./assets/products/google_pixel_9_pro_xl.jpg",
+            "image_url": f"{_IMG}/google_pixel_9_pro_xl.jpg",
         },
         {
             "product_id": "GOOGLE-PIXEL-9-PRO-FOLD",
@@ -81,7 +84,7 @@ class RetailContext:
             "category": "Smartphones",
             "price": 1799.00,
             "in_stock": True,
-            "image_url": "./assets/products/google_pixel_9_pro_fold.jpg",
+            "image_url": f"{_IMG}/google_pixel_9_pro_fold.jpg",
         },
         # Samsung Galaxy S24 Series - Latest
         {
@@ -91,7 +94,7 @@ class RetailContext:
             "category": "Smartphones",
             "price": 899.00,
             "in_stock": True,
-            "image_url": "./assets/products/samsung_galaxy_s24.jpg",
+            "image_url": f"{_IMG}/samsung_galaxy_s24.jpg",
         },
         {
             "product_id": "SAMSUNG-GALAXY-S24-PLUS",
@@ -100,7 +103,7 @@ class RetailContext:
             "category": "Smartphones",
             "price": 1099.00,
             "in_stock": True,
-            "image_url": "./assets/products/samsung_galaxy_s24_plus.jpg",
+            "image_url": f"{_IMG}/samsung_galaxy_s24_plus.jpg",
         },
         {
             "product_id": "SAMSUNG-GALAXY-S24-ULTRA",
@@ -109,7 +112,7 @@ class RetailContext:
             "category": "Smartphones",
             "price": 1299.00,
             "in_stock": True,
-            "image_url": "./assets/products/samsung_galaxy_s24_ultra.jpg",
+            "image_url": f"{_IMG}/samsung_galaxy_s24_ultra.jpg",
         },
         {
             "product_id": "SAMSUNG-GALAXY-Z-FOLD6",
@@ -118,7 +121,7 @@ class RetailContext:
             "category": "Smartphones",
             "price": 1899.00,
             "in_stock": True,
-            "image_url": "./assets/products/samsung_galaxy_z_fold6.jpg",
+            "image_url": f"{_IMG}/samsung_galaxy_z_fold6.jpg",
         },
         {
             "product_id": "SAMSUNG-GALAXY-Z-FLIP6",
@@ -127,7 +130,7 @@ class RetailContext:
             "category": "Smartphones",
             "price": 1099.00,
             "in_stock": True,
-            "image_url": "./assets/products/samsung_galaxy_z_flip6.jpg",
+            "image_url": f"{_IMG}/samsung_galaxy_z_flip6.jpg",
         },
         # Latest Tablets
         {
@@ -137,7 +140,7 @@ class RetailContext:
             "category": "Tablets",
             "price": 1499.00,
             "in_stock": True,
-            "image_url": "./assets/products/apple_ipad_pro_m4.jpg",
+            "image_url": f"{_IMG}/apple_ipad_pro_m4.jpg",
         },
         {
             "product_id": "APPLE-IPAD-AIR-M2",
@@ -146,7 +149,7 @@ class RetailContext:
             "category": "Tablets",
             "price": 699.00,
             "in_stock": True,
-            "image_url": "./assets/products/apple_ipad_air_m2.jpg",
+            "image_url": f"{_IMG}/apple_ipad_air_m2.jpg",
         },
         {
             "product_id": "SAMSUNG-TAB-S10-ULTRA",
@@ -155,7 +158,7 @@ class RetailContext:
             "category": "Tablets",
             "price": 1199.00,
             "in_stock": True,
-            "image_url": "./assets/products/samsung_tab_s10_ultra.jpg",
+            "image_url": f"{_IMG}/samsung_tab_s10_ultra.jpg",
         },
         {
             "product_id": "SAMSUNG-TAB-S10-PLUS",
@@ -164,7 +167,7 @@ class RetailContext:
             "category": "Tablets",
             "price": 899.00,
             "in_stock": True,
-            "image_url": "./assets/products/samsung_tab_s10_plus.jpg",
+            "image_url": f"{_IMG}/samsung_tab_s10_plus.jpg",
         },
         # Electronics - TVs & Displays (Latest 2024-2025 Models)
         {
@@ -174,7 +177,7 @@ class RetailContext:
             "category": "TVs",
             "price": 1799.00,
             "in_stock": True,
-            "image_url": "./assets/products/samsung_qled_qn90d_65.jpg",
+            "image_url": f"{_IMG}/samsung_qled_qn90d_65.jpg",
         },
         {
             "product_id": "SAMSUNG-QLED-QN85D-55",
@@ -183,7 +186,7 @@ class RetailContext:
             "category": "TVs",
             "price": 1399.00,
             "in_stock": True,
-            "image_url": "./assets/products/samsung_qled_qn85d_55.jpg",
+            "image_url": f"{_IMG}/samsung_qled_qn85d_55.jpg",
         },
         {
             "product_id": "LG-OLED-C4-55",
@@ -192,7 +195,7 @@ class RetailContext:
             "category": "TVs",
             "price": 1599.00,
             "in_stock": True,
-            "image_url": "./assets/products/lg_oled_c4_55.jpg",
+            "image_url": f"{_IMG}/lg_oled_c4_55.jpg",
         },
         {
             "product_id": "LG-OLED-G4-65",
@@ -201,7 +204,7 @@ class RetailContext:
             "category": "TVs",
             "price": 2499.00,
             "in_stock": True,
-            "image_url": "./assets/products/lg_oled_g4_65.jpg",
+            "image_url": f"{_IMG}/lg_oled_g4_65.jpg",
         },
         {
             "product_id": "SONY-BRAVIA-XR-A95L",
@@ -210,7 +213,7 @@ class RetailContext:
             "category": "TVs",
             "price": 2799.00,
             "in_stock": True,
-            "image_url": "./assets/products/sony_bravia_xr_a95l.jpg",
+            "image_url": f"{_IMG}/sony_bravia_xr_a95l.jpg",
         },
         {
             "product_id": "SONY-BRAVIA-9-75",
@@ -219,7 +222,7 @@ class RetailContext:
             "category": "TVs",
             "price": 3299.00,
             "in_stock": True,
-            "image_url": "./assets/products/sony_bravia_9_75.jpg",
+            "image_url": f"{_IMG}/sony_bravia_9_75.jpg",
         },
         {
             "product_id": "SAM-TV-QE55QN90B",
@@ -228,7 +231,7 @@ class RetailContext:
             "category": "TVs",
             "price": 1199.00,
             "in_stock": True,
-            "image_url": "./assets/products/sam_tv_qe55qn90b.jpg",
+            "image_url": f"{_IMG}/sam_tv_qe55qn90b.jpg",
         },
         # Electronics - Audio (Latest 2024-2025 Models)
         {
@@ -238,7 +241,7 @@ class RetailContext:
             "category": "Audio",
             "price": 399.00,
             "in_stock": True,
-            "image_url": "./assets/products/sony_wh1000xm6.jpg",
+            "image_url": f"{_IMG}/sony_wh1000xm6.jpg",
         },
         {
             "product_id": "SONY-WH1000XM5S",
@@ -247,7 +250,7 @@ class RetailContext:
             "category": "Audio",
             "price": 349.00,
             "in_stock": True,
-            "image_url": "./assets/products/sony_wh1000xm5s.jpg",
+            "image_url": f"{_IMG}/sony_wh1000xm5s.jpg",
         },
         {
             "product_id": "APPLE-AIRPODS-PRO-2-USBC",
@@ -256,7 +259,7 @@ class RetailContext:
             "category": "Audio",
             "price": 249.00,
             "in_stock": True,
-            "image_url": "./assets/products/apple_airpods_pro_2_usbc.jpg",
+            "image_url": f"{_IMG}/apple_airpods_pro_2_usbc.jpg",
         },
         {
             "product_id": "APPLE-AIRPODS-MAX-2",
@@ -265,7 +268,7 @@ class RetailContext:
             "category": "Audio",
             "price": 549.00,
             "in_stock": True,
-            "image_url": "./assets/products/apple_airpods_max_2.jpg",
+            "image_url": f"{_IMG}/apple_airpods_max_2.jpg",
         },
         {
             "product_id": "BOSE-QC-ULTRA",
@@ -274,7 +277,7 @@ class RetailContext:
             "category": "Audio",
             "price": 429.00,
             "in_stock": True,
-            "image_url": "./assets/products/bose_qc_ultra.jpg",
+            "image_url": f"{_IMG}/bose_qc_ultra.jpg",
         },
         {
             "product_id": "SONOS-ARC-ULTRA",
@@ -283,7 +286,7 @@ class RetailContext:
             "category": "Audio",
             "price": 999.00,
             "in_stock": True,
-            "image_url": "./assets/products/sonos_arc_ultra.jpg",
+            "image_url": f"{_IMG}/sonos_arc_ultra.jpg",
         },
         {
             "product_id": "SONOS-BEAM-GEN2",
@@ -292,7 +295,7 @@ class RetailContext:
             "category": "Audio",
             "price": 449.00,
             "in_stock": True,
-            "image_url": "./assets/products/sonos_beam_gen2.jpg",
+            "image_url": f"{_IMG}/sonos_beam_gen2.jpg",
         },
         # Computers & Accessories (Latest 2024-2025 Models)
         {
@@ -302,7 +305,7 @@ class RetailContext:
             "category": "Laptops",
             "price": 1499.00,
             "in_stock": True,
-            "image_url": "./assets/products/apple_macbook_air_m4.jpg",
+            "image_url": f"{_IMG}/apple_macbook_air_m4.jpg",
         },
         {
             "product_id": "APPLE-MACBOOK-PRO-M4",
@@ -311,7 +314,7 @@ class RetailContext:
             "category": "Laptops",
             "price": 2299.00,
             "in_stock": True,
-            "image_url": "./assets/products/apple_macbook_pro_m4.jpg",
+            "image_url": f"{_IMG}/apple_macbook_pro_m4.jpg",
         },
         {
             "product_id": "APPLE-MACBOOK-PRO-M4-MAX",
@@ -320,7 +323,7 @@ class RetailContext:
             "category": "Laptops",
             "price": 3499.00,
             "in_stock": True,
-            "image_url": "./assets/products/apple_macbook_pro_m4_max.jpg",
+            "image_url": f"{_IMG}/apple_macbook_pro_m4_max.jpg",
         },
         {
             "product_id": "DELL-XPS-15-9530",
@@ -329,7 +332,7 @@ class RetailContext:
             "category": "Laptops",
             "price": 1799.00,
             "in_stock": True,
-            "image_url": "./assets/products/dell_xps_15_9530.jpg",
+            "image_url": f"{_IMG}/dell_xps_15_9530.jpg",
         },
         {
             "product_id": "LENOVO-THINKPAD-X1-GEN12",
@@ -338,7 +341,7 @@ class RetailContext:
             "category": "Laptops",
             "price": 1999.00,
             "in_stock": True,
-            "image_url": "./assets/products/lenovo_thinkpad_x1_gen12.jpg",
+            "image_url": f"{_IMG}/lenovo_thinkpad_x1_gen12.jpg",
         },
         {
             "product_id": "MICROSOFT-SURFACE-LAPTOP-7",
@@ -347,7 +350,7 @@ class RetailContext:
             "category": "Laptops",
             "price": 1599.00,
             "in_stock": True,
-            "image_url": "./assets/products/microsoft_surface_laptop_7.jpg",
+            "image_url": f"{_IMG}/microsoft_surface_laptop_7.jpg",
         },
         {
             "product_id": "LOGI-MX-MASTER3S",
@@ -356,7 +359,7 @@ class RetailContext:
             "category": "Accessories",
             "price": 105.00,
             "in_stock": True,
-            "image_url": "./assets/products/logi_mx_master3s.jpg",
+            "image_url": f"{_IMG}/logi_mx_master3s.jpg",
         },
         {
             "product_id": "LOGITECH-MX-KEYS",
@@ -365,7 +368,7 @@ class RetailContext:
             "category": "Accessories",
             "price": 119.00,
             "in_stock": True,
-            "image_url": "./assets/products/logitech_mx_keys.jpg",
+            "image_url": f"{_IMG}/logitech_mx_keys.jpg",
         },
         {
             "product_id": "ANKER-POWERCORE-20K",
@@ -374,7 +377,7 @@ class RetailContext:
             "category": "Accessories",
             "price": 49.00,
             "in_stock": True,
-            "image_url": "./assets/products/anker_powercore_20k.jpg",
+            "image_url": f"{_IMG}/anker_powercore_20k.jpg",
         },
         # Fashion - Footwear
         {
@@ -384,7 +387,7 @@ class RetailContext:
             "category": "Footwear",
             "price": 99.00,
             "in_stock": True,
-            "image_url": "./assets/products/adidas_sneaker_orig.jpg",
+            "image_url": f"{_IMG}/adidas_sneaker_orig.jpg",
         },
         {
             "product_id": "NIKE-AIR-MAX-90",
@@ -393,7 +396,7 @@ class RetailContext:
             "category": "Footwear",
             "price": 129.00,
             "in_stock": True,
-            "image_url": "./assets/products/nike_air_max_90.jpg",
+            "image_url": f"{_IMG}/nike_air_max_90.jpg",
         },
         {
             "product_id": "NIKE-REVOLUTION-6",
@@ -402,7 +405,7 @@ class RetailContext:
             "category": "Footwear",
             "price": 89.00,
             "in_stock": True,
-            "image_url": "./assets/products/nike_revolution_6.jpg",
+            "image_url": f"{_IMG}/nike_revolution_6.jpg",
         },
         {
             "product_id": "CONVERSE-CHUCK-TAYLOR",
@@ -411,7 +414,7 @@ class RetailContext:
             "category": "Footwear",
             "price": 65.00,
             "in_stock": True,
-            "image_url": "./assets/products/converse_chuck_taylor.jpg",
+            "image_url": f"{_IMG}/converse_chuck_taylor.jpg",
         },
         {
             "product_id": "PUMA-SUEDE-CLASSIC",
@@ -420,7 +423,7 @@ class RetailContext:
             "category": "Footwear",
             "price": 75.00,
             "in_stock": True,
-            "image_url": "./assets/products/puma_suede_classic.jpg",
+            "image_url": f"{_IMG}/puma_suede_classic.jpg",
         },
         # Fashion - Clothing
         {
@@ -430,7 +433,7 @@ class RetailContext:
             "category": "Clothing",
             "price": 89.00,
             "in_stock": False,
-            "image_url": "./assets/products/levis_501_jeans.jpg",
+            "image_url": f"{_IMG}/levis_501_jeans.jpg",
         },
         {
             "product_id": "NIKE-TECH-FLEECE",
@@ -439,7 +442,7 @@ class RetailContext:
             "category": "Clothing",
             "price": 119.00,
             "in_stock": True,
-            "image_url": "./assets/products/nike_tech_fleece.jpg",
+            "image_url": f"{_IMG}/nike_tech_fleece.jpg",
         },
         {
             "product_id": "ADIDAS-TRACK-JACKET",
@@ -448,7 +451,7 @@ class RetailContext:
             "category": "Clothing",
             "price": 85.00,
             "in_stock": True,
-            "image_url": "./assets/products/adidas_track_jacket.jpg",
+            "image_url": f"{_IMG}/adidas_track_jacket.jpg",
         },
         {
             "product_id": "TOMMY-HILFIGER-POLO",
@@ -457,7 +460,7 @@ class RetailContext:
             "category": "Clothing",
             "price": 69.00,
             "in_stock": True,
-            "image_url": "./assets/products/tommy_hilfiger_polo.jpg",
+            "image_url": f"{_IMG}/tommy_hilfiger_polo.jpg",
         },
         # Home & Kitchen
         {
@@ -467,7 +470,7 @@ class RetailContext:
             "category": "Kitchen",
             "price": 749.00,
             "in_stock": True,
-            "image_url": "./assets/products/wmf_coffeemachine.jpg",
+            "image_url": f"{_IMG}/wmf_coffeemachine.jpg",
         },
         {
             "product_id": "KITCHENAID-MIXER",
@@ -476,7 +479,7 @@ class RetailContext:
             "category": "Kitchen",
             "price": 449.00,
             "in_stock": True,
-            "image_url": "./assets/products/kitchenaid_mixer.jpg",
+            "image_url": f"{_IMG}/kitchenaid_mixer.jpg",
         },
         {
             "product_id": "DYSON-V15-VACUUM",
@@ -485,7 +488,7 @@ class RetailContext:
             "category": "Home",
             "price": 649.00,
             "in_stock": True,
-            "image_url": "./assets/products/dyson_v15_vacuum.jpg",
+            "image_url": f"{_IMG}/dyson_v15_vacuum.jpg",
         },
         {
             "product_id": "NESPRESSO-VERTUO",
@@ -494,7 +497,7 @@ class RetailContext:
             "category": "Kitchen",
             "price": 169.00,
             "in_stock": True,
-            "image_url": "./assets/products/nespresso_vertuo.jpg",
+            "image_url": f"{_IMG}/nespresso_vertuo.jpg",
         },
         {
             "product_id": "PHILIPS-AIR-FRYER",
@@ -503,7 +506,7 @@ class RetailContext:
             "category": "Kitchen",
             "price": 299.00,
             "in_stock": True,
-            "image_url": "./assets/products/philips_air_fryer.jpg",
+            "image_url": f"{_IMG}/philips_air_fryer.jpg",
         },
         # Smart Home
         {
@@ -513,7 +516,7 @@ class RetailContext:
             "category": "Smart Home",
             "price": 249.00,
             "in_stock": True,
-            "image_url": "./assets/products/nest_thermostat.jpg",
+            "image_url": f"{_IMG}/nest_thermostat.jpg",
         },
         {
             "product_id": "RING-DOORBELL-PRO",
@@ -522,7 +525,7 @@ class RetailContext:
             "category": "Smart Home",
             "price": 269.00,
             "in_stock": True,
-            "image_url": "./assets/products/ring_doorbell_pro.jpg",
+            "image_url": f"{_IMG}/ring_doorbell_pro.jpg",
         },
         {
             "product_id": "PHILIPS-HUE-KIT",
@@ -531,7 +534,7 @@ class RetailContext:
             "category": "Smart Home",
             "price": 199.00,
             "in_stock": True,
-            "image_url": "./assets/products/philips_hue_kit.jpg",
+            "image_url": f"{_IMG}/philips_hue_kit.jpg",
         },
         {
             "product_id": "AMAZON-ECHO-SHOW",
@@ -540,7 +543,7 @@ class RetailContext:
             "category": "Smart Home",
             "price": 249.00,
             "in_stock": True,
-            "image_url": "./assets/products/amazon_echo_show.jpg",
+            "image_url": f"{_IMG}/amazon_echo_show.jpg",
         },
         # Gaming
         {
@@ -550,7 +553,7 @@ class RetailContext:
             "category": "Gaming",
             "price": 499.00,
             "in_stock": True,
-            "image_url": "./assets/products/ps5_console.jpg",
+            "image_url": f"{_IMG}/ps5_console.jpg",
         },
         {
             "product_id": "XBOX-SERIES-X",
@@ -559,7 +562,7 @@ class RetailContext:
             "category": "Gaming",
             "price": 499.00,
             "in_stock": True,
-            "image_url": "./assets/products/xbox_series_x.jpg",
+            "image_url": f"{_IMG}/xbox_series_x.jpg",
         },
         {
             "product_id": "NINTENDO-SWITCH-OLED",
@@ -568,7 +571,7 @@ class RetailContext:
             "category": "Gaming",
             "price": 349.00,
             "in_stock": True,
-            "image_url": "./assets/products/nintendo_switch_oled.jpg",
+            "image_url": f"{_IMG}/nintendo_switch_oled.jpg",
         },
         {
             "product_id": "STEAM-DECK",
@@ -577,7 +580,7 @@ class RetailContext:
             "category": "Gaming",
             "price": 649.00,
             "in_stock": True,
-            "image_url": "./assets/products/steam_deck.jpg",
+            "image_url": f"{_IMG}/steam_deck.jpg",
         },
         {
             "product_id": "GAMEMAX-PC-RTX4070",
@@ -586,7 +589,7 @@ class RetailContext:
             "category": "Gaming",
             "price": 1599.00,
             "in_stock": True,
-            "image_url": "./assets/products/gamemax_pc_rtx4070.jpg",
+            "image_url": f"{_IMG}/gamemax_pc_rtx4070.jpg",
         },
         # Cameras & Photography
         {
@@ -596,7 +599,7 @@ class RetailContext:
             "category": "Cameras",
             "price": 2499.00,
             "in_stock": True,
-            "image_url": "./assets/products/canon_eos_r6.jpg",
+            "image_url": f"{_IMG}/canon_eos_r6.jpg",
         },
         {
             "product_id": "SONY-A7-IV",
@@ -605,7 +608,7 @@ class RetailContext:
             "category": "Cameras",
             "price": 2499.00,
             "in_stock": True,
-            "image_url": "./assets/products/sony_a7_iv.jpg",
+            "image_url": f"{_IMG}/sony_a7_iv.jpg",
         },
         {
             "product_id": "GOPRO-HERO12",
@@ -614,7 +617,7 @@ class RetailContext:
             "category": "Cameras",
             "price": 399.00,
             "in_stock": True,
-            "image_url": "./assets/products/gopro_hero12.jpg",
+            "image_url": f"{_IMG}/gopro_hero12.jpg",
         },
         {
             "product_id": "DJI-MINI-4-PRO",
@@ -623,7 +626,7 @@ class RetailContext:
             "category": "Cameras",
             "price": 759.00,
             "in_stock": True,
-            "image_url": "./assets/products/dji_mini_4_pro.jpg",
+            "image_url": f"{_IMG}/dji_mini_4_pro.jpg",
         },
         # Accessories & Cases
         {
@@ -633,7 +636,7 @@ class RetailContext:
             "category": "Accessories",
             "price": 19.00,
             "in_stock": True,
-            "image_url": "./assets/products/generic_pixel_case.jpg",
+            "image_url": f"{_IMG}/generic_pixel_case.jpg",
         },
         {
             "product_id": "GOOGLE-PIXEL9PRO-CASE",
@@ -642,7 +645,7 @@ class RetailContext:
             "category": "Accessories",
             "price": 59.99,
             "in_stock": True,
-            "image_url": "./assets/products/google_pixel9pro_case.jpg",
+            "image_url": f"{_IMG}/google_pixel9pro_case.jpg",
         },
         {
             "product_id": "APPLE-LEATHER-CASE",
@@ -651,7 +654,7 @@ class RetailContext:
             "category": "Accessories",
             "price": 59.00,
             "in_stock": True,
-            "image_url": "./assets/products/apple_leather_case.jpg",
+            "image_url": f"{_IMG}/apple_leather_case.jpg",
         },
         {
             "product_id": "GOOGLE-PIXEL-30W-CHARGER",
@@ -660,7 +663,7 @@ class RetailContext:
             "category": "Accessories",
             "price": 29.00,
             "in_stock": True,
-            "image_url": "./assets/products/google_pixel_30w_charger.jpg",
+            "image_url": f"{_IMG}/google_pixel_30w_charger.jpg",
         },
         # Wearables
         {
@@ -670,7 +673,7 @@ class RetailContext:
             "category": "Wearables",
             "price": 399.00,
             "in_stock": True,
-            "image_url": "./assets/products/apple_watch_series_9.jpg",
+            "image_url": f"{_IMG}/apple_watch_series_9.jpg",
         },
         {
             "product_id": "SAMSUNG-GALAXY-WATCH6",
@@ -679,7 +682,7 @@ class RetailContext:
             "category": "Wearables",
             "price": 299.00,
             "in_stock": True,
-            "image_url": "./assets/products/samsung_galaxy_watch6.jpg",
+            "image_url": f"{_IMG}/samsung_galaxy_watch6.jpg",
         },
         {
             "product_id": "FITBIT-CHARGE-6",
@@ -688,7 +691,7 @@ class RetailContext:
             "category": "Wearables",
             "price": 159.00,
             "in_stock": True,
-            "image_url": "./assets/products/fitbit_charge_6.jpg",
+            "image_url": f"{_IMG}/fitbit_charge_6.jpg",
         },
         # Services
         {
@@ -727,7 +730,7 @@ class RetailContext:
             "style_tags": ["modern", "abstract", "warm-tones"],
             "color_palette": ["orange", "pink", "gold"],
             "room_compatibility": ["living room", "bedroom", "office"],
-            "image_url": "./assets/products/apple_iphone_16.jpg",
+            "image_url": f"{_IMG}/apple_iphone_16.jpg",
         },
         {
             "product_id": "WALL-ART-BOTANICAL-PRINT",
@@ -740,7 +743,7 @@ class RetailContext:
             "style_tags": ["bohemian", "natural", "tropical"],
             "color_palette": ["green", "white", "beige"],
             "room_compatibility": ["living room", "bedroom", "bathroom"],
-            "image_url": "./assets/products/wall_art_botanical_print.jpg",
+            "image_url": f"{_IMG}/wall_art_botanical_print.jpg",
         },
         {
             "product_id": "WALL-ART-GEOMETRIC-METAL",
@@ -753,7 +756,7 @@ class RetailContext:
             "style_tags": ["modern", "geometric", "metallic"],
             "color_palette": ["gold", "black", "brass"],
             "room_compatibility": ["living room", "dining room", "entryway"],
-            "image_url": "./assets/products/wall_art_geometric_metal.jpg",
+            "image_url": f"{_IMG}/wall_art_geometric_metal.jpg",
         },
         {
             "product_id": "WALL-ART-MINIMALIST-LINE",
@@ -766,7 +769,7 @@ class RetailContext:
             "style_tags": ["minimalist", "modern", "line-art"],
             "color_palette": ["black", "white"],
             "room_compatibility": ["bedroom", "office", "bathroom"],
-            "image_url": "./assets/products/wall_art_minimalist_line.jpg",
+            "image_url": f"{_IMG}/wall_art_minimalist_line.jpg",
         },
         {
             "product_id": "WALL-ART-COASTAL-PHOTO",
@@ -779,7 +782,7 @@ class RetailContext:
             "style_tags": ["coastal", "natural", "calm"],
             "color_palette": ["blue", "white", "turquoise"],
             "room_compatibility": ["living room", "bedroom", "bathroom"],
-            "image_url": "./assets/products/wall_art_coastal_photo.jpg",
+            "image_url": f"{_IMG}/wall_art_coastal_photo.jpg",
         },
         # Home Decor - Lighting
         {
@@ -793,7 +796,7 @@ class RetailContext:
             "style_tags": ["modern", "luxury", "metallic"],
             "color_palette": ["gold", "white", "marble"],
             "room_compatibility": ["living room", "reading nook", "office"],
-            "image_url": "./assets/products/lamp_arc_floor_gold.jpg",
+            "image_url": f"{_IMG}/lamp_arc_floor_gold.jpg",
         },
         {
             "product_id": "LAMP-PENDANT-RATTAN",
@@ -806,7 +809,7 @@ class RetailContext:
             "style_tags": ["bohemian", "natural", "woven"],
             "color_palette": ["beige", "natural", "brown"],
             "room_compatibility": ["dining room", "bedroom", "entryway"],
-            "image_url": "./assets/products/lamp_pendant_rattan.jpg",
+            "image_url": f"{_IMG}/lamp_pendant_rattan.jpg",
         },
         {
             "product_id": "LAMP-TABLE-CERAMIC",
@@ -819,7 +822,7 @@ class RetailContext:
             "style_tags": ["coastal", "traditional", "ceramic"],
             "color_palette": ["blue", "white", "beige"],
             "room_compatibility": ["bedroom", "living room", "office"],
-            "image_url": "./assets/products/lamp_table_ceramic.jpg",
+            "image_url": f"{_IMG}/lamp_table_ceramic.jpg",
         },
         {
             "product_id": "LAMP-WALL-SCONCE-BRASS",
@@ -832,7 +835,7 @@ class RetailContext:
             "style_tags": ["industrial", "modern", "metallic"],
             "color_palette": ["brass", "black", "gold"],
             "room_compatibility": ["bedroom", "hallway", "bathroom"],
-            "image_url": "./assets/products/lamp_wall_sconce_brass.jpg",
+            "image_url": f"{_IMG}/lamp_wall_sconce_brass.jpg",
         },
         {
             "product_id": "LAMP-STRING-FAIRY",
@@ -845,7 +848,7 @@ class RetailContext:
             "style_tags": ["bohemian", "cozy", "ambient"],
             "color_palette": ["warm-white", "gold"],
             "room_compatibility": ["bedroom", "living room", "patio"],
-            "image_url": "./assets/products/lamp_string_fairy.jpg",
+            "image_url": f"{_IMG}/lamp_string_fairy.jpg",
         },
         # Home Decor - Plants & Planters
         {
@@ -859,7 +862,7 @@ class RetailContext:
             "style_tags": ["minimalist", "modern", "clean"],
             "color_palette": ["white", "matte"],
             "room_compatibility": ["living room", "kitchen", "bedroom", "office"],
-            "image_url": "./assets/products/planter_ceramic_white_set.jpg",
+            "image_url": f"{_IMG}/planter_ceramic_white_set.jpg",
         },
         {
             "product_id": "PLANTER-TERRACOTTA-LARGE",
@@ -872,7 +875,7 @@ class RetailContext:
             "style_tags": ["bohemian", "rustic", "natural"],
             "color_palette": ["terracotta", "orange", "clay"],
             "room_compatibility": ["living room", "patio", "entryway"],
-            "image_url": "./assets/products/planter_terracotta_large.jpg",
+            "image_url": f"{_IMG}/planter_terracotta_large.jpg",
         },
         {
             "product_id": "PLANT-FAUX-MONSTERA",
@@ -885,7 +888,7 @@ class RetailContext:
             "style_tags": ["tropical", "bohemian", "green"],
             "color_palette": ["green", "natural"],
             "room_compatibility": ["living room", "bedroom", "office"],
-            "image_url": "./assets/products/plant_faux_monstera.jpg",
+            "image_url": f"{_IMG}/plant_faux_monstera.jpg",
         },
         {
             "product_id": "PLANTER-HANGING-MACRAME",
@@ -898,7 +901,7 @@ class RetailContext:
             "style_tags": ["bohemian", "handmade", "woven"],
             "color_palette": ["beige", "cream", "natural"],
             "room_compatibility": ["living room", "bedroom", "patio"],
-            "image_url": "./assets/products/planter_hanging_macrame.jpg",
+            "image_url": f"{_IMG}/planter_hanging_macrame.jpg",
         },
         {
             "product_id": "PLANT-FAUX-EUCALYPTUS",
@@ -911,7 +914,7 @@ class RetailContext:
             "style_tags": ["natural", "minimalist", "greenery"],
             "color_palette": ["sage-green", "grey-green"],
             "room_compatibility": ["bedroom", "bathroom", "kitchen"],
-            "image_url": "./assets/products/plant_faux_eucalyptus.jpg",
+            "image_url": f"{_IMG}/plant_faux_eucalyptus.jpg",
         },
         # Home Decor - Textiles
         {
@@ -925,7 +928,7 @@ class RetailContext:
             "style_tags": ["cozy", "minimalist", "textured"],
             "color_palette": ["cream", "beige", "ivory"],
             "room_compatibility": ["living room", "bedroom"],
-            "image_url": "./assets/products/throw_blanket_chunky_knit.jpg",
+            "image_url": f"{_IMG}/throw_blanket_chunky_knit.jpg",
         },
         {
             "product_id": "CUSHION-VELVET-SET",
@@ -938,7 +941,7 @@ class RetailContext:
             "style_tags": ["luxury", "modern", "rich-colors"],
             "color_palette": ["emerald", "navy", "gold", "burgundy"],
             "room_compatibility": ["living room", "bedroom"],
-            "image_url": "./assets/products/cushion_velvet_set.jpg",
+            "image_url": f"{_IMG}/cushion_velvet_set.jpg",
         },
         {
             "product_id": "RUG-MOROCCAN-STYLE",
@@ -951,7 +954,7 @@ class RetailContext:
             "style_tags": ["bohemian", "geometric", "traditional"],
             "color_palette": ["beige", "cream", "black"],
             "room_compatibility": ["living room", "bedroom", "dining room"],
-            "image_url": "./assets/products/rug_moroccan_style.jpg",
+            "image_url": f"{_IMG}/rug_moroccan_style.jpg",
         },
         {
             "product_id": "CURTAIN-LINEN-NATURAL",
@@ -964,7 +967,7 @@ class RetailContext:
             "style_tags": ["minimalist", "natural", "light"],
             "color_palette": ["beige", "natural", "cream"],
             "room_compatibility": ["living room", "bedroom", "dining room"],
-            "image_url": "./assets/products/curtain_linen_natural.jpg",
+            "image_url": f"{_IMG}/curtain_linen_natural.jpg",
         },
         {
             "product_id": "CUSHION-BOHEMIAN-TASSELS",
@@ -977,7 +980,7 @@ class RetailContext:
             "style_tags": ["bohemian", "textured", "eclectic"],
             "color_palette": ["terracotta", "mustard", "cream"],
             "room_compatibility": ["living room", "bedroom", "reading nook"],
-            "image_url": "./assets/products/cushion_bohemian_tassels.jpg",
+            "image_url": f"{_IMG}/cushion_bohemian_tassels.jpg",
         },
         # Home Decor - Decorative Objects
         {
@@ -991,7 +994,7 @@ class RetailContext:
             "style_tags": ["minimalist", "scandinavian", "clean"],
             "color_palette": ["white", "matte"],
             "room_compatibility": ["living room", "dining room", "office"],
-            "image_url": "./assets/products/vase_ceramic_minimalist.jpg",
+            "image_url": f"{_IMG}/vase_ceramic_minimalist.jpg",
         },
         {
             "product_id": "MIRROR-ROUND-GOLD",
@@ -1004,7 +1007,7 @@ class RetailContext:
             "style_tags": ["modern", "luxury", "metallic"],
             "color_palette": ["gold", "brass"],
             "room_compatibility": ["entryway", "bedroom", "bathroom"],
-            "image_url": "./assets/products/mirror_round_gold.jpg",
+            "image_url": f"{_IMG}/mirror_round_gold.jpg",
         },
         {
             "product_id": "CANDLE-HOLDER-BRASS-SET",
@@ -1017,7 +1020,7 @@ class RetailContext:
             "style_tags": ["modern", "metallic", "elegant"],
             "color_palette": ["brass", "gold"],
             "room_compatibility": ["dining room", "living room", "bedroom"],
-            "image_url": "./assets/products/candle_holder_brass_set.jpg",
+            "image_url": f"{_IMG}/candle_holder_brass_set.jpg",
         },
         {
             "product_id": "TRAY-MARBLE-GOLD",
@@ -1030,7 +1033,7 @@ class RetailContext:
             "style_tags": ["luxury", "modern", "marble"],
             "color_palette": ["white", "gold", "marble"],
             "room_compatibility": ["living room", "bedroom", "kitchen"],
-            "image_url": "./assets/products/tray_marble_gold.jpg",
+            "image_url": f"{_IMG}/tray_marble_gold.jpg",
         },
         {
             "product_id": "SCULPTURE-ABSTRACT-CERAMIC",
@@ -1043,7 +1046,7 @@ class RetailContext:
             "style_tags": ["modern", "abstract", "sculptural"],
             "color_palette": ["black", "matte"],
             "room_compatibility": ["living room", "office", "entryway"],
-            "image_url": "./assets/products/sculpture_abstract_ceramic.jpg",
+            "image_url": f"{_IMG}/sculpture_abstract_ceramic.jpg",
         },
         {
             "product_id": "CLOCK-WALL-MINIMALIST",
@@ -1056,7 +1059,7 @@ class RetailContext:
             "style_tags": ["minimalist", "modern", "wood"],
             "color_palette": ["walnut", "black", "wood"],
             "room_compatibility": ["living room", "kitchen", "office", "bedroom"],
-            "image_url": "./assets/products/clock_wall_minimalist.jpg",
+            "image_url": f"{_IMG}/clock_wall_minimalist.jpg",
         },
         # Home Decor - Shelving & Storage
         {
@@ -1070,7 +1073,7 @@ class RetailContext:
             "style_tags": ["minimalist", "modern", "wood"],
             "color_palette": ["walnut", "wood", "natural"],
             "room_compatibility": ["living room", "bedroom", "office", "bathroom"],
-            "image_url": "./assets/products/shelf_floating_walnut.jpg",
+            "image_url": f"{_IMG}/shelf_floating_walnut.jpg",
         },
         {
             "product_id": "BASKET-STORAGE-WOVEN",
@@ -1083,7 +1086,7 @@ class RetailContext:
             "style_tags": ["bohemian", "natural", "woven"],
             "color_palette": ["natural", "beige", "brown"],
             "room_compatibility": ["living room", "bedroom", "bathroom"],
-            "image_url": "./assets/products/basket_storage_woven.jpg",
+            "image_url": f"{_IMG}/basket_storage_woven.jpg",
         },
         {
             "product_id": "SHELF-LADDER-BLACK",
@@ -1096,7 +1099,7 @@ class RetailContext:
             "style_tags": ["industrial", "modern", "metal"],
             "color_palette": ["black", "metal"],
             "room_compatibility": ["living room", "office", "bedroom"],
-            "image_url": "./assets/products/shelf_ladder_black.jpg",
+            "image_url": f"{_IMG}/shelf_ladder_black.jpg",
         },
         {
             "product_id": "BOX-STORAGE-VELVET",
@@ -1109,7 +1112,7 @@ class RetailContext:
             "style_tags": ["luxury", "modern", "rich-colors"],
             "color_palette": ["emerald", "green", "gold"],
             "room_compatibility": ["bedroom", "living room", "office"],
-            "image_url": "./assets/products/box_storage_velvet.jpg",
+            "image_url": f"{_IMG}/box_storage_velvet.jpg",
         },
         # Furniture - Desks
         {
@@ -1120,12 +1123,12 @@ class RetailContext:
             "subcategory": "Desks",
             "price": 189.00,
             "in_stock": True,
-            "image_url": "./assets/products/desk_child_white.jpg",
+            "image_url": f"{_IMG}/desk_child_white.jpg",
             "age_appropriate": ["school-age", "teen"],
             "style_tags": ["modern", "minimalist", "scandinavian"],
             "color_palette": ["white", "wood"],
             "room_compatibility": ["bedroom", "office"],
-            "image_url": "./assets/products/desk_child_white.jpg",
+            "image_url": f"{_IMG}/desk_child_white.jpg",
         },
         {
             "product_id": "DESK-TODDLER-NATURAL",
@@ -1135,12 +1138,12 @@ class RetailContext:
             "subcategory": "Desks",
             "price": 149.00,
             "in_stock": True,
-            "image_url": "./assets/products/desk_toddler_natural.jpg",
+            "image_url": f"{_IMG}/desk_toddler_natural.jpg",
             "age_appropriate": ["toddler"],
             "style_tags": ["scandinavian", "natural", "minimalist"],
             "color_palette": ["wood", "natural", "beige"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/products/desk_toddler_natural.jpg",
+            "image_url": f"{_IMG}/desk_toddler_natural.jpg",
         },
         {
             "product_id": "DESK-TEEN-GREY",
@@ -1150,12 +1153,12 @@ class RetailContext:
             "subcategory": "Desks",
             "price": 269.00,
             "in_stock": True,
-            "image_url": "./assets/products/desk_teen_grey.jpg",
+            "image_url": f"{_IMG}/desk_teen_grey.jpg",
             "age_appropriate": ["teen", "adult"],
             "style_tags": ["modern", "industrial", "functional"],
             "color_palette": ["grey", "black", "metal"],
             "room_compatibility": ["bedroom", "office"],
-            "image_url": "./assets/products/desk_teen_grey.jpg",
+            "image_url": f"{_IMG}/desk_teen_grey.jpg",
         },
         {
             "product_id": "DESK-ADULT-WALNUT",
@@ -1165,12 +1168,12 @@ class RetailContext:
             "subcategory": "Desks",
             "price": 449.00,
             "in_stock": True,
-            "image_url": "./assets/products/desk_adult_walnut.jpg",
+            "image_url": f"{_IMG}/desk_adult_walnut.jpg",
             "age_appropriate": ["adult"],
             "style_tags": ["traditional", "modern", "wood"],
             "color_palette": ["walnut", "wood", "brown"],
             "room_compatibility": ["office", "bedroom"],
-            "image_url": "./assets/products/desk_adult_walnut.jpg",
+            "image_url": f"{_IMG}/desk_adult_walnut.jpg",
         },
         {
             "product_id": "DESK-CORNER-WHITE",
@@ -1180,12 +1183,12 @@ class RetailContext:
             "subcategory": "Desks",
             "price": 329.00,
             "in_stock": True,
-            "image_url": "./assets/products/desk_corner_white.jpg",
+            "image_url": f"{_IMG}/desk_corner_white.jpg",
             "age_appropriate": ["teen", "adult"],
             "style_tags": ["modern", "minimalist", "space-saving"],
             "color_palette": ["white", "metal"],
             "room_compatibility": ["office", "bedroom"],
-            "image_url": "./assets/products/desk_corner_white.jpg",
+            "image_url": f"{_IMG}/desk_corner_white.jpg",
         },
         # Furniture - Beds
         {
@@ -1196,12 +1199,12 @@ class RetailContext:
             "subcategory": "Beds",
             "price": 289.00,
             "in_stock": True,
-            "image_url": "./assets/products/bed_toddler_house.jpg",
+            "image_url": f"{_IMG}/bed_toddler_house.jpg",
             "age_appropriate": ["toddler"],
             "style_tags": ["scandinavian", "playful", "natural"],
             "color_palette": ["wood", "natural", "white"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/products/bed_toddler_house.jpg",
+            "image_url": f"{_IMG}/bed_toddler_house.jpg",
         },
         {
             "product_id": "BED-SINGLE-WHITE",
@@ -1211,12 +1214,12 @@ class RetailContext:
             "subcategory": "Beds",
             "price": 249.00,
             "in_stock": True,
-            "image_url": "./assets/products/bed_single_white.jpg",
+            "image_url": f"{_IMG}/bed_single_white.jpg",
             "age_appropriate": ["school-age", "teen"],
             "style_tags": ["minimalist", "modern", "scandinavian"],
             "color_palette": ["white", "wood"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/products/bed_single_white.jpg",
+            "image_url": f"{_IMG}/bed_single_white.jpg",
         },
         {
             "product_id": "BED-TWIN-GREY",
@@ -1226,12 +1229,12 @@ class RetailContext:
             "subcategory": "Beds",
             "price": 349.00,
             "in_stock": True,
-            "image_url": "./assets/products/bed_twin_grey.jpg",
+            "image_url": f"{_IMG}/bed_twin_grey.jpg",
             "age_appropriate": ["school-age", "teen"],
             "style_tags": ["modern", "functional", "storage"],
             "color_palette": ["grey", "white"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/products/bed_twin_grey.jpg",
+            "image_url": f"{_IMG}/bed_twin_grey.jpg",
         },
         {
             "product_id": "BED-BUNK-NATURAL",
@@ -1241,12 +1244,12 @@ class RetailContext:
             "subcategory": "Beds",
             "price": 549.00,
             "in_stock": True,
-            "image_url": "./assets/products/bed_bunk_natural.jpg",
+            "image_url": f"{_IMG}/bed_bunk_natural.jpg",
             "age_appropriate": ["school-age", "teen"],
             "style_tags": ["scandinavian", "natural", "space-saving"],
             "color_palette": ["wood", "natural"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/products/bed_bunk_natural.jpg",
+            "image_url": f"{_IMG}/bed_bunk_natural.jpg",
         },
         {
             "product_id": "BED-LOFT-BLACK",
@@ -1256,12 +1259,12 @@ class RetailContext:
             "subcategory": "Beds",
             "price": 429.00,
             "in_stock": True,
-            "image_url": "./assets/products/bed_loft_black.jpg",
+            "image_url": f"{_IMG}/bed_loft_black.jpg",
             "age_appropriate": ["teen"],
             "style_tags": ["industrial", "modern", "space-saving"],
             "color_palette": ["black", "metal"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/products/bed_loft_black.jpg",
+            "image_url": f"{_IMG}/bed_loft_black.jpg",
         },
         {
             "product_id": "BED-DOUBLE-UPHOLSTERED",
@@ -1271,12 +1274,12 @@ class RetailContext:
             "subcategory": "Beds",
             "price": 599.00,
             "in_stock": True,
-            "image_url": "./assets/products/bed_double_upholstered.jpg",
+            "image_url": f"{_IMG}/bed_double_upholstered.jpg",
             "age_appropriate": ["adult"],
             "style_tags": ["modern", "luxury", "upholstered"],
             "color_palette": ["grey", "velvet"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/products/bed_double_upholstered.jpg",
+            "image_url": f"{_IMG}/bed_double_upholstered.jpg",
         },
         {
             "product_id": "BED-QUEEN-PLATFORM",
@@ -1286,12 +1289,12 @@ class RetailContext:
             "subcategory": "Beds",
             "price": 699.00,
             "in_stock": True,
-            "image_url": "./assets/products/bed_queen_platform.jpg",
+            "image_url": f"{_IMG}/bed_queen_platform.jpg",
             "age_appropriate": ["adult"],
             "style_tags": ["minimalist", "modern", "wood"],
             "color_palette": ["walnut", "wood", "brown"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/products/bed_queen_platform.jpg",
+            "image_url": f"{_IMG}/bed_queen_platform.jpg",
         },
         # Furniture - Wardrobes & Storage
         {
@@ -1302,12 +1305,12 @@ class RetailContext:
             "subcategory": "Wardrobes",
             "price": 319.00,
             "in_stock": True,
-            "image_url": "./assets/products/wardrobe_child_white.jpg",
+            "image_url": f"{_IMG}/wardrobe_child_white.jpg",
             "age_appropriate": ["toddler", "school-age"],
             "style_tags": ["scandinavian", "minimalist", "functional"],
             "color_palette": ["white", "wood"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/products/wardrobe_child_white.jpg",
+            "image_url": f"{_IMG}/wardrobe_child_white.jpg",
         },
         {
             "product_id": "WARDROBE-TEEN-GREY",
@@ -1317,12 +1320,12 @@ class RetailContext:
             "subcategory": "Wardrobes",
             "price": 449.00,
             "in_stock": True,
-            "image_url": "./assets/products/wardrobe_teen_grey.jpg",
+            "image_url": f"{_IMG}/wardrobe_teen_grey.jpg",
             "age_appropriate": ["teen", "adult"],
             "style_tags": ["modern", "functional", "mirror"],
             "color_palette": ["grey", "white", "mirror"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/products/wardrobe_teen_grey.jpg",
+            "image_url": f"{_IMG}/wardrobe_teen_grey.jpg",
         },
         {
             "product_id": "WARDROBE-ADULT-WALNUT",
@@ -1332,12 +1335,12 @@ class RetailContext:
             "subcategory": "Wardrobes",
             "price": 699.00,
             "in_stock": True,
-            "image_url": "./assets/products/wardrobe_adult_walnut.jpg",
+            "image_url": f"{_IMG}/wardrobe_adult_walnut.jpg",
             "age_appropriate": ["adult"],
             "style_tags": ["traditional", "wood", "spacious"],
             "color_palette": ["walnut", "wood", "brown"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/products/wardrobe_adult_walnut.jpg",
+            "image_url": f"{_IMG}/wardrobe_adult_walnut.jpg",
         },
         {
             "product_id": "DRESSER-CHILD-WHITE",
@@ -1347,12 +1350,12 @@ class RetailContext:
             "subcategory": "Storage",
             "price": 229.00,
             "in_stock": True,
-            "image_url": "./assets/products/dresser_child_white.jpg",
+            "image_url": f"{_IMG}/dresser_child_white.jpg",
             "age_appropriate": ["toddler", "school-age", "teen"],
             "style_tags": ["scandinavian", "minimalist", "clean"],
             "color_palette": ["white", "wood"],
             "room_compatibility": ["bedroom"],
-            "image_url": "./assets/products/dresser_child_white.jpg",
+            "image_url": f"{_IMG}/dresser_child_white.jpg",
         },
         {
             "product_id": "CHEST-DRAWERS-MODERN",
@@ -1362,12 +1365,12 @@ class RetailContext:
             "subcategory": "Storage",
             "price": 349.00,
             "in_stock": True,
-            "image_url": "./assets/products/chest_drawers_modern.jpg",
+            "image_url": f"{_IMG}/chest_drawers_modern.jpg",
             "age_appropriate": ["teen", "adult"],
             "style_tags": ["modern", "minimalist", "functional"],
             "color_palette": ["grey", "white"],
             "room_compatibility": ["bedroom", "living room"],
-            "image_url": "./assets/products/chest_drawers_modern.jpg",
+            "image_url": f"{_IMG}/chest_drawers_modern.jpg",
         },
         {
             "product_id": "TOY-STORAGE-CUBE",
@@ -1377,12 +1380,12 @@ class RetailContext:
             "subcategory": "Storage",
             "price": 189.00,
             "in_stock": True,
-            "image_url": "./assets/products/toy_storage_cube.jpg",
+            "image_url": f"{_IMG}/toy_storage_cube.jpg",
             "age_appropriate": ["toddler", "school-age"],
             "style_tags": ["functional", "playful", "modular"],
             "color_palette": ["white", "multicolor"],
             "room_compatibility": ["bedroom", "playroom"],
-            "image_url": "./assets/products/toy_storage_cube.jpg",
+            "image_url": f"{_IMG}/toy_storage_cube.jpg",
         },
         # Furniture - Bookshelves
         {
@@ -1393,12 +1396,12 @@ class RetailContext:
             "subcategory": "Bookshelves",
             "price": 139.00,
             "in_stock": True,
-            "image_url": "./assets/products/bookshelf_low_child.jpg",
+            "image_url": f"{_IMG}/bookshelf_low_child.jpg",
             "age_appropriate": ["toddler", "school-age"],
             "style_tags": ["scandinavian", "natural", "accessible"],
             "color_palette": ["wood", "natural"],
             "room_compatibility": ["bedroom", "playroom"],
-            "image_url": "./assets/products/bookshelf_low_child.jpg",
+            "image_url": f"{_IMG}/bookshelf_low_child.jpg",
         },
         {
             "product_id": "BOOKSHELF-MEDIUM-WHITE",
@@ -1408,12 +1411,12 @@ class RetailContext:
             "subcategory": "Bookshelves",
             "price": 179.00,
             "in_stock": True,
-            "image_url": "./assets/products/bookshelf_medium_white.jpg",
+            "image_url": f"{_IMG}/bookshelf_medium_white.jpg",
             "age_appropriate": ["school-age", "teen"],
             "style_tags": ["modern", "minimalist", "functional"],
             "color_palette": ["white", "wood"],
             "room_compatibility": ["bedroom", "office"],
-            "image_url": "./assets/products/bookshelf_medium_white.jpg",
+            "image_url": f"{_IMG}/bookshelf_medium_white.jpg",
         },
         {
             "product_id": "BOOKSHELF-TALL-WALNUT",
@@ -1423,12 +1426,12 @@ class RetailContext:
             "subcategory": "Bookshelves",
             "price": 329.00,
             "in_stock": True,
-            "image_url": "./assets/products/bookshelf_tall_walnut.jpg",
+            "image_url": f"{_IMG}/bookshelf_tall_walnut.jpg",
             "age_appropriate": ["teen", "adult"],
             "style_tags": ["traditional", "wood", "spacious"],
             "color_palette": ["walnut", "wood", "brown"],
             "room_compatibility": ["office", "living room", "bedroom"],
-            "image_url": "./assets/products/bookshelf_tall_walnut.jpg",
+            "image_url": f"{_IMG}/bookshelf_tall_walnut.jpg",
         },
         {
             "product_id": "BOOKSHELF-LADDER-BLACK",
@@ -1438,12 +1441,12 @@ class RetailContext:
             "subcategory": "Bookshelves",
             "price": 199.00,
             "in_stock": True,
-            "image_url": "./assets/products/bookshelf_ladder_black.jpg",
+            "image_url": f"{_IMG}/bookshelf_ladder_black.jpg",
             "age_appropriate": ["teen", "adult"],
             "style_tags": ["industrial", "modern", "space-saving"],
             "color_palette": ["black", "metal"],
             "room_compatibility": ["office", "living room", "bedroom"],
-            "image_url": "./assets/products/bookshelf_ladder_black.jpg",
+            "image_url": f"{_IMG}/bookshelf_ladder_black.jpg",
         },
         {
             "product_id": "BOOKSHELF-CUBE-MODULAR",
@@ -1453,12 +1456,12 @@ class RetailContext:
             "subcategory": "Bookshelves",
             "price": 149.00,
             "in_stock": True,
-            "image_url": "./assets/products/bookshelf_cube_modular.jpg",
+            "image_url": f"{_IMG}/bookshelf_cube_modular.jpg",
             "age_appropriate": ["school-age", "teen", "adult"],
             "style_tags": ["modern", "modular", "flexible"],
             "color_palette": ["white"],
             "room_compatibility": ["bedroom", "office", "living room"],
-            "image_url": "./assets/products/bookshelf_cube_modular.jpg",
+            "image_url": f"{_IMG}/bookshelf_cube_modular.jpg",
         },
     ]
 

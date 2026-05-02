@@ -6,8 +6,7 @@
     <title>Cymbal CRM - Approvals</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
     <link rel="stylesheet" href="./static/style.css">
 </head>
@@ -22,7 +21,8 @@
                 <ul>
                     <li><a href="#"><span class="material-symbols-outlined">dashboard</span>Dashboard</a></li>
                     <li><a href="#"><span class="material-symbols-outlined">group</span>Customers</a></li>
-                    <li class="active"><a href="#"><span class="material-symbols-outlined">approval</span>Approvals</a></li>
+                    <li class="active"><a href="#" onclick="showTab('approvals')"><span class="material-symbols-outlined">approval</span>Approvals</a></li>
+                    <li><a href="#" onclick="showTab('evaluation')"><span class="material-symbols-outlined">analytics</span>Evaluation</a></li>
                     <li><a href="#"><span class="material-symbols-outlined">inventory_2</span>Products</a></li>
                     <li><a href="#"><span class="material-symbols-outlined">monitoring</span>Reports</a></li>
                     <li><a href="#"><span class="material-symbols-outlined">settings</span>Settings</a></li>
@@ -51,6 +51,8 @@
             </header>
 
             <main class="page-content">
+                <!-- APPROVALS TAB -->
+                <div id="tab-approvals" class="tab-panel">
                 <div class="content-grid">
                     <section class="card approval-card">
                         <div class="card-header">
@@ -136,6 +138,21 @@
                         </div>
                     </section>
                 </div>
+                </div>
+
+                <!-- EVALUATION TAB -->
+                <div id="tab-evaluation" class="tab-panel" style="display:none;">
+                    <div>
+                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+                            <span class="material-symbols-outlined" style="font-size:28px;color:#00f0ff;">analytics</span>
+                            <div>
+                                <h2 style="margin:0;font-size:1.2em;">Agent Evaluation</h2>
+                                <p style="color:#8888a8;font-size:13px;margin:0;">Voice Shopping Assistant - Session Quality Analysis</p>
+                            </div>
+                        </div>
+                        <div id="evalContent" style="color:#8888a8;">Loading sessions...</div>
+                    </div>
+                </div>
             </main>
 
             <footer class="main-footer">
@@ -145,5 +162,149 @@
     </div>
 
     <script src="./static/script.js"></script>
+    <script>
+    function showTab(tab) {
+        document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+        document.querySelectorAll('.sidebar-nav li').forEach(li => li.classList.remove('active'));
+        const panel = document.getElementById('tab-' + tab);
+        if (panel) panel.style.display = 'block';
+        const links = document.querySelectorAll('.sidebar-nav a');
+        links.forEach(a => {
+            if (a.getAttribute('onclick') && a.getAttribute('onclick').includes(tab)) {
+                a.parentElement.classList.add('active');
+            }
+        });
+        if (tab === 'evaluation') loadEvalSessions();
+    }
+
+    async function loadEvalSessions() {
+        const container = document.getElementById('evalContent');
+        try {
+            const res = await fetch('/api/v1/eval/sessions');
+            const data = await res.json();
+            if (!data.sessions || data.sessions.length === 0) {
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:#888;"><h3>No sessions recorded yet</h3><p>Run the demo to generate session logs for evaluation.</p></div>';
+                return;
+            }
+            let html = '';
+            data.sessions.forEach(s => {
+                html += `
+                <div class="card" style="margin-bottom:16px;">
+                    <div class="card-header">
+                        <span class="material-symbols-outlined card-icon">record_voice_over</span>
+                        <h2>Session ${s.session_id || 'Unknown'}</h2>
+                    </div>
+                    <div class="card-body">
+                        <div style="display:flex;gap:24px;font-size:13px;color:#8888a8;margin-bottom:12px;">
+                            <span>Customer: <strong style="color:#e4e4f0;">${s.customer_id || 'N/A'}</strong></span>
+                            <span>Duration: <strong style="color:#e4e4f0;">${s.duration_seconds || 0}s</strong></span>
+                            <span>Turns: <strong style="color:#e4e4f0;">${s.turn_count || 0}</strong></span>
+                            <span>Tool Calls: <strong style="color:#e4e4f0;">${s.tool_call_count || 0}</strong></span>
+                            <span style="font-size:12px;color:#555570;">${s.start_time || ''}</span>
+                        </div>
+                        <div class="buttons">
+                            <button class="button primary" onclick="runEvaluation('${s.file}', true)">
+                                <span class="material-symbols-outlined">cloud</span>
+                                Evaluate (Vertex AI + Custom)
+                            </button>
+                            <button class="button secondary" onclick="runEvaluation('${s.file}', false)">
+                                <span class="material-symbols-outlined">calculate</span>
+                                Evaluate (Custom Metrics Only)
+                            </button>
+                            ${s.has_eval_results ? `<button class="button secondary" onclick="viewEvalResults('${s.file}')"><span class="material-symbols-outlined">visibility</span>View Results</button>` : ''}
+                        </div>
+                        <div id="eval-results-${s.file}" style="margin-top:16px;"></div>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        } catch (e) {
+            container.innerHTML = '<p style="color:red;">Failed to load sessions: ' + e.message + '</p>';
+        }
+    }
+
+    async function runEvaluation(filename, useVertex) {
+        const panel = document.getElementById('eval-results-' + filename);
+        panel.innerHTML = '<p style="color:#5b7fff;">Running evaluation... This may take a minute.</p>';
+        try {
+            const res = await fetch('/api/v1/eval/run/' + filename + '?use_vertex=' + useVertex, { method: 'POST' });
+            const data = await res.json();
+            if (data.results) renderEvalResults(panel, data.results);
+            else panel.innerHTML = '<p style="color:red;">Error: ' + (data.detail || 'Unknown') + '</p>';
+        } catch (e) {
+            panel.innerHTML = '<p style="color:red;">Error: ' + e.message + '</p>';
+        }
+    }
+
+    async function viewEvalResults(filename) {
+        const panel = document.getElementById('eval-results-' + filename);
+        panel.innerHTML = '<p style="color:#5b7fff;">Loading results...</p>';
+        try {
+            const res = await fetch('/api/v1/eval/results/' + filename);
+            const data = await res.json();
+            renderEvalResults(panel, data);
+        } catch (e) {
+            panel.innerHTML = '<p style="color:red;">Error: ' + e.message + '</p>';
+        }
+    }
+
+    function renderEvalResults(panel, results) {
+        const overall = results.overall || {};
+        const grade = overall.grade || '?';
+        const score = overall.score || 0;
+        const pct = (score * 100).toFixed(1);
+        const gradeColor = score >= 0.8 ? '#22c55e' : score >= 0.6 ? '#f59e0b' : '#ef4444';
+
+        const layers = [
+            { key: 'trajectory_order', label: 'Trajectory Order', sk: 'trajectory_order_score' },
+            { key: 'trajectory_args', label: 'Trajectory Args', sk: 'trajectory_args_score' },
+            { key: 'step_skip', label: 'Step Completion', sk: 'step_skip_score' },
+            { key: 'moodboard_quality', label: 'Moodboard Quality', sk: 'moodboard_quality_score' },
+            { key: 'session_completion', label: 'Task Completion', sk: 'session_completion_score' },
+            { key: 'speech_latency', label: 'Speech Latency', sk: 'speech_latency_score' },
+            { key: 'speech_wer', label: 'Transcription (WER)', sk: 'speech_wer_score' },
+        ];
+
+        let html = `
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+                <span style="font-size:36px;font-weight:800;color:${gradeColor};background:${gradeColor}15;padding:4px 16px;border-radius:8px;">${grade}</span>
+                <div><div style="font-size:28px;font-weight:700;color:${gradeColor};">${pct}%</div><div style="font-size:12px;color:#8888a8;">Overall Score</div></div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+        `;
+        layers.forEach(l => {
+            const layer = results[l.key] || {};
+            const val = layer[l.sk];
+            if (val === undefined) return;
+            const color = val >= 0.8 ? '#22c55e' : val >= 0.6 ? '#f59e0b' : '#ef4444';
+            html += `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;">
+                <div style="font-size:11px;color:#8888a8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">${l.label}</div>
+                <div style="font-size:24px;font-weight:700;color:${color};">${(val*100).toFixed(0)}%</div>`;
+            Object.entries(layer).forEach(([k,v]) => {
+                if (k !== l.sk && !Array.isArray(v)) {
+                    html += `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-top:1px solid rgba(255,255,255,0.04);"><span style="color:#555570;">${k}</span><span style="color:#c0c0d8;">${typeof v==='number'&&v%1!==0?v.toFixed(2):v}</span></div>`;
+                }
+            });
+            if (layer.skipped_stages && layer.skipped_stages.length) {
+                html += `<div style="color:#ef4444;font-size:11px;margin-top:4px;">Skipped: ${layer.skipped_stages.join(', ')}</div>`;
+            }
+            html += '</div>';
+        });
+
+        if (results.vertex_conversation && !results.vertex_conversation.error) {
+            html += '<div style="grid-column:1/-1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;"><div style="font-size:11px;color:#8888a8;text-transform:uppercase;margin-bottom:8px;">Vertex AI Conversation Quality</div>';
+            Object.entries(results.vertex_conversation).forEach(([k,v]) => {
+                if (typeof v === 'number') {
+                    const c = v >= 4 ? '#22c55e' : v >= 3 ? '#f59e0b' : '#ef4444';
+                    html += `<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="color:#555570;">${k}</span><span style="color:${c};font-weight:600;">${v.toFixed(2)}</span></div>`;
+                }
+            });
+            html += '</div>';
+        }
+
+        html += '</div>';
+        panel.innerHTML = html;
+    }
+    </script>
 </body>
 </html> 

@@ -84,3 +84,27 @@ pylintrc
 pylintrc.test
 
 venv/
+
+# Log files
+*.log
+
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+*.tfstate
+*.tfstate.*
+
+# Evaluation session logs (generated at runtime)
+server/evaluation/logs/*.json
+
+# Claude Code
+.claude/
+
+# Node modules
+node_modules/
+
+# Assets served from GCS bucket
+client/assets/
+server/client/assets/

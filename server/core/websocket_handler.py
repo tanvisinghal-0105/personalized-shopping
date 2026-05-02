@@ -21,6 +21,7 @@ from google.genai.types import (
 
 from core.agent_factory import get_agent_config
 from .logger import logger
+from evaluation.session_recorder import get_recorder, finish_recorder
 from config.config import (
     CONFIG,
     VAD_ENABLED,
@@ -185,9 +186,65 @@ async def cleanup_session(session_id: str) -> None:
             del SESSION_CONTEXTS[session_id]
             logger.info(f"Session context for {session_id} removed")
 
+        # Save evaluation recording
+        try:
+            eval_file = finish_recorder(str(session_id))
+            if eval_file:
+                logger.info(f"[EVAL] Session recording saved: {eval_file}")
+        except Exception as rec_err:
+            logger.warning(f"[EVAL] Failed to save session recording: {rec_err}")
+
         logger.info(f"Session {session_id} cleaned up and ended")
     except Exception as cleanup_error:
         logger.error(f"Error during session cleanup: {cleanup_error}")
+
+
+async def _generate_and_send_style_previews(
+    websocket: Any,
+    room_photo_b64: str,
+    style_options: list,
+    room_type: str,
+) -> None:
+    """Generate personalised style previews in the background and stream each
+    to the client as it becomes ready.  The frontend swaps the static image
+    for the generated one when it receives a ``style_preview_update`` message.
+    """
+    from core.agents.retail.tools import _generate_single_style_preview
+
+    async def _gen_one(style_entry):
+        return await asyncio.to_thread(
+            _generate_single_style_preview, room_photo_b64, style_entry, room_type
+        )
+
+    logger.info(f"[STYLE PREVIEW ASYNC] Starting generation for {len(style_options)} styles")
+    tasks = {
+        asyncio.create_task(_gen_one(s)): s["id"]
+        for s in style_options
+    }
+
+    for coro in asyncio.as_completed(tasks):
+        try:
+            result = await coro
+            if result and "data:image" in result.get("image_url", ""):
+                await websocket.send(json.dumps({
+                    "type": "style_preview_update",
+                    "data": {
+                        "style_id": result["id"],
+                        "image_url": result["image_url"],
+                    }
+                }))
+                logger.info(f"[STYLE PREVIEW ASYNC] Sent preview for '{result['id']}'")
+        except Exception as e:
+            logger.error(f"[STYLE PREVIEW ASYNC] Error generating preview: {e}")
+
+    # Notify frontend that personalisation is complete
+    try:
+        await websocket.send(json.dumps({
+            "type": "style_preview_done",
+        }))
+    except Exception:
+        pass
+    logger.info("[STYLE PREVIEW ASYNC] All style previews done")
 
 
 async def handle_agent_responses(websocket: Any, live_events: Any, session_id: str, live_request_queue: LiveRequestQueue) -> None:
@@ -198,6 +255,7 @@ async def handle_agent_responses(websocket: Any, live_events: Any, session_id: s
     """
     try:
         full_text = ""
+        _last_tool_call_args = {}
         intent_detector = get_intent_detector()
 
         async for event in live_events:
@@ -211,6 +269,13 @@ async def handle_agent_responses(websocket: Any, live_events: Any, session_id: s
 
                 if transcribed_text and is_finished:
                     logger.info(f"[VOICE INTENT] User said (finished): '{transcribed_text}'")
+                    # Record for evaluation
+                    try:
+                        recorder = get_recorder(str(session_id))
+                        recorder.record_user_input(transcribed_text)
+                        logger.info(f"[EVAL] Recorded user input: '{transcribed_text[:50]}'")
+                    except Exception as rec_err:
+                        logger.warning(f"[EVAL] Failed to record user input: {rec_err}")
 
                     # Get session context for all intent checks
                     from core.agents.retail.session_state import get_state_manager
@@ -360,6 +425,8 @@ DO NOT respond with text. DO NOT ask questions. JUST CALL THE TOOL NOW."""
             if event.content.parts[0].function_call:
                 print("Function call detected")
                 tool = event.content.parts[0].function_call
+                # Store args for eval recording when the response arrives
+                _last_tool_call_args[tool.name] = dict(tool.args) if tool.args else {}
                 await websocket.send(
                     json.dumps(
                         {
@@ -374,16 +441,48 @@ DO NOT respond with text. DO NOT ask questions. JUST CALL THE TOOL NOW."""
                 response_data = tool_result.response
                 logger.info(f"[TOOL RESPONSE] Function response for: {tool_name}, keys: {list(response_data.keys()) if isinstance(response_data, dict) else 'not-dict'}")
 
+                # Record tool call for evaluation (use args from the function_call event)
+                try:
+                    recorder = get_recorder(str(session_id))
+                    tool_args = _last_tool_call_args.pop(tool_name, {})
+                    recorder.record_tool_call(tool_name, tool_args, response_data)
+                    logger.info(f"[EVAL] Recorded tool call: {tool_name} with args keys: {list(tool_args.keys())}")
+                except Exception as rec_err:
+                    logger.warning(f"[EVAL] Failed to record tool call: {rec_err}")
+
                 # For visualization results, the image_base64 may be too large
                 # for the ADK to pass through. Send it directly via websocket.
                 if isinstance(response_data, dict) and response_data.get("ui_data", {}).get("display_type") == "room_visualization":
                     logger.info(f"[TOOL RESPONSE] Sending room_visualization ui_data directly to frontend")
+
+                # Async style preview generation: if the tool returned a
+                # style_selector with a room photo, extract the photo before
+                # sending the result to the client (to avoid a huge payload).
+                room_photo_for_preview = None
+                ui_data = response_data.get("ui_data", {}) if isinstance(response_data, dict) else {}
+                if (ui_data.get("display_type") == "style_selector"
+                        and ui_data.get("generate_previews_from_photo")
+                        and ui_data.get("room_photo_base64")):
+                    room_photo_for_preview = ui_data.pop("room_photo_base64")
+                    ui_data.pop("generate_previews_from_photo", None)
+                    ui_data["personalizing_in_progress"] = True
 
                 await websocket.send(
                     json.dumps(
                         {"type": "tool_result", "data": response_data}
                     )
                 )
+
+                if room_photo_for_preview:
+                    logger.info("[STYLE PREVIEW] Kicking off async style preview generation")
+                    asyncio.create_task(
+                        _generate_and_send_style_previews(
+                            websocket,
+                            room_photo_for_preview,
+                            ui_data["style_options"],
+                            ui_data.get("room_type", "room"),
+                        )
+                    )
 
             # --- Text and Markdown handling ---
             if event.content.parts and event.content.parts[0].text:
@@ -778,7 +877,31 @@ async def handle_client(websocket: Any) -> None:
                 f"Customer info received: {first_name} {last_name} ({customer_id}) - {email}"
             )
 
+        # Clear cart for fresh session
+        if customer_id:
+            try:
+                from google.cloud import firestore as _fs
+                _db = _fs.Client()
+                _db.collection("carts").document(customer_id).set({
+                    "cart_id": f"CART-{customer_id}",
+                    "items": {},
+                    "subtotal": 0,
+                    "last_updated": datetime.datetime.now().isoformat(),
+                })
+                logger.info(f"Cart cleared for new session: {customer_id}")
+            except Exception as e:
+                logger.warning(f"Could not clear cart: {e}")
+
+        # Initialize eval recorder with customer info
+        try:
+            recorder = get_recorder(str(session_id), customer_id or "unknown")
+            recorder.customer_id = customer_id or "unknown"
+            logger.info(f"[EVAL] Recorder initialized for session {session_id}, customer {customer_id}")
+        except Exception as rec_err:
+            logger.warning(f"[EVAL] Failed to init recorder: {rec_err}")
+
         # Get agent config with customer personalization
+
         agent_config = get_agent_config(
             customer_id=customer_id,
             first_name=first_name,

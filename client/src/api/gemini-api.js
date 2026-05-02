@@ -109,6 +109,16 @@ export class GeminiAPI {
                 } else if (response.type === 'tool_result') {
                     console.log('Received function response:', response.data);
                     this.onFunctionResponse(response.data);
+                } else if (response.type === 'style_preview_update') {
+                    console.log('Received style preview update:', response.data?.style_id);
+                    if (this.onStylePreviewUpdate) {
+                        this.onStylePreviewUpdate(response.data);
+                    }
+                } else if (response.type === 'style_preview_done') {
+                    console.log('Style preview personalisation complete');
+                    if (this.onStylePreviewDone) {
+                        this.onStylePreviewDone();
+                    }
                 } else {
                     console.log('Received unknown message type:', response);
                 }

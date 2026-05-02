@@ -9,7 +9,9 @@ from datetime import datetime, timedelta
 from google.cloud import firestore
 from .context import RetailContext
 from .session_state import get_state_manager
-from config.config import RECOMMENDATION_MODEL
+from config.config import RECOMMENDATION_MODEL, GCS_ASSETS_BASE_URL
+
+_ASSETS = GCS_ASSETS_BASE_URL
 
 # Initialize Firestore client with error handling
 db = None
@@ -81,59 +83,71 @@ def approve_discount(
 
 
 def sync_ask_for_approval(
-    type: str, value: float, reason: str, product_id: str = ""
+    customer_id: str, type: str, value: float, reason: str, product_id: str = ""
 ) -> str:
-    """Asks a manager for approval synchronously (waits for a response)."""
+    """Asks a manager for approval synchronously (waits for a response).
+
+    This tool creates an approval request in Firestore and polls until
+    the manager approves or denies it via the CRM dashboard.
+
+    Args:
+        customer_id: The customer ID requesting the discount.
+        type: Type of discount ('percentage', 'flat', 'price_match', 'bundle').
+        value: Discount value (e.g. 10 for 10% or 10 EUR).
+        reason: Reason for the discount request.
+        product_id: Optional product ID the discount applies to.
+
+    Returns:
+        A string indicating the manager's decision.
+    """
     logger.info(
-        f"Requesting sync manager approval for discount: type={type}, value={value}, reason={reason}, product_id={product_id}"
+        f"Requesting manager approval for customer {customer_id}: {type}={value}, reason={reason}, product_id={product_id}"
     )
-    url = "https://escalation-handler-243114688021.us-central1.run.app/request"
+
     payload = {
-        "menuId": 36,
-        "menuLang": "en",
-        "customer_id": "CY-1234-1234",
+        "customer_id": customer_id,
         "discount_type": type,
         "discount_value": value,
         "product_id": product_id,
-        "crmAccountId": "abc123",
+        "reason": reason,
         "approval_status": "pending",
-        "messages": {
-            "agent": [reason],
-            "allow": "My manager says ok",
-            "deny": "My manager says no",
-            "timeout": "Sorry I did not hear back from my manager",
-            "error": "Sorry but I've had some trouble getting hold of my manager",
-        },
-        "escalationHost": "chat-escalation-243114688021.us-central1.run.app",
+        "requested_at": datetime.now().isoformat(),
     }
 
     if db is not None:
         try:
-            db.collection("customers").document("CY-1234-1234").set(payload)
+            db.collection("customers").document(customer_id).set(payload)
+            logger.info(f"Approval request saved to Firestore for {customer_id}")
         except Exception as e:
             logger.warning(f"Failed to save to Firestore: {e}")
+            return "Sorry, I had trouble reaching my manager. Please try again."
 
     logger.info("Waiting for manager approval...")
 
-    # poll for approval status. max of 5 minutes with 1 second intervals
-    for i in range(300):
+    # Poll for approval status -- max 3 minutes with 2 second intervals
+    for i in range(90):
         if db is not None:
             try:
-                doc = db.collection("customers").document("CY-1234-1234").get()
+                doc = db.collection("customers").document(customer_id).get()
                 if doc.exists:
-                    if doc.to_dict()["approval_status"] == "approved":
-                        return "Manager approved the discount"
+                    status = doc.to_dict().get("approval_status", "pending")
+                    if status == "approved":
+                        logger.info(f"Manager APPROVED discount for {customer_id}")
+                        return "Great news! My manager has approved the discount for you."
+                    elif status == "denied":
+                        logger.info(f"Manager DENIED discount for {customer_id}")
+                        return "I'm sorry, my manager was not able to approve that discount at this time."
             except Exception as e:
                 logger.warning(f"Failed to check Firestore: {e}")
                 break
         else:
-            # Without Firestore, simulate approval for demo purposes
             time.sleep(2)
-            return "Manager approved the discount (simulated)"
+            return "My manager has approved the discount. (simulated)"
 
-        time.sleep(1)
+        time.sleep(2)
 
-    logger.info("Manager approval not received after 5 minutes")
+    logger.info(f"Manager approval not received after 3 minutes for {customer_id}")
+    return "I haven't heard back from my manager yet. Let me check on that and get back to you."
 
     logger.info("Sending request to manager...")
     headers = {"Content-Type": "application/json"}
@@ -1263,6 +1277,31 @@ def create_style_moodboard(
     # Normalize color preferences for matching
     normalized_color_prefs = [c.lower() for c in color_preferences] if color_preferences else []
 
+    # Color family mapping for fuzzy color matching
+    _COLOR_FAMILIES = {
+        "blue": ["blue", "navy", "sky blue", "ocean", "cobalt", "teal", "aqua", "cerulean", "indigo", "azure", "sapphire", "denim", "marine"],
+        "white": ["white", "ivory", "cream", "off-white", "snow", "pearl", "alabaster", "chalk", "linen"],
+        "green": ["green", "sage", "olive", "emerald", "forest", "mint", "lime", "moss", "jade", "fern", "eucalyptus"],
+        "pink": ["pink", "blush", "rose", "coral", "salmon", "magenta", "fuchsia", "dusty pink", "mauve"],
+        "red": ["red", "crimson", "burgundy", "maroon", "ruby", "scarlet", "wine", "cherry"],
+        "yellow": ["yellow", "gold", "mustard", "amber", "honey", "lemon", "ochre", "saffron"],
+        "orange": ["orange", "terracotta", "rust", "tangerine", "peach", "apricot", "copper"],
+        "brown": ["brown", "walnut", "chocolate", "tan", "caramel", "mocha", "chestnut", "espresso", "wood", "timber", "oak", "birch"],
+        "grey": ["grey", "gray", "charcoal", "silver", "slate", "ash", "graphite", "pewter", "stone"],
+        "black": ["black", "ebony", "onyx", "jet", "midnight"],
+        "beige": ["beige", "sand", "taupe", "khaki", "camel", "nude", "natural", "wheat", "oat"],
+        "purple": ["purple", "violet", "lavender", "plum", "lilac", "amethyst", "mauve", "aubergine"],
+    }
+
+    def _color_matches(pref_color, product_color):
+        """Check if two colours belong to the same colour family."""
+        if pref_color in product_color or product_color in pref_color:
+            return True
+        for family_members in _COLOR_FAMILIES.values():
+            if pref_color in family_members and product_color in family_members:
+                return True
+        return False
+
     # Score each product based on how well it matches preferences
     product_scores = {}
     for product in all_relevant_products:
@@ -1276,9 +1315,13 @@ def create_style_moodboard(
         style_matches = sum(1 for style in matched_styles if style in product_styles)
         score += style_matches * 10
 
-        # Color match: +15 points per matching color (PRIORITIZE color coordination!)
+        # Color match: +15 points per matching color (fuzzy family matching)
         if normalized_color_prefs:
-            color_matches = sum(1 for color in normalized_color_prefs if color in product_colors)
+            color_matches = sum(
+                1 for pref in normalized_color_prefs
+                for pc in product_colors
+                if _color_matches(pref, pc)
+            )
             score += color_matches * 15
 
         # Room match: +5 points if room compatible
@@ -1326,7 +1369,7 @@ def create_style_moodboard(
     for product in moodboard_products:
         product_id = product["product_id"]
         # Use the image_url directly from the product catalog
-        image_url = product.get("image_url", "./assets/placeholder_home_decor.jpg")
+        image_url = product.get("image_url", f"{_ASSETS}/placeholder_home_decor.jpg")
 
         logger.info(f"[MOODBOARD] Product {product_id} using image: {image_url}")
 
@@ -1426,7 +1469,7 @@ def display_product_search_results(
     for product in selected_products:
         product_id = product["product_id"]
         # Use the image_url directly from the product catalog
-        image_url = product.get("image_url", "./assets/placeholder_product.jpg")
+        image_url = product.get("image_url", f"{_ASSETS}/placeholder_product.jpg")
 
         logger.info(f"[PRODUCT SEARCH] Product {product_id} using image: {image_url}")
 
@@ -1466,6 +1509,91 @@ def display_product_search_results(
     return search_results
 
 
+_STYLE_PROMPTS = {
+    # Adult styles
+    "modern": "Transform this room into a stunning modern interior: repaint walls crisp white, replace all furniture with sleek low-profile pieces in black and grey, add geometric pendant lights, a bold abstract canvas on the wall, and a clean monochrome rug.",
+    "minimalist": "Transform this room into a serene minimalist space: repaint walls pure white, remove clutter, replace furniture with simple white and pale wood pieces, add one statement floor lamp, bare surfaces, and a single potted plant.",
+    "bohemian": "Transform this room into a vibrant bohemian retreat: add a colourful woven tapestry on the wall, layer multiple patterned rugs and kilim cushions, hang macrame plant holders with trailing greenery, drape fairy lights, and fill with jewel-toned textiles in orange, magenta and teal.",
+    "coastal": "Transform this room into a breezy coastal retreat: repaint walls soft sky blue, add white-washed wood furniture, hang rope-framed mirrors, place a jute rug, add coral and shell decorations, blue striped cushions, and driftwood accents.",
+    "industrial": "Transform this room into an urban industrial loft: add exposed brick accent wall, replace furniture with raw metal and dark wood pieces, hang Edison bulb pendant lights, add a distressed leather chair, metal shelving, and concrete-effect accessories.",
+    "scandinavian": "Transform this room into a cosy Scandinavian haven: repaint walls warm white, add light birch wood furniture, layer sheepskin throws and knitted cushions, place a round jute rug, add minimalist wooden shelves, and soft warm lighting.",
+    "traditional": "Transform this room into a classic traditional space: add rich dark wood furniture with ornate details, hang elegant curtains with tassels, place a Persian-style rug, add table lamps with fabric shades, framed paintings, and symmetrical arrangement.",
+    "rustic": "Transform this room into a warm rustic retreat: add reclaimed wood accent wall, replace furniture with chunky timber pieces, place a cowhide rug, add antler or wrought-iron chandelier, woven baskets, and warm flannel textiles in red and brown.",
+    # Child themes
+    "underwater_world": "Dramatically transform this children's bedroom into an underwater ocean paradise: repaint walls deep ocean blue with painted coral reefs and seaweed, add dolphin and sea turtle wall decals, replace bedding with ocean-blue duvet covered in fish patterns, hang a jellyfish lamp from the ceiling, add a treasure chest toy box, and scatter shell-shaped cushions.",
+    "forest_adventure": "Dramatically transform this children's bedroom into an enchanted forest: repaint walls deep green with painted trees and woodland murals, add a tree-trunk bookshelf, fox and deer wall decals, mushroom-shaped night lights, leaf-patterned green bedding, a woodland animal rug, and hanging bird houses as shelves.",
+    "northern_lights": "Dramatically transform this children's bedroom into a magical aurora night sky: repaint ceiling with swirling purple, teal, and green northern lights, add glowing star decals across dark navy walls, replace bedding with galaxy-print purple and teal duvet, hang a crescent moon lamp, add cloud-shaped shelves, and iridescent curtains.",
+    "space_explorer": "Dramatically transform this children's bedroom into a space station: repaint walls dark navy blue with painted planets, stars, and constellations, add a rocket ship bookshelf, astronaut wall decals, planet mobile hanging from ceiling, silver metallic bedding with rocket patterns, and a glowing Earth night light.",
+    "safari_wild": "Dramatically transform this children's bedroom into a safari jungle camp: repaint walls warm sandy beige with painted savanna landscape and acacia trees, add large giraffe and elephant wall decals, a bamboo canopy over the bed, leopard-print cushions, a jungle green rug, woven grass baskets, and a wooden safari jeep toy shelf.",
+    "rainbow_bright": "Dramatically transform this children's bedroom into a bold rainbow wonderland: repaint each wall a different bright primary colour (red, yellow, blue, green), add rainbow arch wall mural, replace bedding with vivid multicoloured rainbow stripes, hang colourful bunting, add a bright yellow bookshelf, and scatter cushions in every colour of the rainbow.",
+}
+
+
+def _generate_single_style_preview(
+    room_photo_b64: str,
+    style_entry: dict,
+    room_type: str,
+) -> dict:
+    """Generate a single style preview image by restyling the uploaded room photo.
+
+    Called from the websocket handler in a background thread.
+    Returns the style dict with an updated ``image_url`` (base64 data-URI)
+    or the original dict unchanged on failure.
+    """
+    import base64
+
+    style_id = style_entry["id"]
+    prompt = _STYLE_PROMPTS.get(style_id)
+    if not prompt:
+        logger.warning(f"[STYLE PREVIEW] No prompt for style '{style_id}', keeping static image")
+        return style_entry
+
+    try:
+        from google import genai
+        from google.genai import types as genai_types
+
+        client = genai.Client()
+        photo_bytes = base64.b64decode(room_photo_b64)
+        reference_image = genai_types.RawReferenceImage(
+            reference_id=1,
+            reference_image=genai_types.Image(image_bytes=photo_bytes),
+        )
+
+        edit_prompt = (
+            f"{prompt} "
+            f"Keep the same room shape, window positions, and camera angle. "
+            f"The style transformation must be clearly visible and dramatic. "
+            f"Photorealistic interior design photograph, 4K quality, "
+            f"natural lighting, editorial magazine style."
+        )
+
+        image_response = client.models.edit_image(
+            model="imagen-3.0-capability-001",
+            prompt=edit_prompt,
+            reference_images=[reference_image],
+            config=genai_types.EditImageConfig(
+                number_of_images=1,
+                safety_filter_level="block_some",
+                person_generation="dont_allow",
+            ),
+        )
+
+        if image_response and image_response.generated_images:
+            img_bytes = image_response.generated_images[0].image.image_bytes
+            img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+            logger.info(f"[STYLE PREVIEW] Generated preview for '{style_id}' ({len(img_bytes)} bytes)")
+            result = dict(style_entry)
+            result["image_url"] = f"data:image/png;base64,{img_b64}"
+            return result
+        else:
+            logger.warning(f"[STYLE PREVIEW] No image returned for '{style_id}', keeping static image")
+            return style_entry
+
+    except Exception as e:
+        logger.error(f"[STYLE PREVIEW] Failed to generate preview for '{style_id}': {e}")
+        return style_entry
+
+
 def start_home_decor_consultation(
     customer_id: str,
     initial_request: Optional[str] = None,
@@ -1485,64 +1613,20 @@ def start_home_decor_consultation(
 
     state_manager = get_state_manager()
 
-    # Check if customer has an existing active session
+    # If the user is making a fresh request (initial_request provided),
+    # always start a new session to avoid resuming stale state.
     existing_session = state_manager.get_customer_session(customer_id)
-    if existing_session and not existing_session.get("moodboard_generated", False):
-        logger.info(f"[HOME DECOR] Found existing session {existing_session['session_id']}, using it and extracting current state...")
-        session_id = existing_session["session_id"]
+    if existing_session:
+        old_id = existing_session["session_id"]
+        logger.info(f"[HOME DECOR] Clearing previous session {old_id} to start fresh")
+        state_manager.mark_moodboard_generated(old_id)
 
-        # Extract existing session data to continue properly
-        collected = existing_session.get("collected_data", {})
+    # Create new session
+    session_id = f"DECOR-CONSULT-{random.randint(10000, 99999)}"
+    state_manager.create_session(customer_id, session_id)
+    logger.info(f"[HOME DECOR] Created new session {session_id}")
 
-        # Instead of starting over, continue where we left off with the existing state
-        # This prevents the circular questioning issue
-        return continue_home_decor_consultation(
-            customer_id=customer_id,
-            session_id=session_id,
-            room_type=collected.get("room_type"),
-            room_purpose=collected.get("room_purpose"),
-            age_context=collected.get("age_context"),
-            constraints=collected.get("constraints"),
-            style_preferences=collected.get("style_preferences"),
-            color_preferences=collected.get("color_preferences"),
-        )
-    else:
-        # Create new session
-        session_id = f"DECOR-CONSULT-{random.randint(10000, 99999)}"
-        state_manager.create_session(customer_id, session_id)
-        logger.info(f"[HOME DECOR] Created new session {session_id}")
-
-    # Try to detect room type from initial request
-    detected_room = None
-    if initial_request:
-        request_lower = initial_request.lower()
-        room_keywords = {
-            "living room": ["living room", "lounge"],
-            "bedroom": ["bedroom", "bed room"],
-            "office": ["office", "home office", "workspace"],
-            "dining room": ["dining room", "dining"],
-            "kitchen": ["kitchen"],
-            "bathroom": ["bathroom", "bath"],
-            "entryway": ["entryway", "entry way", "hallway", "entrance"]
-        }
-
-        for room_type, keywords in room_keywords.items():
-            if any(keyword in request_lower for keyword in keywords):
-                detected_room = room_type
-                logger.info(f"[HOME DECOR] Detected room from initial request: {detected_room}")
-                # Update session with detected room
-                state_manager.update_session(session_id, room_type=detected_room)
-                break
-
-    # If room was detected, skip room selector and proceed to style selection
-    if detected_room:
-        logger.info(f"[HOME DECOR] Room detected ({detected_room}), skipping room selector and proceeding to style selection")
-        return continue_home_decor_consultation(
-            customer_id=customer_id,
-            session_id=session_id,
-            room_type=detected_room
-        )
-
+    # Always show the room selector UI so the customer can confirm their choice
     # Define the consultation stages
     consultation_flow = {
         "stage_1_room_identification": {
@@ -1650,6 +1734,23 @@ def continue_home_decor_consultation(
             logger.warning(f"[HOME DECOR] Session {session_id} not found")
             return {"status": "error", "message": "Session not found. Please start a new consultation."}
 
+    # Guard: do not let the AI agent skip ahead by pre-filling style or
+    # color preferences before the user has been shown the UI for them.
+    session_before = state_manager.get_session(session_id)
+    collected_before = session_before["collected_data"] if session_before else {}
+    current_stage = session_before.get("current_stage", "") if session_before else ""
+
+    # If the style selector UI hasn't been shown yet, ignore any styles/colors
+    # the AI tries to fill in (e.g. from photo analysis).
+    if style_preferences and current_stage not in ("stage_2_style_discovery",):
+        if not collected_before.get("style_preferences"):
+            logger.info(f"[HOME DECOR] Ignoring AI-provided style_preferences {style_preferences} -- style selector not yet shown (stage: {current_stage})")
+            style_preferences = None
+    if color_preferences and current_stage not in ("stage_3_color_preferences",):
+        if not collected_before.get("color_preferences"):
+            logger.info(f"[HOME DECOR] Ignoring AI-provided color_preferences {color_preferences} -- color selector not yet shown (stage: {current_stage})")
+            color_preferences = None
+
     # Update session state with new information
     state_manager.update_session(
         session_id=session_id,
@@ -1680,16 +1781,19 @@ def continue_home_decor_consultation(
             logger.info(f"[HOME DECOR] Rejecting adult styles {given_styles} for child room -- forcing themed style selector")
             collected["style_preferences"] = None
             collected["color_preferences"] = None
-            state_manager.update_session(session_id, style_preferences=None, color_preferences=None)
+            # Use empty list to explicitly clear (None means "don't update")
+            state_manager.update_session(session_id, style_preferences=[], color_preferences=[])
             # Return with the themed style selector UI so the frontend renders it
             child_style_options = [
-                {"id": "underwater_world", "label": "Underwater World", "description": "Soft blues with dolphins, shells & ocean vibes", "image_url": "./assets/theme_underwater_world.jpg"},
-                {"id": "forest_adventure", "label": "Forest Adventure", "description": "Warm greens & browns, woodland creatures", "image_url": "./assets/theme_forest_adventure.jpg"},
-                {"id": "northern_lights", "label": "Northern Lights", "description": "Cool pastels, aurora colours & starry skies", "image_url": "./assets/theme_northern_lights.jpg"},
-                {"id": "space_explorer", "label": "Space Explorer", "description": "Deep navy & silver, planets & rockets", "image_url": "./assets/theme_space_explorer.jpg"},
-                {"id": "safari_wild", "label": "Safari Wild", "description": "Earthy tones, jungle animals & adventure", "image_url": "./assets/theme_safari_wild.jpg"},
-                {"id": "rainbow_bright", "label": "Rainbow Bright", "description": "Bold primary colours, playful & cheerful", "image_url": "./assets/theme_rainbow_bright.jpg"},
+                {"id": "underwater_world", "label": "Underwater World", "description": "Soft blues with dolphins, shells & ocean vibes", "image_url": f"{_ASSETS}/theme_underwater_world.jpg"},
+                {"id": "forest_adventure", "label": "Forest Adventure", "description": "Warm greens & browns, woodland creatures", "image_url": f"{_ASSETS}/theme_forest_adventure.jpg"},
+                {"id": "northern_lights", "label": "Northern Lights", "description": "Cool pastels, aurora colours & starry skies", "image_url": f"{_ASSETS}/theme_northern_lights.jpg"},
+                {"id": "space_explorer", "label": "Space Explorer", "description": "Deep navy & silver, planets & rockets", "image_url": f"{_ASSETS}/theme_space_explorer.jpg"},
+                {"id": "safari_wild", "label": "Safari Wild", "description": "Earthy tones, jungle animals & adventure", "image_url": f"{_ASSETS}/theme_safari_wild.jpg"},
+                {"id": "rainbow_bright", "label": "Rainbow Bright", "description": "Bold primary colours, playful & cheerful", "image_url": f"{_ASSETS}/theme_rainbow_bright.jpg"},
             ]
+            room_photo_b64 = collected.get("room_photo_base64")
+
             return {
                 "status": "awaiting_input",
                 "session_id": session_id,
@@ -1705,6 +1809,9 @@ def continue_home_decor_consultation(
                     "style_options": child_style_options,
                     "interaction_mode": "multi_select",
                     "phase": "phase_1_style_discovery",
+                    "generate_previews_from_photo": bool(room_photo_b64),
+                    "room_photo_base64": room_photo_b64 if room_photo_b64 else None,
+                    "room_type": collected["room_type"],
                 }
             }
 
@@ -1759,6 +1866,15 @@ def continue_home_decor_consultation(
     if not collected["room_type"]:
         state_manager.update_session(session_id, stage="stage_1_room_identification")
         logger.info(f"[HOME DECOR] Awaiting room type from customer")
+        room_options_ui = [
+            {"id": "living_room", "label": "Living Room", "icon": ""},
+            {"id": "bedroom", "label": "Bedroom", "icon": ""},
+            {"id": "office", "label": "Office", "icon": ""},
+            {"id": "dining_room", "label": "Dining Room", "icon": ""},
+            {"id": "kitchen", "label": "Kitchen", "icon": ""},
+            {"id": "bathroom", "label": "Bathroom", "icon": ""},
+            {"id": "entryway", "label": "Entryway", "icon": ""}
+        ]
         return {
             "status": "awaiting_input",
             "session_id": session_id,
@@ -1766,7 +1882,15 @@ def continue_home_decor_consultation(
             "missing_info": "room_type",
             "question": "Which room would you like to decorate?",
             "options": ["living room", "bedroom", "office", "dining room", "kitchen", "bathroom", "entryway"],
-            "message": "Let's start by identifying which room you'd like to transform."
+            "message": "Let's start by identifying which room you'd like to transform.",
+            "ui_data": {
+                "display_type": "room_selector",
+                "title": "Which room would you like to decorate?",
+                "subtitle": "Select the space you'd like to transform",
+                "room_options": room_options_ui,
+                "interaction_mode": "single_select",
+                "phase": "phase_1_initial_interest"
+            }
         }
 
     # Ask about room purpose (for bedrooms - decoration vs redesign)
@@ -1847,15 +1971,18 @@ def continue_home_decor_consultation(
         age = collected.get("age_context")
         is_child_room = age in ("toddler", "school-age", "teen")
 
+        # Check if we have an uploaded room photo to generate personalised style previews
+        room_photo_b64 = collected.get("room_photo_base64")
+
         if is_child_room:
             # Child-themed style tiles -- fun imaginative worlds
             style_options_ui = [
-                {"id": "underwater_world", "label": "Underwater World", "description": "Soft blues with dolphins, shells & ocean vibes", "image_url": "./assets/theme_underwater_world.jpg"},
-                {"id": "forest_adventure", "label": "Forest Adventure", "description": "Warm greens & browns, woodland creatures", "image_url": "./assets/theme_forest_adventure.jpg"},
-                {"id": "northern_lights", "label": "Northern Lights", "description": "Cool pastels, aurora colours & starry skies", "image_url": "./assets/theme_northern_lights.jpg"},
-                {"id": "space_explorer", "label": "Space Explorer", "description": "Deep navy & silver, planets & rockets", "image_url": "./assets/theme_space_explorer.jpg"},
-                {"id": "safari_wild", "label": "Safari Wild", "description": "Earthy tones, jungle animals & adventure", "image_url": "./assets/theme_safari_wild.jpg"},
-                {"id": "rainbow_bright", "label": "Rainbow Bright", "description": "Bold primary colours, playful & cheerful", "image_url": "./assets/theme_rainbow_bright.jpg"},
+                {"id": "underwater_world", "label": "Underwater World", "description": "Soft blues with dolphins, shells & ocean vibes", "image_url": f"{_ASSETS}/theme_underwater_world.jpg"},
+                {"id": "forest_adventure", "label": "Forest Adventure", "description": "Warm greens & browns, woodland creatures", "image_url": f"{_ASSETS}/theme_forest_adventure.jpg"},
+                {"id": "northern_lights", "label": "Northern Lights", "description": "Cool pastels, aurora colours & starry skies", "image_url": f"{_ASSETS}/theme_northern_lights.jpg"},
+                {"id": "space_explorer", "label": "Space Explorer", "description": "Deep navy & silver, planets & rockets", "image_url": f"{_ASSETS}/theme_space_explorer.jpg"},
+                {"id": "safari_wild", "label": "Safari Wild", "description": "Earthy tones, jungle animals & adventure", "image_url": f"{_ASSETS}/theme_safari_wild.jpg"},
+                {"id": "rainbow_bright", "label": "Rainbow Bright", "description": "Bold primary colours, playful & cheerful", "image_url": f"{_ASSETS}/theme_rainbow_bright.jpg"},
             ]
             style_ids = [s["id"] for s in style_options_ui]
             title = "Style Finder: Which worlds do you love?"
@@ -1875,14 +2002,14 @@ def continue_home_decor_consultation(
             room_key = room_image_map.get(collected["room_type"].lower(), "living_room")
 
             style_options_ui = [
-                {"id": "modern", "label": "Modern", "description": "Clean lines, minimal ornamentation", "image_url": f"./assets/{room_key}_modern.jpg"},
-                {"id": "minimalist", "label": "Minimalist", "description": "Less is more, simple & functional", "image_url": f"./assets/{room_key}_minimalist.jpg"},
-                {"id": "bohemian", "label": "Bohemian", "description": "Eclectic mix, rich colors & patterns", "image_url": f"./assets/{room_key}_bohemian.jpg"},
-                {"id": "coastal", "label": "Coastal", "description": "Light & airy, nautical themes", "image_url": f"./assets/{room_key}_coastal.jpg"},
-                {"id": "industrial", "label": "Industrial", "description": "Exposed materials, urban loft", "image_url": f"./assets/{room_key}_industrial.jpg"},
-                {"id": "scandinavian", "label": "Scandinavian", "description": "Natural materials, hygge coziness", "image_url": f"./assets/{room_key}_scandinavian.jpg"},
-                {"id": "traditional", "label": "Traditional", "description": "Classic elegance, timeless pieces", "image_url": f"./assets/{room_key}_traditional.jpg"},
-                {"id": "rustic", "label": "Rustic", "description": "Natural materials, country charm", "image_url": f"./assets/{room_key}_rustic.jpg"}
+                {"id": "modern", "label": "Modern", "description": "Clean lines, minimal ornamentation", "image_url": f"{_ASSETS}/{room_key}_modern.jpg"},
+                {"id": "minimalist", "label": "Minimalist", "description": "Less is more, simple & functional", "image_url": f"{_ASSETS}/{room_key}_minimalist.jpg"},
+                {"id": "bohemian", "label": "Bohemian", "description": "Eclectic mix, rich colors & patterns", "image_url": f"{_ASSETS}/{room_key}_bohemian.jpg"},
+                {"id": "coastal", "label": "Coastal", "description": "Light & airy, nautical themes", "image_url": f"{_ASSETS}/{room_key}_coastal.jpg"},
+                {"id": "industrial", "label": "Industrial", "description": "Exposed materials, urban loft", "image_url": f"{_ASSETS}/{room_key}_industrial.jpg"},
+                {"id": "scandinavian", "label": "Scandinavian", "description": "Natural materials, hygge coziness", "image_url": f"{_ASSETS}/{room_key}_scandinavian.jpg"},
+                {"id": "traditional", "label": "Traditional", "description": "Classic elegance, timeless pieces", "image_url": f"{_ASSETS}/{room_key}_traditional.jpg"},
+                {"id": "rustic", "label": "Rustic", "description": "Natural materials, country charm", "image_url": f"{_ASSETS}/{room_key}_rustic.jpg"}
             ]
             style_ids = [s["id"] for s in style_options_ui]
             title = f"Perfect! Now, what style speaks to you for your {collected['room_type']}?"
@@ -1902,7 +2029,10 @@ def continue_home_decor_consultation(
                 "subtitle": subtitle,
                 "style_options": style_options_ui,
                 "interaction_mode": "multi_select",
-                "phase": "phase_1_style_discovery"
+                "phase": "phase_1_style_discovery",
+                "generate_previews_from_photo": bool(room_photo_b64),
+                "room_photo_base64": room_photo_b64 if room_photo_b64 else None,
+                "room_type": collected["room_type"],
             }
         }
 
@@ -2656,27 +2786,46 @@ def visualize_room_with_products(
 
     room_label = room_type or "bedroom"
 
-    # Build product placement descriptions with specific positioning hints
+    # Build product placement descriptions with realistic positioning hints
     product_placement = []
     for i, p in enumerate(products_to_show[:8]):
         name = p['name']
-        subcat = p.get('subcategory', p.get('category', ''))
-        if 'bed' in subcat.lower() or 'bed' in name.lower():
-            product_placement.append(f"a {name} positioned against the main wall")
-        elif 'desk' in subcat.lower() or 'desk' in name.lower():
+        name_lower = name.lower()
+        subcat = p.get('subcategory', p.get('category', '')).lower()
+        if 'bed' in subcat or 'bed' in name_lower:
+            product_placement.append(f"a {name} positioned against the main wall as the centrepiece")
+        elif 'desk' in subcat or 'desk' in name_lower:
             product_placement.append(f"a {name} placed near the window for natural light")
-        elif 'lamp' in subcat.lower() or 'light' in subcat.lower():
-            product_placement.append(f"a {name} providing warm ambient lighting")
-        elif 'rug' in subcat.lower() or 'rug' in name.lower():
-            product_placement.append(f"a {name} on the floor anchoring the space")
-        elif 'art' in subcat.lower() or 'print' in subcat.lower():
-            product_placement.append(f"a {name} hanging on the wall as a focal point")
-        elif 'plant' in subcat.lower() or 'planter' in name.lower():
-            product_placement.append(f"a {name} adding a touch of greenery")
-        elif 'shelf' in subcat.lower() or 'bookshelf' in name.lower():
-            product_placement.append(f"a {name} mounted or standing against a wall")
+        elif 'chair' in subcat or 'chair' in name_lower:
+            product_placement.append(f"a {name} tucked under the desk or beside the bed")
+        elif 'wardrobe' in subcat or 'wardrobe' in name_lower or 'closet' in name_lower:
+            product_placement.append(f"a {name} standing against a side wall")
+        elif 'lamp' in subcat or 'light' in subcat or 'lamp' in name_lower:
+            product_placement.append(f"a {name} on the bedside table or desk providing warm light")
+        elif 'rug' in subcat or 'rug' in name_lower or 'carpet' in name_lower:
+            product_placement.append(f"a {name} laid flat on the floor in the centre of the room")
+        elif 'art' in subcat or 'print' in subcat or 'canvas' in name_lower or 'poster' in name_lower:
+            product_placement.append(f"a {name} hanging centred on the wall above the bed or desk, NOT on a window")
+        elif 'clock' in subcat or 'clock' in name_lower:
+            product_placement.append(f"a {name} mounted on the wall above the window or on a side wall, NOT on the window glass")
+        elif 'mirror' in subcat or 'mirror' in name_lower:
+            product_placement.append(f"a {name} mounted on the wall at eye height, NOT on a window")
+        elif 'plant' in subcat or 'planter' in name_lower or 'plant' in name_lower:
+            product_placement.append(f"a {name} standing on the floor in a corner or placed on a shelf")
+        elif 'cushion' in subcat or 'cushion' in name_lower or 'pillow' in name_lower:
+            product_placement.append(f"a {name} arranged on the bed or a chair")
+        elif 'shelf' in subcat or 'bookshelf' in name_lower or 'shelf' in name_lower:
+            product_placement.append(f"a {name} mounted on the wall or standing against a wall")
+        elif 'curtain' in subcat or 'curtain' in name_lower or 'blind' in name_lower:
+            product_placement.append(f"a {name} hanging from a rod above the window")
+        elif 'basket' in subcat or 'basket' in name_lower or 'storage' in name_lower:
+            product_placement.append(f"a {name} placed on the floor near a shelf or under a desk")
+        elif 'throw' in subcat or 'blanket' in name_lower or 'throw' in name_lower:
+            product_placement.append(f"a {name} draped casually over the bed or a chair")
+        elif 'vase' in subcat or 'vase' in name_lower:
+            product_placement.append(f"a {name} placed on a shelf or desk surface")
         else:
-            product_placement.append(f"a {name}")
+            product_placement.append(f"a {name} placed naturally in the room at an appropriate location")
 
     # Randomize camera angle and time of day for variety on regeneration
     camera_angles = [
@@ -2735,15 +2884,18 @@ def visualize_room_with_products(
             arrangement = random.choice(arrangement_hints)
 
             edit_prompt = (
-                f"Keep this exact room layout, walls, floor, windows, and lighting. "
-                f"Place the following new furniture and decor items naturally into the existing space: "
+                f"Completely redesign this room in a {style_text} style. "
+                f"Keep the same room shape, window positions, and camera angle. "
+                f"Remove all existing furniture and decor. Replace with the following new items: "
                 f"{'; '.join(product_placement[:6])}. "
                 f"{arrangement}. "
-                f"Style the room with {style_text}. "
-                f"The new items must look like they physically belong in this room -- "
-                f"correct perspective, matching shadows, realistic scale relative to the room. "
-                f"Do not change the room structure, wall colour, or window positions. "
-                f"Photorealistic result, as if the items were photographed in this actual room."
+                f"Repaint walls and change flooring to match the {style_text} aesthetic. "
+                f"The transformation must be dramatic and clearly visible. "
+                f"IMPORTANT: Place items only on appropriate surfaces -- hang wall art and clocks on walls NOT on windows, "
+                f"lay rugs flat on the floor, place furniture on the ground. Windows must remain clear and unobstructed. "
+                f"All new items must have correct perspective, realistic scale, and matching shadows. "
+                f"Show the full room from wall to wall, do not crop or zoom in. "
+                f"Ultra-realistic interior design photograph, 4K resolution, professional lighting."
             )
 
             # Decode the base64 photo

@@ -17,6 +17,26 @@ PROJECT_ID = os.environ.get("PROJECT_ID", "next-2025-ces")
 LOCATION = os.environ.get("VERTEX_LOCATION", "us-central1")
 DEMO_TYPE = os.environ.get("DEMO_TYPE", "retail")
 
+# GCS bucket for assets, eval logs, and generated images
+GCS_BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME", f"{PROJECT_ID}-shopping-assets")
+GCS_ASSETS_PREFIX = "assets"
+GCS_EVAL_PREFIX = "evaluation/logs"
+GCS_GENERATED_PREFIX = "generated"
+GCS_ASSETS_BASE_URL = f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/{GCS_ASSETS_PREFIX}"
+
+def get_gcs_public_url(path: str) -> str:
+    """Get the public URL for a GCS object."""
+    return f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/{path}"
+
+def get_asset_url(relative_path: str) -> str:
+    """Convert a local ./assets/... path to a GCS public URL.
+    Falls back to the original path if GCS is not configured."""
+    if not GCS_BUCKET_NAME or GCS_BUCKET_NAME.endswith("next-2025-ces-shopping-assets"):
+        return relative_path
+    # Strip leading ./
+    clean = relative_path.lstrip("./")
+    return get_gcs_public_url(clean)
+
 
 class ConfigurationError(Exception):
     """Custom exception for configuration errors."""
@@ -150,15 +170,9 @@ logger.info(
     f"VAD Timing - Prefix Padding: {VAD_PREFIX_PADDING_MS}ms, Silence Duration: {VAD_SILENCE_DURATION_MS}ms, Allow Interruption: {ALLOW_INTERRUPTION}"
 )
 
-# Load system instructions
-try:
-    with open("config/system-instructions.txt", "r") as f:
-        SYSTEM_INSTRUCTIONS = f.read()
-except Exception as e:
-    logger.error(f"Failed to load system instructions: {e}")
-    SYSTEM_INSTRUCTIONS = ""
-
-logger.info(f"System instructions: {SYSTEM_INSTRUCTIONS}")
+# System instructions are defined in core/agents/retail/prompts.py
+# This config-level field is kept for the generation_config template
+SYSTEM_INSTRUCTIONS = ""
 available_languages = {
     "de-DE": "German (Germany)",
     "en-AU": "English (Australia)",

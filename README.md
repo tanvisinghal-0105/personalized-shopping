@@ -1,54 +1,65 @@
 # Cymbal Personalized Shopping Assistant
 
-A multimodal AI shopping assistant powered by Google's Gemini 2.0 Flash with real-time voice, video, and text interactions. Built for Cymbal, a retail electronics company.
+A multimodal AI voice shopping assistant powered by Google Gemini Live API with real-time audio, video, and text interactions. Features an end-to-end home decor consultation flow with AI-generated room visualizations using Imagen 3.
 
-## Deployed Services
+Built with Google ADK (Agents Development Kit), Vertex AI, Firestore, and Cloud Run.
 
-All services are live on Google Cloud Run:
+## Architecture
 
-- **Frontend**: https://cymbal-frontend-991831686961.us-central1.run.app
-- **Backend**: https://live-agent-backend-lyja7bi4gq-uc.a.run.app
-- **CRM**: https://cymbal-crm-991831686961.us-central1.run.app
-
-## Overview
-
-This application enables customers to interact with an AI shopping assistant through:
-- Voice conversation with real-time speech recognition
-- Video input for product identification
-- Text-based chat interface
-- Manager approval workflow for discounts and special requests
-
-The system consists of three main components:
-1. **Client** - Web-based UI for customer interactions
-2. **Server** - WebSocket backend with Gemini 2.0 Flash integration
-3. **CRM** - Manager interface for approval requests
+```
+                    WebSocket (audio/video/text)
+  Client (8000) <------------------------------> Backend (8081)
+  HTML/JS/CSS                                     ADK Agent + Gemini Live API
+                                                  25+ Tools (cart, decor, viz)
+                                                       |
+                                          +------------+------------+
+                                          |            |            |
+                                     Firestore    Vertex AI    Imagen 3
+                                     (carts,      (Gemini,     (room viz,
+                                      profiles)    eval)       style gen)
+                                          |
+                                    CRM (8082)
+                                    FastAPI + Eval Dashboard
+```
 
 ## Key Features
 
-- Real-time multimodal interactions (audio, video, text)
-- Product recommendations and availability checking
-- Shopping cart management
-- Price matching and discount approvals
-- Manager escalation workflow via CRM
-- Low-latency responses with Gemini 2.0 Flash Live API
+- **Voice-first shopping** -- real-time audio conversation with Gemini Live native audio
+- **Home decor consultation** -- guided multi-phase flow: room selection, style finder, photo analysis, moodboard generation
+- **Child-themed style finder** -- 6 themed room styles (Underwater World, Forest Adventure, etc.) with AI-generated previews from the customer's own room photo
+- **Room visualization** -- Imagen 3 inpainting renders selected products into the customer's actual room
+- **Order history cross-referencing** -- identifies existing furniture from past purchases using Gemini Vision
+- **Evaluation framework** -- 5-layer custom + Vertex AI evaluation for voice agent quality
+- **CRM dashboard** -- approval workflow and evaluation results viewer
 
-### Home Decor Consultation
-- Multi-phase guided consultation flow (room selection, purpose, age context, constraints, style, colour, dimensions)
-- Themed style finder for child bedrooms (Underwater World, Forest Adventure, Northern Lights, Space Explorer, Safari Wild, Rainbow Bright)
-- Room photo analysis using Gemini Vision API with order history cross-referencing
-- Room size collection with preset sizes and custom dimension input
-- Intelligent moodboard generation with age-appropriate, style-matched, colour-coordinated products
-- Room visualization powered by Imagen 3 -- renders selected products into the customer's actual room photo via inpainting, or generates a fresh photorealistic rendering
-  
 ## Repository Structure
 
 ```
-personalized-shopping/
-├── client/          # Frontend web application (see client/README.md)
-├── server/          # Backend WebSocket server (see server/README.md)
-├── crm/             # Manager approval interface (see crm/README.md)
-├── assets/          # Project images and logos
-└── README.md        # This file
+personalized_shopping/
+  client/                   # Frontend -- static HTML/JS/CSS
+    src/api/                #   WebSocket API client
+    src/ui/                 #   Home decor renderer, voice orb
+    assets/                 #   Product images, style previews (203 files)
+  server/                   # Backend -- WebSocket server
+    core/agents/retail/     #   ADK agent, 25+ tools, intent detector
+    config/                 #   Environment config, GCS settings
+    evaluation/             #   Eval framework (recorder, metrics, Vertex AI)
+    tests/                  #   Unit tests (40 tests, pytest)
+    scripts/                #   Image generation, GCS upload utilities
+  crm/                      # CRM Dashboard -- FastAPI
+    core/app.py             #   REST API + eval endpoints
+    static/                 #   Dashboard UI (dark theme)
+  terraform/                # GCP Infrastructure as Code
+    cloud_run.tf            #   3 Cloud Run services
+    gcs.tf                  #   Storage bucket with lifecycle rules
+    iam.tf                  #   Service accounts + IAM bindings
+    vpc.tf                  #   VPC connector for Cloud Run
+  docs/                     # Documentation
+    DEMO_STORYLINE.md       #   Expected demo dialog script
+    DEMO_GUIDE.md           #   Full demo walkthrough
+    DEPLOYMENT_GUIDE.md     #   Cloud deployment instructions
+  TESTS.md                  # Testing guide
+  Makefile                  # Dev commands
 ```
 
 ## Quick Start
@@ -56,110 +67,112 @@ personalized-shopping/
 ### Prerequisites
 
 - Python 3.11+
-- **EITHER:**
-  - Google AI Studio API key (recommended for development) - [Get API key](https://aistudio.google.com/apikey)
-  - OR Google Cloud account with Vertex AI access (recommended for production)
-
-### Model Options
-
-This application supports two Gemini model deployment options:
-
-#### Option 1: AI Studio (Development)
-- **Model:** `gemini-3.1-flash-live-preview`
-- **Setup:** Get API key from [AI Studio](https://aistudio.google.com/apikey)
-- **Best for:** Local development, testing, demos
-
-#### Option 2: Vertex AI (Production)
-- **Model:** `gemini-live-2.5-flash-native-audio`
-- **Setup:** Enable Vertex AI in Google Cloud project
-- **Best for:** Production deployments, enterprise use
-
-See [Server README](server/README.md) for detailed configuration instructions.
+- Google Cloud project with Vertex AI enabled
+- `gcloud auth application-default login` completed
 
 ### Local Development
 
-1. **Clone the repository**
-   ```bash
-   git clone git@github.com:tanvisinghal-0105/personalized-shopping.git
-   cd personalized-shopping
-   ```
+```bash
+# 1. Clone and configure
+git clone git@github.com:tanvisinghal-0105/personalized-shopping.git
+cd personalized-shopping
+cd server && cp .env.example .env
+# Edit .env with your project ID and config
+pip install -r requirements.txt
 
-2. **Configure backend**
-   ```bash
-   cd server
-   cp .env.example .env
-   # Edit .env with your API key or Vertex AI configuration
-   pip install -r requirements.txt
-   ```
+# 2. Start all services
+make backend    # Backend on :8081
+make frontend   # Frontend on :8000
+# CRM: cd crm && python main.py  # CRM on :8082
 
-   **For AI Studio (quickest):**
-   ```bash
-   # In .env file:
-   GOOGLE_GENAI_USE_VERTEXAI=0
-   GOOGLE_API_KEY=your_api_key_here
-   ```
+# 3. Open http://localhost:8000
+```
 
-   **For Vertex AI:**
-   ```bash
-   # In .env file:
-   GOOGLE_GENAI_USE_VERTEXAI=1
-   GOOGLE_CLOUD_PROJECT=your_project_id
-   GOOGLE_CLOUD_LOCATION=us-central1
-   ```
-
-3. **Start backend server**
-   ```bash
-   python server.py
-   ```
-   Server runs on `localhost:8081`
-
-4. **Start frontend client** (in new terminal)
-   ```bash
-   cd client
-   python -m http.server 8000
-   ```
-   Access at `http://localhost:8000/index.html`
-
-5. **Initialize test data**
-   ```bash
-   cd server
-   python init_sample_data.py
-   ```
-   This creates sample customer approval requests for CRM testing
-
-### Cloud Deployment
-
-Deploy individual services to Google Cloud Run:
+### Environment Configuration
 
 ```bash
-# Backend
+# server/.env
+GOOGLE_GENAI_USE_VERTEXAI=1
+GOOGLE_CLOUD_PROJECT=your-project-id
+GOOGLE_CLOUD_LOCATION=us-central1
+GCS_BUCKET_NAME=your-project-id-shopping-assets
+```
+
+## Testing
+
+Run the full test suite:
+```bash
+cd server
+python -m pytest tests/ -v          # 40 unit tests
+python -m evaluation.run_eval       # Eval framework on recorded sessions
+```
+
+Or use the Claude Code skill: `/test-suite`
+
+See [TESTS.md](TESTS.md) for the complete testing guide.
+
+## Evaluation Framework
+
+The project includes a custom 5-layer evaluation framework for voice agent quality:
+
+| Layer | Metrics | Engine |
+|-------|---------|--------|
+| Speech Quality | WER, latency to first byte | Custom |
+| Agent Trajectory | Tool call order, argument accuracy | Custom + Vertex AI |
+| Conversation Quality | Relevance, naturalness, child-appropriateness | Vertex AI PointwiseMetric |
+| Moodboard Quality | Style/color match, furniture balance | Custom |
+| End-to-End Session | Task completion, turn efficiency | Custom |
+
+Sessions are auto-recorded during live demos. Run evaluation from the CRM dashboard (Evaluation tab) or CLI:
+```bash
+cd server
+python -m evaluation.run_eval --no-vertex    # Custom metrics only
+python -m evaluation.run_eval                # Full eval with Vertex AI
+```
+
+## Infrastructure
+
+Terraform manages the full GCP stack:
+```bash
+cd terraform
+terraform init
+terraform plan
+terraform apply
+```
+
+Resources provisioned:
+- 3 Cloud Run services (frontend, backend, CRM)
+- GCS bucket with lifecycle rules (eval log retention, generated image cleanup)
+- IAM service accounts (Vertex AI, Firestore, Secret Manager, Storage)
+- VPC connector for Cloud Run internal networking
+
+## Cloud Deployment
+
+```bash
+# Deploy via Cloud Build
 gcloud builds submit --config server/cloudbuild.yaml
-
-# Frontend
 gcloud builds submit --config client/cloudbuild.yaml
-
-# CRM
 gcloud builds submit --config crm/cloudbuild.yaml
 ```
 
-For detailed deployment instructions, see the README in each component directory.
+## Demo Flow
 
-## Testing the Application
+The home decor consultation follows this storyline (see [docs/DEMO_STORYLINE.md](docs/DEMO_STORYLINE.md)):
 
-1. **Test customer interactions**: Open the frontend and interact via voice or text
-2. **Test manager approvals**: Use CRM interface with customer ID `GR-1234-1234`
-3. **Check sample data**: Test with customer IDs: `GR-1234-1234`, `CY-5678-5678`, `CY-9999-9999`
-
-## Architecture
-
-The system uses a WebSocket-based architecture:
-- Client sends audio/video/text to backend via WebSocket
-- Backend processes with Gemini 2.0 Flash Live API
-- Agent can call tools (cart management, product lookup, manager approvals)
-- Manager approvals are stored in Firestore and accessed via CRM
+1. **Initial request** -- "I need help redesigning Mila's bedroom"
+2. **Context gathering** -- room purpose, age, constraints (what furniture to keep)
+3. **Photo analysis** -- upload room photos or use live camera (1 FPS)
+4. **Style finder** -- child-themed tiles with AI-generated previews from the room photo
+5. **Color + dimensions** -- preferences and room size
+6. **Moodboard** -- 10 curated products matched by style, color, age
+7. **Room visualization** -- Imagen 3 renders products into the actual room
+8. **Cart + checkout** -- add items, get complementary suggestions
+9. **Discount approval** -- customer asks for bundle discount, AI escalates to manager via CRM, manager approves in real-time
 
 ## Component Documentation
 
-- **[Client README](client/README.md)** - Frontend application details
-- **[Server README](server/README.md)** - Backend configuration and deployment
-- **[CRM README](crm/README.md)** - Manager approval interface
+- [Client README](client/README.md) -- Frontend details
+- [Server README](server/README.md) -- Backend configuration
+- [CRM README](crm/README.md) -- CRM dashboard
+- [Demo Storyline](docs/DEMO_STORYLINE.md) -- Expected dialog script
+- [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) -- Cloud deployment
