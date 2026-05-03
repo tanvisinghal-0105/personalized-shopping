@@ -270,12 +270,35 @@ async def list_eval_sessions():
 
 @app.post("/api/v1/eval/run/{filename}")
 async def run_evaluation(filename: str, use_vertex: bool = True):
-    """Run evaluation on a specific session log."""
+    """Run evaluation on a specific session log (GCS or local)."""
+    # Try local first
     filepath = os.path.realpath(os.path.join(EVAL_LOG_DIR, filename))
     if not filepath.startswith(os.path.realpath(EVAL_LOG_DIR) + os.sep):
         raise fastapi.HTTPException(status_code=400, detail="Invalid filename")
+
+    # If not local, download from GCS
     if not os.path.exists(filepath):
-        raise fastapi.HTTPException(status_code=404, detail="Session file not found")
+        try:
+            from google.cloud import storage
+
+            client = storage.Client()
+            bucket = client.bucket(GCS_BUCKET_NAME)
+            blob = bucket.blob(f"{GCS_EVAL_PREFIX}/{filename}")
+            if blob.exists():
+                os.makedirs(EVAL_LOG_DIR, exist_ok=True)
+                blob.download_to_filename(filepath)
+                logger.info(f"Downloaded eval session from GCS: {filename}")
+            else:
+                raise fastapi.HTTPException(
+                    status_code=404, detail="Session file not found"
+                )
+        except fastapi.HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to download from GCS: {e}")
+            raise fastapi.HTTPException(
+                status_code=404, detail="Session file not found"
+            )
 
     try:
         from evaluation.run_eval import evaluate_session

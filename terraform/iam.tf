@@ -67,6 +67,15 @@ resource "google_project_iam_member" "backend_cloudtrace" {
   member  = "serviceAccount:${google_service_account.backend.email}"
 }
 
+# roles/modelarmor.user -- Allows the backend to sanitize prompts/responses.
+# Needed for: Model Armor input/output filtering to detect prompt injection,
+# jailbreaks, harmful content, and PII leakage in real-time.
+resource "google_project_iam_member" "backend_modelarmor" {
+  project = var.project_id
+  role    = "roles/modelarmor.user"
+  member  = "serviceAccount:${google_service_account.backend.email}"
+}
+
 # roles/storage.objectViewer -- Allows the backend to read GCS objects.
 # Needed for: reading product catalog images from the assets/ prefix
 # to serve to the shopping UI and retrieving evaluation reference data.
