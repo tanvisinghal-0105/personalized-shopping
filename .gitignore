@@ -109,3 +109,4 @@ node_modules/
 # Assets served from GCS bucket
 client/assets/
 server/client/assets/
+terraform.tfvars

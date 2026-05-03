@@ -196,6 +196,30 @@ The server uses these Firestore collections:
   - Document ID: customer ID
   - Fields: cart items, subtotal, timestamp
 
+## Authentication
+
+### Local Development
+
+Use Application Default Credentials -- no key files needed:
+
+```bash
+gcloud auth application-default login
+```
+
+This provides credentials for Vertex AI, Firestore, Secret Manager, and all other Google Cloud APIs.
+
+### Production (Cloud Run)
+
+Cloud Run services use the attached service account automatically. Do not download or mount JSON key files. The service account (`live-agent-backend@$PROJECT_ID.iam.gserviceaccount.com`) is granted least-privilege roles via Terraform.
+
+### Google Sign-In (Frontend)
+
+The shopping UI uses Google Sign-In. The frontend validates that the user's email ends with `@google.com` before establishing a session.
+
+### WebSocket Authentication
+
+WebSocket connections pass a Google ID token as a query parameter (`?token=<id_token>`). The server validates the token on connection and rejects unauthenticated requests.
+
 ## Troubleshooting
 
 ### Connection Issues

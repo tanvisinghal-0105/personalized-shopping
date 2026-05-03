@@ -13,7 +13,7 @@ export class GeminiAPI {
             }
         }
 
-        // Append customer info as query parameters if provided
+        // Append customer info and auth token as query parameters
         if (customerInfo && customerInfo.customerId) {
             const params = new URLSearchParams({
                 customer_id: customerInfo.customerId,
@@ -21,6 +21,10 @@ export class GeminiAPI {
                 last_name: customerInfo.lastName || '',
                 email: customerInfo.email || ''
             });
+            // Pass Google ID token for backend authentication
+            if (customerInfo.googleIdToken) {
+                params.set('id_token', customerInfo.googleIdToken);
+            }
             endpoint = `${endpoint}?${params.toString()}`;
             console.log('Customer info added to WebSocket URL:', customerInfo);
         }

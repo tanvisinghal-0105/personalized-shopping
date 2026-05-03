@@ -5,6 +5,12 @@ resource "google_storage_bucket" "shopping_assets" {
   force_destroy               = false
   uniform_bucket_level_access = true
 
+  labels = {
+    app         = "cymbal-stylesync"
+    environment = var.environment
+    managed_by  = "terraform"
+  }
+
   # Public read access for product images served to the frontend
   # Eval logs are in a separate prefix and not publicly accessible
 
@@ -31,6 +37,19 @@ resource "google_storage_bucket" "shopping_assets" {
     }
     action {
       type = "Delete"
+    }
+  }
+
+  # Move objects older than 90 days to NEARLINE storage for cost savings,
+  # except for the assets/ prefix which must stay in STANDARD
+  lifecycle_rule {
+    condition {
+      age                   = 90
+      matches_prefix        = ["evaluation/", "generated/", "sessions/"]
+    }
+    action {
+      type          = "SetStorageClass"
+      storage_class = "NEARLINE"
     }
   }
 

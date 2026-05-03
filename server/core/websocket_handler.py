@@ -1098,13 +1098,19 @@ async def handle_client(websocket: Any) -> None:
     logger.info(f"New client connected. Session ID: {session_id}")
 
     try:
-        # Authenticate the connection
+        # Extract query parameters first (needed for auth)
+        from urllib.parse import urlparse, parse_qs
+
+        parsed_url = urlparse(websocket.request.path)
+        query_params = parse_qs(parsed_url.query) if parsed_url.query else {}
+
+        # Authenticate the connection (checks headers + query param id_token)
         headers = (
             dict(websocket.request.headers)
             if hasattr(websocket.request, "headers")
             else {}
         )
-        user = authenticate_websocket(headers)
+        user = authenticate_websocket(headers, query_params=query_params)
         if user is None:
             logger.warning(
                 f"[AUTH] Unauthorized WebSocket connection rejected: {session_id}"
@@ -1115,12 +1121,6 @@ async def handle_client(websocket: Any) -> None:
             "websocket_connect",
             {"session_id": session_id, "user": user.get("email", "unknown")},
         )
-
-        # Extract customer info from query parameters
-        from urllib.parse import urlparse, parse_qs
-
-        parsed_url = urlparse(websocket.request.path)
-        query_params = parse_qs(parsed_url.query) if parsed_url.query else {}
 
         customer_id = query_params.get("customer_id", [None])[0]
         first_name = query_params.get("first_name", [None])[0]

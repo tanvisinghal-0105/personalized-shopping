@@ -3,6 +3,12 @@ resource "google_cloud_run_v2_service" "frontend" {
   name     = "cymbal-frontend"
   location = var.region
 
+  labels = {
+    app         = "cymbal-stylesync"
+    environment = var.environment
+    managed_by  = "terraform"
+  }
+
   template {
     service_account = google_service_account.frontend.email
 
@@ -51,6 +57,12 @@ resource "google_cloud_run_v2_service" "backend" {
   name     = "live-agent-backend"
   location = var.region
 
+  labels = {
+    app         = "cymbal-stylesync"
+    environment = var.environment
+    managed_by  = "terraform"
+  }
+
   template {
     service_account = google_service_account.backend.email
 
@@ -91,10 +103,6 @@ resource "google_cloud_run_v2_service" "backend" {
       env {
         name  = "LOG_LEVEL"
         value = "INFO"
-      }
-      env {
-        name  = "AUTH_ENABLED"
-        value = "true"
       }
     }
 

@@ -99,6 +99,7 @@ server/          Backend (WebSocket + Gemini Live + ADK Agent)
 crm/             Cymbal StyleSync Dashboard (FastAPI, 5 tabs)
 client/          Shopping UI (embedded in CRM)
 terraform/       GCP infra (Cloud Run, GCS, VPC, IAM, monitoring)
+docs/            Guides (deployment, demo storyline, google-cloud-skills)
 ```
 
 ## Demo Personas

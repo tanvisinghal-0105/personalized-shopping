@@ -54,6 +54,9 @@ python -c "from evaluation.run_eval import trajectory_order_metric; print('OK')"
 | `server/tests/test_observability.py` | Metrics collection, error recording, health reporting |
 | `server/tests/test_retry.py` | Retryable error classification, backoff logic, 429/503 handling |
 | `server/tests/test_security.py` | Input sanitization, PII detection, injection guard, audit logging |
+| `server/tests/test_model_armor.py` | Model Armor sanitization, prompt injection detection, harmful content filtering |
+| `server/tests/test_multi_agent.py` | ADK multi-agent orchestration, sub-agent routing, tool delegation |
+| `server/tests/test_tracing.py` | OpenTelemetry spans, Cloud Trace export, distributed trace context |
 
 ## GCS Upload (for deployment)
 ```bash

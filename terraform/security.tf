@@ -66,6 +66,10 @@ resource "google_compute_firewall" "allow_internal" {
 
   source_ranges = ["10.8.0.0/28"]  # VPC connector subnet only
   description   = "Allow internal traffic from VPC connector"
+
+  log_config {
+    metadata = "INCLUDE_ALL_METADATA"
+  }
 }
 
 resource "google_compute_firewall" "deny_all_ingress" {
@@ -79,6 +83,10 @@ resource "google_compute_firewall" "deny_all_ingress" {
   source_ranges = ["0.0.0.0/0"]
   priority      = 65534
   description   = "Deny all external ingress (Cloud Run handles external traffic)"
+
+  log_config {
+    metadata = "INCLUDE_ALL_METADATA"
+  }
 }
 
 # ================================================================== #

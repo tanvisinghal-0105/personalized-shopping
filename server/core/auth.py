@@ -117,13 +117,16 @@ def verify_iap_jwt(iap_jwt: str, expected_audience: str = "") -> Optional[Dict]:
         return None
 
 
-def authenticate_websocket(headers: dict) -> Optional[Dict]:
-    """Authenticate a WebSocket connection from request headers.
+def authenticate_websocket(
+    headers: dict, query_params: Optional[Dict] = None
+) -> Optional[Dict]:
+    """Authenticate a WebSocket connection.
 
     Checks in order:
-    1. IAP JWT (x-goog-iap-jwt-assertion)
-    2. Authorization Bearer token
-    3. Auth disabled (local dev)
+    1. IAP JWT header
+    2. Authorization Bearer header
+    3. Google ID token from query params (for browser WebSocket)
+    4. Auth disabled (local dev)
 
     Returns:
         User info dict or None if unauthorized
@@ -141,6 +144,19 @@ def authenticate_websocket(headers: dict) -> Optional[Dict]:
     if auth_header.startswith("Bearer "):
         token = auth_header[7:]
         return verify_google_identity(token)
+
+    # Check query param id_token (browser WebSocket can't set headers)
+    if query_params:
+        id_token = query_params.get("id_token", [None])
+        if isinstance(id_token, list):
+            id_token = id_token[0]
+        if id_token:
+            result = verify_google_identity(id_token)
+            if result:
+                logger.info(
+                    f"[AUTH] Authenticated via query param: {result.get('email')}"
+                )
+                return result
 
     logger.warning("[AUTH] No auth token provided")
     return None

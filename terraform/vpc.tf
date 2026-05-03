@@ -10,6 +10,12 @@ resource "google_compute_subnetwork" "subnet" {
   ip_cidr_range = "10.8.0.0/28"
   region        = var.region
   network       = google_compute_network.vpc.id
+
+  log_config {
+    aggregation_interval = "INTERVAL_5_SEC"
+    flow_sampling        = 0.5
+    metadata             = "INCLUDE_ALL_METADATA"
+  }
 }
 
 # Serverless VPC Access connector for Cloud Run
