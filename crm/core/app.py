@@ -73,6 +73,7 @@ async def read_shop():
         with open(shop_path) as f:
             html = f.read()
         html = html.replace("{{GCS_ASSETS_BASE}}", GCS_ASSETS_BASE)
+        html = html.replace("{{BUILD_TS}}", str(int(os.path.getmtime(shop_path))))
         return HTMLResponse(content=html)
     else:
         return fastapi.Response(content="Shopping UI not found", status_code=404)
@@ -261,10 +262,15 @@ def _list_local_eval_sessions():
 
 @app.get("/api/v1/eval/sessions")
 async def list_eval_sessions():
-    """List all recorded evaluation sessions from GCS or local fallback."""
+    """List all recorded evaluation sessions from GCS or local fallback.
+
+    Filters out empty sessions (0 turns) which result from dropped
+    connections and contain no meaningful data.
+    """
     sessions = _list_gcs_eval_sessions()
     if not sessions:
         sessions = _list_local_eval_sessions()
+    sessions = [s for s in sessions if (s.get("turn_count") or 0) > 0]
     return {"sessions": sessions}
 
 
@@ -304,6 +310,23 @@ async def run_evaluation(filename: str, use_vertex: bool = True):
         from evaluation.run_eval import evaluate_session
 
         results = evaluate_session(filepath, use_vertex=use_vertex)
+
+        # Save results to GCS
+        try:
+            from google.cloud import storage as _storage
+
+            results_filename = filename.replace(".json", "_eval_results.json")
+            _client = _storage.Client()
+            _bucket = _client.bucket(GCS_BUCKET_NAME)
+            _blob = _bucket.blob(f"{GCS_EVAL_PREFIX}/{results_filename}")
+            _blob.upload_from_string(
+                json.dumps(results, indent=2, default=str),
+                content_type="application/json",
+            )
+            logger.info(f"Eval results saved to GCS: {results_filename}")
+        except Exception as gcs_err:
+            logger.warning(f"Failed to save eval results to GCS: {gcs_err}")
+
         return {"status": "success", "results": results}
     except Exception as e:
         logger.error(f"Evaluation failed: {e}")
@@ -339,6 +362,71 @@ async def get_eval_results(filename: str):
         )
     with open(results_file) as f:
         return json.load(f)
+
+
+@app.get("/api/v1/eval/analytics")
+async def eval_analytics():
+    """Return aggregate analytics across all evaluated sessions."""
+    sessions = _list_gcs_eval_sessions()
+    if not sessions:
+        sessions = _list_local_eval_sessions()
+    sessions = [s for s in sessions if (s.get("turn_count") or 0) > 0]
+
+    total_sessions = len(sessions)
+    total_cost = sum(s.get("cost_usd", 0) for s in sessions)
+    total_tokens = sum(
+        (s.get("token_usage", {}).get("input_tokens", 0) or 0)
+        + (s.get("token_usage", {}).get("output_tokens", 0) or 0)
+        for s in sessions
+    )
+    total_duration = sum(s.get("duration_seconds", 0) or 0 for s in sessions)
+
+    # Collect scores from evaluated sessions
+    scores = []
+    try:
+        from google.cloud import storage
+
+        client = storage.Client()
+        bucket = client.bucket(GCS_BUCKET_NAME)
+        for s in sessions:
+            if not s.get("has_eval_results"):
+                continue
+            try:
+                results_name = s["file"].replace(".json", "_eval_results.json")
+                blob = bucket.blob(f"{GCS_EVAL_PREFIX}/{results_name}")
+                if blob.exists():
+                    result = json.loads(blob.download_as_text())
+                    overall = result.get("overall", {})
+                    score = overall.get("score")
+                    if score is not None:
+                        latency_data = result.get("speech_latency", {})
+                        scores.append(
+                            {
+                                "session_id": s.get("session_id"),
+                                "score": score,
+                                "grade": overall.get("grade", "?"),
+                                "latency": latency_data.get("p95_latency_seconds"),
+                            }
+                        )
+            except Exception:
+                pass
+    except Exception as e:
+        logger.warning(f"Failed to collect eval scores: {e}")
+
+    avg_score = sum(sc["score"] for sc in scores) / len(scores) if scores else None
+    latencies = [sc["latency"] for sc in scores if sc.get("latency") is not None]
+    avg_latency = sum(latencies) / len(latencies) if latencies else None
+
+    return {
+        "total_sessions": total_sessions,
+        "evaluated_sessions": len(scores),
+        "total_cost": total_cost,
+        "total_tokens": total_tokens,
+        "total_duration": total_duration,
+        "avg_score": avg_score,
+        "avg_latency": avg_latency,
+        "scores": scores,
+    }
 
 
 @app.get("/eval", response_class=HTMLResponse)
@@ -494,7 +582,6 @@ function renderResults(panel, results) {
 
   const layers = [
     { key: 'trajectory_order', label: 'Trajectory Order', scoreKey: 'trajectory_order_score' },
-    { key: 'trajectory_args', label: 'Trajectory Args', scoreKey: 'trajectory_args_score' },
     { key: 'step_skip', label: 'Step Completion', scoreKey: 'step_skip_score' },
     { key: 'moodboard_quality', label: 'Moodboard Quality', scoreKey: 'moodboard_quality_score' },
     { key: 'session_completion', label: 'Task Completion', scoreKey: 'session_completion_score' },

@@ -13,36 +13,21 @@ export class GeminiAPI {
             }
         }
 
-        // Append customer info and auth token as query parameters
-        if (customerInfo && customerInfo.customerId) {
-            const params = new URLSearchParams({
-                customer_id: customerInfo.customerId,
-                first_name: customerInfo.firstName || '',
-                last_name: customerInfo.lastName || '',
-                email: customerInfo.email || ''
-            });
-            // Pass Google ID token for backend authentication
-            if (customerInfo.googleIdToken) {
-                params.set('id_token', customerInfo.googleIdToken);
-            }
-            endpoint = `${endpoint}?${params.toString()}`;
-            console.log('Customer info added to WebSocket URL:', customerInfo);
-        }
+        this._baseEndpoint = endpoint;
+        this._customerInfo = customerInfo;
+        this._buildEndpoint();
 
-        this.endpoint = endpoint;
         this.ws = null;
         this.isSpeaking = false;
-        this.connect();
         this.retryCount = 0;
         this.maxRetries = 5;
-    }
+        this._refreshTimer = null;
 
-    connect() {
-        console.log('Initializing GeminiAPI with endpoint:', this.endpoint);
-        this.ws = new WebSocket(this.endpoint);
-        // Reset retry count when a new connection attempt starts
-        //this.retryCount = 0; // We will reset it upon successful connection instead
-        
+        // Callback to refresh the Google ID token. Set by the caller.
+        // Must return a Promise that resolves to the new credential string.
+        this.onTokenRefresh = null;
+
+        // Initialize callbacks once -- connect() must NOT reset these
         this.onReady = () => {};
         this.onAudioData = () => {};
         this.onTextContent = () => {};
@@ -56,11 +41,129 @@ export class GeminiAPI {
             console.log('Function Response:', data);
             this.logMessage({type: 'tool_result', data: data});
         };
-        this.onInterrupted = () => {};  // New callback for interruption events
-        this.onTriggerPhotoAnalysis = () => {};  // New callback for voice-triggered photo analysis
-        
-        this.setupWebSocket();
+        this.onInterrupted = () => {};
+        this.onTriggerPhotoAnalysis = () => {};
         this.logMessage = () => {};
+
+        // Don't connect yet -- caller must set onTokenRefresh first, then
+        // call start(). This avoids a race where we try to refresh an
+        // expired token before the callback is wired up.
+        this._started = false;
+    }
+
+    // Call after setting onTokenRefresh to begin the connection.
+    start() {
+        if (this._started) return;
+        this._started = true;
+
+        // If the token is already expired, refresh before connecting.
+        if (this._isTokenExpired()) {
+            console.log('[TOKEN] Token already expired at start(), refreshing first...');
+            this._doTokenRefresh().then(() => {
+                this.connect();
+            }).catch(() => {
+                // Refresh failed -- connect anyway so the 1008 handler can retry
+                this.connect();
+            });
+        } else {
+            this._scheduleTokenRefresh();
+            this.connect();
+        }
+    }
+
+    _isTokenExpired() {
+        const token = this._customerInfo?.googleIdToken;
+        if (!token) return false;
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            // Consider expired if less than 30 seconds remain
+            return (payload.exp * 1000 - Date.now()) < 30000;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    _buildEndpoint() {
+        const customerInfo = this._customerInfo;
+        if (customerInfo && customerInfo.customerId) {
+            const params = new URLSearchParams({
+                customer_id: customerInfo.customerId,
+                first_name: customerInfo.firstName || '',
+                last_name: customerInfo.lastName || '',
+                email: customerInfo.email || ''
+            });
+            if (customerInfo.googleIdToken) {
+                params.set('id_token', customerInfo.googleIdToken);
+            }
+            this.endpoint = `${this._baseEndpoint}?${params.toString()}`;
+            console.log('Customer info added to WebSocket URL:', customerInfo);
+        } else {
+            this.endpoint = this._baseEndpoint;
+        }
+    }
+
+    // Parse the JWT exp claim and schedule a refresh 5 minutes before expiry.
+    _scheduleTokenRefresh() {
+        if (this._refreshTimer) {
+            clearTimeout(this._refreshTimer);
+            this._refreshTimer = null;
+        }
+
+        const token = this._customerInfo?.googleIdToken;
+        if (!token) return;
+
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const expMs = payload.exp * 1000;
+            const refreshAt = expMs - 5 * 60 * 1000; // 5 minutes before expiry
+            const delay = refreshAt - Date.now();
+
+            if (delay <= 0) {
+                // Token already expired or about to expire -- refresh now
+                console.log('[TOKEN] Token expired or expiring soon, refreshing now');
+                this._doTokenRefresh();
+                return;
+            }
+
+            console.log(`[TOKEN] Scheduling refresh in ${Math.round(delay / 1000)}s (5 min before expiry)`);
+            this._refreshTimer = setTimeout(() => this._doTokenRefresh(), delay);
+        } catch (e) {
+            console.warn('[TOKEN] Could not parse token expiry:', e);
+        }
+    }
+
+    async _doTokenRefresh() {
+        if (!this.onTokenRefresh) {
+            console.warn('[TOKEN] No onTokenRefresh callback set, cannot refresh');
+            return;
+        }
+
+        try {
+            console.log('[TOKEN] Refreshing Google ID token...');
+            const newCredential = await this.onTokenRefresh();
+            if (newCredential) {
+                this._customerInfo.googleIdToken = newCredential;
+                this._buildEndpoint();
+                this._scheduleTokenRefresh();
+                console.log('[TOKEN] Token refreshed successfully');
+
+                // Reconnect with new token if WebSocket is still open
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    console.log('[TOKEN] Reconnecting WebSocket with new token...');
+                    this.ws.close(1000, 'Token refresh');
+                    this.retryCount = 0;
+                    this.connect();
+                }
+            }
+        } catch (e) {
+            console.error('[TOKEN] Token refresh failed:', e);
+        }
+    }
+
+    connect() {
+        console.log('Initializing GeminiAPI with endpoint:', this.endpoint);
+        this.ws = new WebSocket(this.endpoint);
+        this.setupWebSocket();
     }
 
     setupWebSocket() {
@@ -157,15 +260,25 @@ export class GeminiAPI {
                 reason: event.reason,
                 wasClean: event.wasClean
             });
-            
-            // Only show error if it wasn't a clean close
-            if (!event.wasClean) {
+
+            // If closed due to expired/invalid token, refresh and reconnect
+            if (event.code === 1008 && this.onTokenRefresh) {
+                console.log('[TOKEN] Connection rejected (1008), attempting token refresh...');
+                this._doTokenRefresh().then(() => {
+                    this.retryCount = 0;
+                    this.connect();
+                });
+                return;
+            }
+
+            // Only show error if it wasn't a clean close or a token-refresh close
+            if (!event.wasClean && event.reason !== 'Token refresh') {
                 this.onError({
                     message: 'Connection was interrupted',
                     action: 'Attempting to reconnect...',
                     error_type: 'connection_closed'
                 });
-                
+
                 this._attemptReconnection();
             }
         };
@@ -296,6 +409,25 @@ export class GeminiAPI {
                 action: 'Please check your connection or refresh the page',
                 error_type: 'connection_failed'
             });
+        }
+    }
+
+    // Update the stored token externally (e.g. after a background refresh).
+    updateToken(newCredential) {
+        if (this._customerInfo) {
+            this._customerInfo.googleIdToken = newCredential;
+            this._buildEndpoint();
+            this._scheduleTokenRefresh();
+        }
+    }
+
+    destroy() {
+        if (this._refreshTimer) {
+            clearTimeout(this._refreshTimer);
+            this._refreshTimer = null;
+        }
+        if (this.ws) {
+            this.ws.close(1000, 'Client destroyed');
         }
     }
 }

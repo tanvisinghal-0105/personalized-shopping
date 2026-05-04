@@ -10,7 +10,15 @@ COPY crm/ ./
 COPY client/index.html /client/index.html
 COPY client/src/ /client/src/
 
+# Copy server evaluation module + config for running evals from CRM
+COPY server/evaluation/ /server/evaluation/
+COPY server/config/ /server/config/
+COPY server/core/logger.py /server/core/logger.py
+
 RUN uv sync --locked
+
+# Add server to Python path so evaluation module is importable
+ENV PYTHONPATH="/server:${PYTHONPATH}"
 
 EXPOSE 8080
 

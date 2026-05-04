@@ -284,6 +284,56 @@ async def _handle_direct_visualization(
             product_ids=product_ids,
         )
 
+        # Save generated image to GCS for evaluation
+        image_b64 = (
+            result.get("ui_data", {}).get("image_base64")
+            if isinstance(result, dict)
+            else None
+        )
+        if image_b64:
+            try:
+                from google.cloud import storage as _gcs
+
+                _gcs_client = _gcs.Client()
+                _bucket_name = f"{_gcs_client.project}-shopping-assets"
+                _bucket = _gcs_client.bucket(_bucket_name)
+                gcs_path = f"evaluation/images/viz_{session_id}_{decor_session_id}.png"
+                _blob = _bucket.blob(gcs_path)
+                import base64 as _b64
+
+                _blob.upload_from_string(
+                    _b64.b64decode(image_b64), content_type="image/png"
+                )
+                logger.info(f"[DIRECT VIZ] Image saved to GCS: {gcs_path}")
+
+                # Record in session recorder for eval (uses record_tool_call
+                # so _autosave persists the event to GCS)
+                try:
+                    recorder = get_recorder(str(session_id))
+                    recorder.record_tool_call(
+                        tool_name="visualize_room_with_products",
+                        args={
+                            "customer_id": customer_id,
+                            "session_id": decor_session_id,
+                            "product_ids": product_ids,
+                        },
+                        result={
+                            "status": "success",
+                            "image_gcs_path": gcs_path,
+                            "products_shown": result.get("products_shown", []),
+                        },
+                        ui_type="room_visualization",
+                    )
+                    logger.info(
+                        f"[DIRECT VIZ] Recorded viz tool call in session recorder"
+                    )
+                except Exception as rec_err:
+                    logger.warning(
+                        f"[DIRECT VIZ] Failed to record viz event: {rec_err}"
+                    )
+            except Exception as gcs_err:
+                logger.warning(f"[DIRECT VIZ] Failed to save image to GCS: {gcs_err}")
+
         # Send the visualization result directly to the frontend
         await websocket.send(json.dumps({"type": "tool_result", "data": result}))
         logger.info("[DIRECT VIZ] Visualization sent to frontend")
@@ -1211,6 +1261,44 @@ async def handle_client(websocket: Any) -> None:
 
         await websocket.send(json.dumps({"ready": True}))
         logger.info(f"New session started: {session_id}")
+
+        # Send initial cart state so frontend displays the seeded cart
+        if customer_id:
+            try:
+                from google.cloud import firestore as _fs2
+
+                _cart_db = _fs2.Client()
+                cart_doc = _cart_db.collection("carts").document(customer_id).get()
+                if cart_doc.exists:
+                    cart_data = cart_doc.to_dict()
+                    cart_items = []
+                    for pid, item in (cart_data.get("items") or {}).items():
+                        cart_items.append(
+                            {
+                                "product_id": pid,
+                                "name": item.get("name", pid),
+                                "quantity": item.get("quantity", 1),
+                                "price": item.get("price", 0),
+                            }
+                        )
+                    await websocket.send(
+                        json.dumps(
+                            {
+                                "type": "tool_result",
+                                "data": {
+                                    "name": "access_cart_information",
+                                    "updated_cart": {
+                                        "cart_id": cart_data.get("cart_id", ""),
+                                        "items": cart_items,
+                                        "subtotal": cart_data.get("subtotal", 0),
+                                    },
+                                },
+                            }
+                        )
+                    )
+                    logger.info(f"Sent initial cart state to frontend: {customer_id}")
+            except Exception as cart_err:
+                logger.warning(f"Could not send initial cart state: {cart_err}")
 
         # Note: Personalized greeting is handled by the agent's persona system
         # The agent will generate an appropriate greeting with audio automatically

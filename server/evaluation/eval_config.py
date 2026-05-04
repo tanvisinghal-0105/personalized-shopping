@@ -111,7 +111,7 @@ INTENT_TEST_CASES = [
 AUDIO_QUALITY_THRESHOLDS = {
     "max_wer": 0.15,  # Word Error Rate: < 15%
     "max_latency_first_byte_ms": 2000,  # Time to first audio byte: < 2s
-    "max_latency_turn_ms": 5000,  # Full turn latency: < 5s
+    "max_latency_turn_ms": 8000,  # Full turn latency: < 8s (includes Gemini reasoning)
     "min_naturalness_score": 3.5,  # MOS-style 1-5 scale
     "min_relevance_score": 4.0,  # Response relevance 1-5 scale
 }

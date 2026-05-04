@@ -252,13 +252,72 @@
     async function loadEvalSessions() {
         const container = document.getElementById('evalContent');
         try {
-            const res = await fetch('/api/v1/eval/sessions');
-            const data = await res.json();
+            const [sessionsRes, analyticsRes] = await Promise.all([
+                fetch('/api/v1/eval/sessions'),
+                fetch('/api/v1/eval/analytics'),
+            ]);
+            const data = await sessionsRes.json();
+            const analytics = await analyticsRes.json();
+
             if (!data.sessions || data.sessions.length === 0) {
                 container.innerHTML = '<div style="text-align:center;padding:40px;color:#888;"><h3>No sessions recorded yet</h3><p>Run the demo to generate session logs for evaluation.</p></div>';
                 return;
             }
+
             let html = '';
+
+            // Analytics summary cards
+            const avgScore = analytics.avg_score != null ? (analytics.avg_score * 100).toFixed(1) + '%' : '--';
+            const avgScoreColor = analytics.avg_score >= 0.8 ? '#22c55e' : analytics.avg_score >= 0.6 ? '#f59e0b' : analytics.avg_score != null ? '#ef4444' : '#8888a8';
+            const avgLatency = analytics.avg_latency != null ? analytics.avg_latency.toFixed(2) + 's' : '--';
+
+            html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px;">
+                <div class="card"><div class="card-body" style="text-align:center;padding:16px;">
+                    <div style="font-size:11px;color:#8888a8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Total Sessions</div>
+                    <div style="font-size:28px;font-weight:700;color:#e4e4f0;">${analytics.total_sessions}</div>
+                    <div style="font-size:11px;color:#555570;">${analytics.evaluated_sessions} evaluated</div>
+                </div></div>
+                <div class="card"><div class="card-body" style="text-align:center;padding:16px;">
+                    <div style="font-size:11px;color:#8888a8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Avg Score</div>
+                    <div style="font-size:28px;font-weight:700;color:${avgScoreColor};">${avgScore}</div>
+                    <div style="font-size:11px;color:#555570;">across evaluated</div>
+                </div></div>
+                <div class="card"><div class="card-body" style="text-align:center;padding:16px;">
+                    <div style="font-size:11px;color:#8888a8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Avg Latency (P95)</div>
+                    <div style="font-size:28px;font-weight:700;color:#00f0ff;">${avgLatency}</div>
+                    <div style="font-size:11px;color:#555570;">speech response</div>
+                </div></div>
+            </div>`;
+
+            // Score distribution chart (bar chart using CSS)
+            if (analytics.scores && analytics.scores.length > 0) {
+                const buckets = { A: 0, B: 0, C: 0, D: 0, F: 0 };
+                analytics.scores.forEach(sc => { buckets[sc.grade] = (buckets[sc.grade] || 0) + 1; });
+                const maxCount = Math.max(...Object.values(buckets), 1);
+                const gradeColors = { A: '#22c55e', B: '#86efac', C: '#f59e0b', D: '#fca5a5', F: '#ef4444' };
+
+                html += `<div class="card" style="margin-bottom:20px;"><div class="card-header"><span class="material-symbols-outlined card-icon">bar_chart</span><h2>Score Distribution</h2></div>
+                    <div class="card-body">
+                    <p style="font-size:12px;color:#555570;margin-bottom:12px;">
+                        Distribution of overall evaluation grades across all evaluated sessions.
+                        Grade is a weighted average of applicable metrics (trajectory, speech, moodboard, etc).
+                        Metrics for stages the session never reached are excluded.
+                        A: 90%+, B: 80-89%, C: 70-79%, D: 60-69%, F: below 60%.
+                    </p>
+                    <div style="display:flex;align-items:flex-end;gap:12px;height:120px;padding:0 20px;">`;
+                Object.entries(buckets).forEach(([grade, count]) => {
+                    const pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                    const barH = Math.max(pct, 4);
+                    html += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+                        <div style="font-size:12px;font-weight:600;color:${gradeColors[grade]};">${count}</div>
+                        <div style="width:100%;height:${barH}px;background:${gradeColors[grade]};border-radius:4px 4px 0 0;min-height:4px;"></div>
+                        <div style="font-size:13px;font-weight:700;color:${gradeColors[grade]};">${grade}</div>
+                    </div>`;
+                });
+                html += `</div></div></div>`;
+            }
+
+            // Session cards
             data.sessions.forEach(s => {
                 html += `
                 <div class="card" style="margin-bottom:16px;">
@@ -267,13 +326,11 @@
                         <h2>Session ${s.session_id || 'Unknown'}</h2>
                     </div>
                     <div class="card-body">
-                        <div style="display:flex;gap:24px;font-size:13px;color:#8888a8;margin-bottom:12px;">
+                        <div style="display:flex;gap:24px;font-size:13px;color:#8888a8;margin-bottom:12px;flex-wrap:wrap;">
                             <span>Customer: <strong style="color:#e4e4f0;">${s.customer_id || 'N/A'}</strong></span>
-                            <span>Duration: <strong style="color:#e4e4f0;">${s.duration_seconds || 0}s</strong></span>
+                            <span>Duration: <strong style="color:#e4e4f0;">${(s.duration_seconds || 0).toFixed(1)}s</strong></span>
                             <span>Turns: <strong style="color:#e4e4f0;">${s.turn_count || 0}</strong></span>
                             <span>Tool Calls: <strong style="color:#e4e4f0;">${s.tool_call_count || 0}</strong></span>
-                            <span>Cost: <strong style="color:#e4e4f0;">\$${(s.cost_usd || 0).toFixed(4)}</strong></span>
-                            <span>Tokens: <strong style="color:#e4e4f0;">${((s.token_usage?.input_tokens || 0) + (s.token_usage?.output_tokens || 0)).toLocaleString()}</strong></span>
                             <span style="font-size:12px;color:#555570;">${s.start_time || ''}</span>
                         </div>
                         <div class="buttons">
@@ -299,7 +356,11 @@
         try {
             const res = await fetch('/api/v1/eval/run/' + filename + '?use_vertex=' + useVertex, { method: 'POST' });
             const data = await res.json();
-            if (data.results) renderEvalResults(panel, data.results);
+            if (data.results) {
+                renderEvalResults(panel, data.results);
+                // Reload session list so "View Results" button appears
+                loadEvalSessions();
+            }
             else panel.innerHTML = '<p style="color:red;">Error: ' + (data.detail || 'Unknown') + '</p>';
         } catch (e) {
             panel.innerHTML = '<p style="color:red;">Error: ' + e.message + '</p>';
@@ -324,46 +385,117 @@
         const score = overall.score || 0;
         const pct = (score * 100).toFixed(1);
         const gradeColor = score >= 0.8 ? '#22c55e' : score >= 0.6 ? '#f59e0b' : '#ef4444';
+        const skippedLayers = overall.skipped_layers || [];
+
+        const tooltips = {
+            image_quality: 'Gemini-as-judge rubric evaluation. Questions about product placement, style adherence, room type, quality, aesthetics.',
+        };
+
+        // LLM Judge dimensions (primary scoring)
+        const judgeDims = [
+            { key: 'conversation_quality', label: 'Conversation Quality', desc: 'Natural, coherent, appropriate responses' },
+            { key: 'tool_usage', label: 'Tool Usage', desc: 'Right tools at right time, proper arguments' },
+            { key: 'task_effectiveness', label: 'Task Effectiveness', desc: 'Meaningful progress toward customer goal' },
+            { key: 'response_quality', label: 'Response Quality', desc: 'Helpful, clear, contextually appropriate' },
+            { key: 'customer_experience', label: 'Customer Experience', desc: 'Would a real customer be satisfied?' },
+        ];
 
         const layers = [
-            { key: 'trajectory_order', label: 'Trajectory Order', sk: 'trajectory_order_score' },
-            { key: 'trajectory_args', label: 'Trajectory Args', sk: 'trajectory_args_score' },
-            { key: 'step_skip', label: 'Step Completion', sk: 'step_skip_score' },
-            { key: 'moodboard_quality', label: 'Moodboard Quality', sk: 'moodboard_quality_score' },
-            { key: 'session_completion', label: 'Task Completion', sk: 'session_completion_score' },
-            { key: 'speech_latency', label: 'Speech Latency', sk: 'speech_latency_score' },
-            { key: 'speech_wer', label: 'Transcription (WER)', sk: 'speech_wer_score' },
             { key: 'image_quality', label: 'Image Quality (Rubric)', sk: 'image_eval_score' },
         ];
+
+        const sessionType = results.session_type || 'unknown';
+        const typeLabels = { shopping: 'Shopping Assistant', home_decor: 'Home Decor Consultation', mixed: 'Shopping + Home Decor', unknown: 'Voice Assistant' };
+        const typeLabel = typeLabels[sessionType] || 'Voice Assistant Session';
+        const typeColor = sessionType === 'shopping' ? '#4285f4' : sessionType === 'mixed' ? '#f59e0b' : '#22c55e';
 
         let html = `
             <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
                 <span style="font-size:36px;font-weight:800;color:${gradeColor};background:${gradeColor}15;padding:4px 16px;border-radius:8px;">${grade}</span>
-                <div><div style="font-size:28px;font-weight:700;color:${gradeColor};">${pct}%</div><div style="font-size:12px;color:#8888a8;">Overall Score</div></div>
+                <div>
+                    <div style="font-size:28px;font-weight:700;color:${gradeColor};">${pct}%</div>
+                    <div style="font-size:12px;color:#8888a8;">Overall Score (weighted average of applicable metrics)</div>
+                    <div style="font-size:11px;color:${typeColor};margin-top:2px;">${typeLabel}</div>
+                    ${skippedLayers.length > 0 ? `<div style="font-size:11px;color:#555570;margin-top:2px;">Excluded (not applicable): ${skippedLayers.join(', ')}</div>` : ''}
+                </div>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+        `;
+
+        // LLM Judge scores (primary)
+        const judge = results.llm_judge || {};
+        if (judge.avg_rating) {
+            html += `<div style="margin-bottom:16px;"><div style="font-size:12px;color:#8888a8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">LLM-as-Judge Evaluation (Gemini 2.5 Flash)</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">`;
+            judgeDims.forEach(d => {
+                const dim = judge[d.key] || {};
+                const s = dim.score || 0;
+                const c = s >= 4 ? '#22c55e' : s >= 3 ? '#f59e0b' : '#ef4444';
+                html += `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px;" title="${d.desc}">
+                    <div style="font-size:11px;color:#8888a8;margin-bottom:4px;">${d.label}</div>
+                    <div style="font-size:24px;font-weight:700;color:${c};">${s}/5</div>
+                    <div style="font-size:10px;color:#555570;margin-top:4px;line-height:1.4;">${dim.explanation || ''}</div>
+                </div>`;
+            });
+            html += `</div></div>`;
+        }
+
+        html += `<div style="font-size:12px;color:#8888a8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Supplementary Metrics (informational)</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">
         `;
         layers.forEach(l => {
             const layer = results[l.key] || {};
             const val = layer[l.sk];
             if (val === undefined) return;
-            const color = val >= 0.8 ? '#22c55e' : val >= 0.6 ? '#f59e0b' : '#ef4444';
-            html += `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;">
-                <div style="font-size:11px;color:#8888a8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">${l.label}</div>
-                <div style="font-size:24px;font-weight:700;color:${color};">${(val*100).toFixed(0)}%</div>`;
+            const isSkipped = skippedLayers.includes(l.key);
+            const color = isSkipped ? '#555570' : val >= 0.8 ? '#22c55e' : val >= 0.6 ? '#f59e0b' : '#ef4444';
+            const opacity = isSkipped ? 'opacity:0.5;' : '';
+            const tip = tooltips[l.key] || '';
+            const weight = overall.applied_weights?.[l.key];
+            const weightStr = weight ? ` (${Math.round(weight * 100)}% weight)` : '';
+            html += `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;${opacity}" title="${tip}">
+                <div style="font-size:11px;color:#8888a8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;cursor:help;">${l.label}${isSkipped ? ' <span style="color:#555570;font-size:9px;">(N/A)</span>' : weightStr}</div>
+                <div style="font-size:24px;font-weight:700;color:${color};">${isSkipped ? 'N/A' : (val*100).toFixed(0) + '%'}</div>`;
+            if (tip) {
+                html += `<div style="font-size:10px;color:#555570;margin-bottom:4px;line-height:1.4;">${tip}</div>`;
+            }
             Object.entries(layer).forEach(([k,v]) => {
-                if (k !== l.sk && !Array.isArray(v)) {
+                if (k !== l.sk && !Array.isArray(v) && typeof v !== 'object') {
                     html += `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-top:1px solid rgba(255,255,255,0.04);"><span style="color:#555570;">${k}</span><span style="color:#c0c0d8;">${typeof v==='number'&&v%1!==0?v.toFixed(2):v}</span></div>`;
                 }
             });
             if (layer.skipped_stages && layer.skipped_stages.length) {
                 html += `<div style="color:#ef4444;font-size:11px;margin-top:4px;">Skipped: ${layer.skipped_stages.join(', ')}</div>`;
             }
+            // Show image rubric verdicts or template
+            if (l.key === 'image_quality') {
+                const verdicts = layer.verdicts || layer.rubric_template || [];
+                if (verdicts.length > 0) {
+                    const isTemplate = !layer.verdicts;
+                    html += '<div style="margin-top:8px;border-top:1px solid rgba(255,255,255,0.08);padding-top:8px;">';
+                    html += `<div style="font-size:10px;color:#8888a8;margin-bottom:4px;">${isTemplate ? 'RUBRIC QUESTIONS (template -- no image to evaluate)' : 'RUBRIC QUESTIONS (Gemini-as-Judge)'}</div>`;
+                    verdicts.forEach(v => {
+                        const vColor = v.verdict === 'YES' ? '#22c55e' : v.verdict === 'NO' ? '#ef4444' : '#555570';
+                        const sevColor = v.severity === 'BLOCKER' ? '#ef4444' : '#f59e0b';
+                        html += `<div style="font-size:10px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.03);">
+                            <div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:#c0c0d8;">${v.question}</span><span style="color:${vColor};font-weight:600;white-space:nowrap;">${v.verdict}</span></div>
+                            <div style="color:#555570;font-size:9px;"><span style="color:${sevColor};">${v.severity}</span>${v.confidence !== 'N/A' ? ' | ' + v.confidence + ' confidence' : ''}${v.explanation && v.explanation !== 'No image data available for evaluation' ? ' | ' + v.explanation : ''}</div>
+                        </div>`;
+                    });
+                    if (layer.category_scores) {
+                        html += '<div style="margin-top:4px;font-size:10px;color:#8888a8;">Category Scores: ';
+                        Object.entries(layer.category_scores).forEach(([cat, sc]) => {
+                            html += `<span style="margin-right:8px;">${cat}: <strong style="color:#c0c0d8;">${sc >= 0 ? (sc*100).toFixed(0)+'%' : 'N/A'}</strong></span>`;
+                        });
+                        html += '</div>';
+                    }
+                    html += '</div>';
+                }
+            }
             html += '</div>';
         });
 
         if (results.vertex_conversation && !results.vertex_conversation.error) {
-            html += '<div style="grid-column:1/-1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;"><div style="font-size:11px;color:#8888a8;text-transform:uppercase;margin-bottom:8px;">Vertex AI Conversation Quality</div>';
+            html += '<div style="grid-column:1/-1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;" title="Vertex AI PointwiseMetric evaluation using Gemini as judge. Scores 1-5 on relevance, naturalness, and child appropriateness."><div style="font-size:11px;color:#8888a8;text-transform:uppercase;margin-bottom:8px;">Vertex AI Conversation Quality</div>';
             Object.entries(results.vertex_conversation).forEach(([k,v]) => {
                 if (typeof v === 'number') {
                     const c = v >= 4 ? '#22c55e' : v >= 3 ? '#f59e0b' : '#ef4444';

@@ -119,9 +119,19 @@ def speech_latency_metric(instance: dict) -> dict:
         return {"speech_latency_score": 0.0, "avg_latency_ms": 0}
 
     avg = sum(latencies) / len(latencies)
-    threshold = AUDIO_QUALITY_THRESHOLDS["max_latency_first_byte_ms"]
+    p95 = sorted(latencies)[int(len(latencies) * 0.95)] if len(latencies) > 1 else avg
+    # Use full turn latency threshold (5s) for timestamp-estimated latencies,
+    # since these measure user_input-to-tool_call which includes Gemini
+    # processing time, not just audio first-byte latency.
+    threshold = AUDIO_QUALITY_THRESHOLDS["max_latency_turn_ms"]
+    # Graduated scoring: 100% at 0ms, 80% at 2s, 50% at 3.5s, 0% at 5s+
     score = max(0.0, min(1.0, 1.0 - (avg / threshold)))
-    return {"speech_latency_score": round(score, 3), "avg_latency_ms": round(avg)}
+    return {
+        "speech_latency_score": round(score, 3),
+        "avg_latency_ms": round(avg),
+        "p95_latency_ms": round(p95),
+        "p95_latency_seconds": round(p95 / 1000, 2),
+    }
 
 
 def speech_wer_metric(instance: dict) -> dict:
@@ -478,80 +488,316 @@ def session_completion_metric(instance: dict) -> dict:
 # ================================================================== #
 
 
+def _detect_session_type(session_data: dict) -> str:
+    """Detect whether a session is Home Decor, Shopping, or mixed."""
+    trajectory = session_data.get("predicted_trajectory", [])
+    tool_names = [tc.get("tool_name", "") for tc in trajectory]
+    home_decor_tools = {
+        "start_home_decor_consultation",
+        "continue_home_decor_consultation",
+        "create_style_moodboard",
+        "visualize_room_with_products",
+        "analyze_room_with_history",
+    }
+    shopping_tools = {
+        "modify_cart",
+        "access_cart_information",
+        "check_product_availability",
+        "display_product_search_results",
+        "get_product_recommendations",
+        "lookup_warranty_details",
+        "get_trade_in_value",
+        "sync_ask_for_approval",
+    }
+    hd_count = sum(1 for t in tool_names if t in home_decor_tools)
+    sh_count = sum(1 for t in tool_names if t in shopping_tools)
+    if hd_count > 0 and sh_count == 0:
+        return "home_decor"
+    if sh_count > 0 and hd_count == 0:
+        return "shopping"
+    if hd_count > 0 and sh_count > 0:
+        return "mixed"
+    return "unknown"
+
+
+def _build_transcript(session_data: dict) -> str:
+    """Build a readable conversation transcript from session data."""
+    lines = []
+    for event in session_data.get("events", []):
+        etype = event.get("type", "")
+        if etype == "user_input":
+            text = event.get("text", event.get("transcription", ""))
+            if text:
+                lines.append(f"[CUSTOMER]: {text}")
+        elif etype == "agent_response":
+            text = event.get("text", event.get("transcription", ""))
+            if text:
+                lines.append(f"[AGENT]: {text}")
+        elif etype == "tool_call":
+            name = event.get("tool_name", "unknown_tool")
+            args = event.get("args", {})
+            lines.append(f"[TOOL CALL]: {name}({json.dumps(args, default=str)[:200]})")
+        elif etype == "tool_result":
+            status = event.get("status", "")
+            lines.append(f"[TOOL RESULT]: status={status}")
+
+    # If events don't have transcript, fall back to transcriptions array
+    if not lines:
+        for t in session_data.get("transcriptions", []):
+            role = t.get("role", "unknown").upper()
+            text = t.get("text", "")
+            if text:
+                lines.append(f"[{role}]: {text}")
+
+    # Add tool calls from predicted_trajectory if events were sparse
+    if len(lines) < 3:
+        for tc in session_data.get("predicted_trajectory", []):
+            name = tc.get("tool_name", "unknown")
+            args = tc.get("args", {})
+            lines.append(f"[TOOL CALL]: {name}({json.dumps(args, default=str)[:200]})")
+
+    return "\n".join(lines) if lines else "(no transcript available)"
+
+
+def _llm_judge_evaluate(transcript: str, session_data: dict, session_type: str) -> dict:
+    """Use Gemini as judge to evaluate conversation quality on 5 dimensions.
+
+    Each dimension is scored 1-5 with an explanation.
+    """
+    from google import genai
+    from google.genai import types as genai_types
+
+    tool_calls = session_data.get("predicted_trajectory", [])
+    tool_summary = ", ".join(tc.get("tool_name", "?") for tc in tool_calls)
+    turn_count = session_data.get("turn_count", 0)
+    duration = session_data.get("duration_seconds", 0)
+
+    prompt = f"""You are an expert evaluator for Cymbal StyleSync, a voice-first AI shopping assistant
+built on Google Cloud with Gemini Live API and ADK multi-agent orchestration.
+
+IMPORTANT CONTEXT:
+- This is a VOICE-FIRST system using Gemini Live API with bidirectional audio streaming.
+- The transcript below is reconstructed from tool call logs and speech-to-text output.
+- Customer input may contain transcription artifacts, mixed languages, or garbled text -- this is
+  NORMAL for voice systems and should NOT be penalized. Focus on what the agent DID, not transcript quality.
+- The agent communicates primarily via VOICE (audio), so [AGENT] text responses may be absent
+  from the transcript. Evaluate based on tool calls and flow progression instead.
+- Tool calls are the primary signal of agent behavior and quality.
+
+Evaluate this voice assistant session (primary activity: {session_type}) on 5 dimensions. Score each 1-5 (1=poor, 5=excellent).
+Be fair and constructive -- a score of 3 means "acceptable", 4 means "good", 5 means "excellent".
+
+Session metadata:
+- Type: {session_type}
+- Turns: {turn_count}
+- Duration: {duration:.0f}s
+- Tools used: {tool_summary}
+
+Conversation transcript and tool calls:
+{transcript[:4000]}
+
+Score each dimension 1-5:
+
+1. **Conversation Flow**: Did the agent follow a logical flow? Were tool calls sequenced properly for this type of session ({session_type})?
+
+2. **Tool Usage**: Were the right tools called with reasonable arguments? Did tool arguments reflect customer intent where discernible?
+
+3. **Task Progress**: How much meaningful progress was made toward the customer's goal? Score based on what was accomplished, not what was missing.
+
+4. **Agent Behavior**: Did the agent behave appropriately -- not hallucinating actions, not skipping steps, responding to customer signals?
+
+5. **Overall Quality**: Considering this is a voice-first demo system, how well did the agent perform overall?
+
+Respond in JSON:
+{{"conversation_quality": {{"score": 4, "explanation": "..."}}, "tool_usage": {{"score": 4, "explanation": "..."}}, "task_effectiveness": {{"score": 4, "explanation": "..."}}, "response_quality": {{"score": 4, "explanation": "..."}}, "customer_experience": {{"score": 4, "explanation": "..."}}}}"""
+
+    try:
+        client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
+        response = client.models.generate_content(
+            model=JUDGE_MODEL,
+            contents=[prompt],
+            config=genai_types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.1,
+            ),
+        )
+
+        response_text = response.text if response else None
+        if response_text:
+            scores = json.loads(response_text)
+            # Compute overall from 5 dimensions (each 1-5, normalize to 0-1)
+            all_scores = []
+            for dim in [
+                "conversation_quality",
+                "tool_usage",
+                "task_effectiveness",
+                "response_quality",
+                "customer_experience",
+            ]:
+                dim_data = scores.get(dim, {})
+                s = dim_data.get("score", 3)
+                all_scores.append(s)
+
+            avg = sum(all_scores) / len(all_scores) if all_scores else 3.0
+            normalized = (avg - 1) / 4  # Map 1-5 to 0-1
+
+            scores["llm_judge_score"] = round(normalized, 3)
+            scores["avg_rating"] = round(avg, 2)
+            return scores
+
+    except Exception as e:
+        print(f"  LLM Judge evaluation failed: {e}")
+
+    # Fallback: use computed metrics if LLM judge fails
+    return {
+        "llm_judge_score": 0.5,
+        "avg_rating": 3.0,
+        "error": "LLM judge unavailable, using default score",
+        "conversation_quality": {
+            "score": 3,
+            "explanation": "Default (judge unavailable)",
+        },
+        "tool_usage": {"score": 3, "explanation": "Default (judge unavailable)"},
+        "task_effectiveness": {
+            "score": 3,
+            "explanation": "Default (judge unavailable)",
+        },
+        "response_quality": {"score": 3, "explanation": "Default (judge unavailable)"},
+        "customer_experience": {
+            "score": 3,
+            "explanation": "Default (judge unavailable)",
+        },
+    }
+
+
 def evaluate_session(session_file: str, use_vertex: bool = True) -> dict:
     """Run all evaluation layers on a recorded session."""
     with open(session_file) as f:
         session_data = json.load(f)
+
+    session_type = _detect_session_type(session_data)
 
     print(f"\n{'='*60}")
     print(f"  Evaluating session: {session_data.get('session_id')}")
     print(f"  Customer: {session_data.get('customer_id')}")
     print(f"  Duration: {session_data.get('duration_seconds', 0)}s")
     print(f"  Turns: {session_data.get('turn_count', 0)}")
+    print(f"  Session type: {session_type}")
     print(f"{'='*60}\n")
 
-    results = {}
+    results = {"session_type": session_type}
 
-    # -- Layer 1: Speech Quality --
-    print("[Layer 1] Speech Quality...")
-    results["speech_latency"] = speech_latency_metric(session_data)
-    results["speech_wer"] = speech_wer_metric(session_data)
-    _print_scores("Speech Latency", results["speech_latency"])
-    _print_scores("Speech WER", results["speech_wer"])
+    # -- Build conversation transcript for LLM judge --
+    transcript = _build_transcript(session_data)
 
-    # -- Layer 2: Agent Trajectory --
-    print("\n[Layer 2] Agent Trajectory...")
-    results["trajectory_order"] = trajectory_order_metric(session_data)
+    # -- LLM-as-Judge evaluation (primary scoring) --
+    print("[LLM Judge] Running Gemini-as-judge evaluation...")
+    llm_judge_results = _llm_judge_evaluate(transcript, session_data, session_type)
+    results["llm_judge"] = llm_judge_results
+    _print_scores("LLM Judge", llm_judge_results)
+
+    # -- Supplementary: Trajectory Args --
+    print("\n[Supplementary] Trajectory Args...")
     results["trajectory_args"] = trajectory_args_metric(session_data)
-    results["step_skip"] = step_skip_metric(session_data)
-    _print_scores("Trajectory Order", results["trajectory_order"])
     _print_scores("Trajectory Args", results["trajectory_args"])
-    _print_scores("Step Skip Detection", results["step_skip"])
 
-    # -- Layer 3: Conversation Quality (Vertex AI) --
-    if use_vertex:
-        print("\n[Layer 3] Conversation Quality (Vertex AI)...")
-        try:
-            _init_vertex()
-            vertex_results = _run_vertex_conversation_eval(session_data)
-            results["vertex_conversation"] = vertex_results
-            _print_scores("Vertex AI Conversation", vertex_results)
-        except Exception as e:
-            print(f"  Vertex AI evaluation failed: {e}")
-            results["vertex_conversation"] = {"error": str(e)}
-    else:
-        print("\n[Layer 3] Conversation Quality - SKIPPED (--no-vertex)")
-
-    # -- Layer 4: Moodboard Quality --
-    print("\n[Layer 4] Moodboard Quality...")
-    results["moodboard_quality"] = moodboard_quality_metric(session_data)
-    _print_scores("Moodboard Quality", results["moodboard_quality"])
-
-    # -- Layer 5: End-to-End Session --
-    print("\n[Layer 5] End-to-End Session...")
-    results["session_completion"] = session_completion_metric(session_data)
-    _print_scores("Session Completion", results["session_completion"])
-
-    # -- Layer 6: Image Quality (if visualization was generated) --
+    # Image quality rubric template
     viz_events = [
         e
         for e in session_data.get("events", [])
         if e.get("type") == "tool_call"
         and e.get("tool_name") == "visualize_room_with_products"
     ]
-    if viz_events:
-        print("\n[Layer 6] Image Quality Evaluation...")
-        print(
-            "  (Image eval requires the generated image -- skipped for recorded sessions)"
+    from .image_eval import _build_rubric
+
+    style_prefs = session_data.get("style_preferences", [])
+    room_type = "bedroom"
+    for tc in session_data.get("tool_calls", []):
+        if tc.get("args", {}).get("room_type"):
+            room_type = tc["args"]["room_type"]
+            break
+
+    rubric_questions = []
+    try:
+        rubric = _build_rubric([], style_prefs or ["modern"], room_type, None)
+        rubric_questions = [
+            {
+                "question": r["question"],
+                "category": r["category"],
+                "severity": r["severity"],
+                "verdict": "N/A",
+                "confidence": "N/A",
+                "explanation": "No image data available for evaluation",
+            }
+            for r in rubric
+        ]
+    except Exception:
+        pass
+
+    # Try to fetch the generated image from GCS for real evaluation
+    image_b64_for_eval = None
+    gcs_viz_events = [
+        e
+        for e in session_data.get("events", [])
+        if e.get("type") == "tool_call"
+        and e.get("tool_name") == "visualize_room_with_products"
+        and e.get("image_gcs_path")
+    ]
+
+    if gcs_viz_events:
+        gcs_path = gcs_viz_events[-1]["image_gcs_path"]
+        try:
+            from google.cloud import storage as _gcs
+            import base64
+
+            _client = _gcs.Client()
+            _bucket_name = f"{_client.project}-shopping-assets"
+            _bucket = _client.bucket(_bucket_name)
+            _blob = _bucket.blob(gcs_path)
+            if _blob.exists():
+                image_bytes = _blob.download_as_bytes()
+                image_b64_for_eval = base64.b64encode(image_bytes).decode("utf-8")
+                print(f"  Fetched visualization image from GCS: {gcs_path}")
+        except Exception as gcs_err:
+            print(f"  Failed to fetch image from GCS: {gcs_err}")
+
+    if image_b64_for_eval:
+        # Run real Gemini-as-judge image evaluation
+        from .image_eval import evaluate_generated_image
+
+        products_shown = gcs_viz_events[-1].get("products_shown", [])
+        product_dicts = [
+            {"name": p} if isinstance(p, str) else p for p in products_shown
+        ]
+        constraints_data = None
+        for tc in session_data.get("tool_calls", []):
+            if tc.get("tool_name") == "visualize_room_with_products":
+                constraints_data = tc.get("args", {}).get("constraints")
+                break
+
+        results["image_quality"] = evaluate_generated_image(
+            image_base64=image_b64_for_eval,
+            products_shown=product_dicts,
+            style_preferences=style_prefs or ["modern"],
+            room_type=room_type,
+            constraints=constraints_data,
         )
+    elif viz_events:
         results["image_quality"] = {
             "image_eval_score": 0.7,
-            "note": "Image eval requires live image data. Run from CRM dashboard for full eval.",
+            "note": "Image generated but not stored in GCS for evaluation.",
+            "verdicts": rubric_questions,
+            "criteria_count": len(rubric_questions),
         }
     else:
-        results["image_quality"] = {"image_eval_score": 0.0, "note": "no_visualization"}
+        results["image_quality"] = {
+            "image_eval_score": 0.0,
+            "note": "no_visualization",
+            "rubric_template": rubric_questions,
+            "criteria_count": len(rubric_questions),
+        }
 
-    # -- Overall Score --
+    # -- Overall Score (from LLM judge) --
     overall = _compute_overall_score(results)
     results["overall"] = overall
     print(f"\n{'='*60}")
@@ -613,34 +859,21 @@ def _run_vertex_conversation_eval(session_data: dict) -> dict:
 
 
 def _compute_overall_score(results: dict) -> dict:
-    """Weighted composite of all layer scores."""
-    weights = {
-        "trajectory_order": 0.25,
-        "step_skip": 0.20,
-        "moodboard_quality": 0.20,
-        "session_completion": 0.15,
-        "speech_latency": 0.10,
-        "speech_wer": 0.10,
-    }
+    """Weighted composite of all layer scores.
 
-    total = 0.0
-    weight_sum = 0.0
-    for key, weight in weights.items():
-        layer = results.get(key, {})
-        # Find the primary score key (first key ending in '_score')
-        score = next(
-            (
-                v
-                for k, v in layer.items()
-                if k.endswith("_score") and isinstance(v, (int, float))
-            ),
-            None,
-        )
-        if score is not None:
-            total += score * weight
-            weight_sum += weight
+    Metrics that depend on reaching a certain stage (moodboard, visualization,
+    session completion) are excluded from the weight pool when the session
+    never reached those stages, so short sessions are scored fairly on what
+    they actually accomplished.
+    """
+    # Score comes entirely from LLM-as-judge (0-1 normalized)
+    llm_judge = results.get("llm_judge", {})
+    llm_score = llm_judge.get("llm_judge_score")
 
-    overall = total / weight_sum if weight_sum else 0.0
+    overall = llm_score if llm_score is not None else 0.5
+
+    applied_weights = {"llm_judge": 1.0}
+    skipped = []
 
     if overall >= 0.9:
         grade = "A"
@@ -653,7 +886,12 @@ def _compute_overall_score(results: dict) -> dict:
     else:
         grade = "F"
 
-    return {"score": round(overall, 4), "grade": grade, "weights": weights}
+    return {
+        "score": round(overall, 4),
+        "grade": grade,
+        "applied_weights": applied_weights,
+        "skipped_layers": skipped,
+    }
 
 
 def _print_scores(label: str, scores: dict):

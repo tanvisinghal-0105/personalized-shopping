@@ -105,6 +105,12 @@ class SessionRecorder:
                 else None
             ),
             "status": result.get("status") if isinstance(result, dict) else None,
+            "image_gcs_path": (
+                result.get("image_gcs_path") if isinstance(result, dict) else None
+            ),
+            "products_shown": (
+                result.get("products_shown") if isinstance(result, dict) else None
+            ),
             "turn": self.turn_count,
             "timestamp": ts,
             "elapsed_ms": int((ts - self.start_time) * 1000),

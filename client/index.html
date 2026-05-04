@@ -995,6 +995,55 @@ function handleGoogleSignIn(response) {
   }, 600);
 }
 
+// Silently refresh the Google ID token using the GSI library's prompt.
+// Returns a Promise resolving to the new credential string (JWT).
+function refreshGoogleIdToken() {
+  return new Promise((resolve, reject) => {
+    if (!window.google || !google.accounts || !google.accounts.id) {
+      reject(new Error('Google Identity Services not loaded'));
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      reject(new Error('Token refresh timed out'));
+    }, 15000);
+
+    // Re-initialize with the same client ID but use a one-shot callback
+    google.accounts.id.initialize({
+      client_id: '991831686961-dcjb3oc5d7dvs2k5vniulce68vc3fmbp.apps.googleusercontent.com',
+      callback: (response) => {
+        clearTimeout(timeoutId);
+        if (response.credential) {
+          // Update the stored user with the new token
+          const payload = JSON.parse(atob(response.credential.split('.')[1]));
+          if (typeof currentUser !== 'undefined' && currentUser) {
+            currentUser.googleIdToken = response.credential;
+            localStorage.setItem('cymbalUser', JSON.stringify(currentUser));
+          }
+          console.log('[TOKEN] Google ID token refreshed, new exp:',
+            new Date(payload.exp * 1000).toISOString());
+          resolve(response.credential);
+        } else {
+          reject(new Error('No credential in response'));
+        }
+      },
+      auto_select: true,   // auto-select the already-signed-in account
+      cancel_on_tap_outside: false
+    });
+
+    // Trigger the One Tap prompt which will silently re-issue a token
+    // for the already-authenticated user
+    google.accounts.id.prompt((notification) => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        clearTimeout(timeoutId);
+        console.warn('[TOKEN] Silent refresh prompt not shown:',
+          notification.getNotDisplayedReason?.() || notification.getSkippedReason?.());
+        reject(new Error('Silent refresh unavailable, user may need to sign in again'));
+      }
+    });
+  });
+}
+
 // Show fallback form if Google Sign-In doesn't load
 setTimeout(() => {
   const gBtn = document.querySelector('.g_id_signin iframe');
@@ -1411,7 +1460,7 @@ setTimeout(() => {
   import { AudioRecorder } from './src/audio/audio-recorder.js';
   import { AudioStreamer } from './src/audio/audio-streamer.js';
   import { MediaHandler } from './src/media/media-handler.js';
-  import { GeminiAPI } from './src/api/gemini-api.js';
+  import { GeminiAPI } from './src/api/gemini-api.js?v={{BUILD_TS}}';
   import { base64ToArrayBuffer } from './src/utils/utils.js';
   import { HomeDecorRenderer } from './src/ui/home-decor-renderer.js';
   import { VoiceOrb, ORB_STATES } from './src/ui/voice-orb.js';
@@ -1489,6 +1538,8 @@ setTimeout(() => {
     if (!chatInitialized) {
       chatInitialized = true;
       api = new GeminiAPI(null, currentUser);
+      api.onTokenRefresh = refreshGoogleIdToken;
+      api.start();
       setupAPIHandlers();
 
       api.onReady = () => {
