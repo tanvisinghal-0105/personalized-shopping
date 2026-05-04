@@ -335,33 +335,72 @@ async def run_evaluation(filename: str, use_vertex: bool = True):
 
 @app.get("/api/v1/eval/results/{filename}")
 async def get_eval_results(filename: str):
-    """Get evaluation results for a session (GCS or local)."""
-    # Try GCS first
+    """Get evaluation results from GCS (authoritative source)."""
+    results_name = filename.replace(".json", "_eval_results.json")
+
+    # Read from GCS only -- local files can be stale across instances
     try:
         from google.cloud import storage
 
         client = storage.Client()
         bucket = client.bucket(GCS_BUCKET_NAME)
-        results_name = filename.replace(".json", "_eval_results.json")
         blob = bucket.blob(f"{GCS_EVAL_PREFIX}/{results_name}")
         if blob.exists():
-            return json.loads(blob.download_as_text())
+            blob.reload()
+            data = json.loads(blob.download_as_text())
+            logger.info(
+                f"Eval results loaded from GCS: {results_name} "
+                f"(score={data.get('overall', {}).get('score')})"
+            )
+            return data
     except Exception as e:
         logger.warning(f"GCS eval results lookup failed: {e}")
 
-    # Fallback to local
-    results_file = os.path.realpath(
-        os.path.join(EVAL_LOG_DIR, filename.replace(".json", "_eval_results.json"))
+    raise fastapi.HTTPException(
+        status_code=404,
+        detail="Evaluation results not found. Run evaluation first.",
     )
-    if not results_file.startswith(os.path.realpath(EVAL_LOG_DIR) + os.sep):
-        raise fastapi.HTTPException(status_code=400, detail="Invalid filename")
-    if not os.path.exists(results_file):
-        raise fastapi.HTTPException(
-            status_code=404,
-            detail="Evaluation results not found. Run evaluation first.",
+
+
+@app.put("/api/v1/eval/results/{filename}")
+async def put_eval_results(filename: str, request: fastapi.Request):
+    """Upload eval results directly to GCS and clear local cache."""
+    results_name = filename.replace(".json", "_eval_results.json")
+    body = await request.json()
+    try:
+        from google.cloud import storage
+
+        # Delete stale local file if it exists
+        local_path = os.path.realpath(os.path.join(EVAL_LOG_DIR, results_name))
+        if local_path.startswith(os.path.realpath(EVAL_LOG_DIR)) and os.path.exists(
+            local_path
+        ):
+            os.remove(local_path)
+            logger.info(f"Removed stale local eval results: {local_path}")
+
+        # Write to GCS
+        content = json.dumps(body, indent=2, default=str)
+        client = storage.Client()
+        bucket = client.bucket(GCS_BUCKET_NAME)
+        blob = bucket.blob(f"{GCS_EVAL_PREFIX}/{results_name}")
+        # Delete first to avoid stale object caching
+        if blob.exists():
+            blob.delete()
+        blob.upload_from_string(content, content_type="application/json")
+
+        # Also write locally so GET reads the same data
+        os.makedirs(EVAL_LOG_DIR, exist_ok=True)
+        with open(os.path.join(EVAL_LOG_DIR, results_name), "w") as f:
+            f.write(content)
+
+        logger.info(
+            f"Eval results written via PUT: {results_name} "
+            f"(score={body.get('overall', {}).get('score')})"
         )
-    with open(results_file) as f:
-        return json.load(f)
+        return {"status": "success", "file": results_name}
+    except Exception as e:
+        logger.error(f"Failed to write eval results: {e}")
+        raise fastapi.HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/v1/eval/analytics")
