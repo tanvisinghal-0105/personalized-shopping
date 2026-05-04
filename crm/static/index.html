@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="./static/style.css">
 </head>
 <body>
-    <div class="app-layout">
+    <div class="app-layout" id="appLayout">
         <aside class="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-logo-text">cymbal</div>
@@ -253,8 +253,8 @@
         const container = document.getElementById('evalContent');
         try {
             const [sessionsRes, analyticsRes] = await Promise.all([
-                fetch('/api/v1/eval/sessions'),
-                fetch('/api/v1/eval/analytics'),
+                authFetch('/api/v1/eval/sessions'),
+                authFetch('/api/v1/eval/analytics'),
             ]);
             const data = await sessionsRes.json();
             const analytics = await analyticsRes.json();
@@ -354,7 +354,7 @@
         const panel = document.getElementById('eval-results-' + filename);
         panel.innerHTML = '<p style="color:#5b7fff;">Running evaluation... This may take a minute.</p>';
         try {
-            const res = await fetch('/api/v1/eval/run/' + filename + '?use_vertex=' + useVertex, { method: 'POST' });
+            const res = await authFetch('/api/v1/eval/run/' + filename + '?use_vertex=' + useVertex, { method: 'POST' });
             const data = await res.json();
             if (data.results) {
                 renderEvalResults(panel, data.results);
@@ -371,7 +371,7 @@
         const panel = document.getElementById('eval-results-' + filename);
         panel.innerHTML = '<p style="color:#5b7fff;">Loading results...</p>';
         try {
-            const res = await fetch('/api/v1/eval/results/' + filename);
+            const res = await authFetch('/api/v1/eval/results/' + filename);
             const data = await res.json();
             renderEvalResults(panel, data);
         } catch (e) {
@@ -534,7 +534,7 @@
     } catch(e) {}
 
     // Also try to get from latest eval session
-    fetch('/api/v1/eval/sessions').then(r => r.json()).then(data => {
+    authFetch('/api/v1/eval/sessions').then(r => r.json()).then(data => {
         const sessions = data.sessions || [];
         if (sessions.length > 0 && !document.getElementById('customerId').value) {
             const latest = sessions.find(s => s.customer_id && s.customer_id !== 'unknown');
@@ -551,7 +551,7 @@
 
         // Fetch from backend health and metrics endpoints
         try {
-            const healthRes = await fetch('/api/v1/eval/sessions');
+            const healthRes = await authFetch('/api/v1/eval/sessions');
             const sessions = await healthRes.json();
 
             // Calculate aggregate stats from sessions
@@ -671,4 +671,4 @@
     }
     </script>
 </body>
-</html> 
+</html>

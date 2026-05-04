@@ -1,4 +1,5 @@
 import fastapi
+from fastapi import Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
@@ -16,6 +17,43 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = fastapi.FastAPI()
+
+# --- Authentication for CRM API endpoints ---
+AUTH_ENABLED = os.environ.get("AUTH_ENABLED", "true").lower() == "true"
+ALLOWED_DOMAINS = ["google.com"]
+
+
+def _verify_id_token(token: str) -> dict:
+    """Verify a Google ID token and return user info."""
+    try:
+        from google.oauth2 import id_token
+        from google.auth.transport import requests as google_requests
+
+        request = google_requests.Request()
+        id_info = id_token.verify_oauth2_token(token, request)
+        email = id_info.get("email", "")
+        domain = email.split("@")[-1] if "@" in email else ""
+        if domain not in ALLOWED_DOMAINS:
+            return None
+        return {"email": email, "name": id_info.get("name", "")}
+    except Exception:
+        return None
+
+
+async def require_auth(request: fastapi.Request):
+    """FastAPI dependency that requires a valid Google ID token."""
+    if not AUTH_ENABLED:
+        return {"email": "dev@google.com", "name": "Dev User"}
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+        user = _verify_id_token(token)
+        if user:
+            return user
+
+    raise fastapi.HTTPException(status_code=401, detail="Authentication required")
+
 
 logger.info("Initializing Firestore client")
 db = firestore.Client()
@@ -52,6 +90,112 @@ app.add_middleware(
 )
 
 
+# --- Page-level auth middleware (cookie-based) ---
+# Paths that don't require auth (sign-in page, static assets, health checks)
+_PUBLIC_PREFIXES = ("/login", "/static/", "/src/", "/favicon")
+
+
+@app.middleware("http")
+async def page_auth_middleware(request: fastapi.Request, call_next):
+    path = request.url.path
+
+    # Allow public paths
+    if any(path.startswith(p) for p in _PUBLIC_PREFIXES):
+        return await call_next(request)
+
+    # API endpoints use Bearer token auth via Depends(require_auth) -- skip here
+    if path.startswith("/api/"):
+        return await call_next(request)
+
+    # For all other routes (pages), check the id_token cookie
+    if AUTH_ENABLED:
+        token = request.cookies.get("id_token")
+        if not token or not _verify_id_token(token):
+            from fastapi.responses import RedirectResponse
+
+            redirect_to = request.url.path
+            return RedirectResponse(url=f"/login?next={redirect_to}", status_code=302)
+
+    return await call_next(request)
+
+
+# --- Sign-in page ---
+@app.get("/login", include_in_schema=False)
+async def login_page(next: str = "/"):
+    return HTMLResponse(
+        content=f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In - Cymbal StyleSync</title>
+<style>
+  * {{ margin:0; padding:0; box-sizing:border-box; }}
+  body {{ font-family:'Inter',-apple-system,sans-serif; background:#0a0b14; color:#e4e4f0; min-height:100vh; display:flex; align-items:center; justify-content:center; }}
+  .container {{ text-align:center; max-width:400px; padding:40px; }}
+  .title {{ font-size:32px; font-weight:700; margin-bottom:8px; }}
+  .subtitle {{ color:#8888a8; font-size:14px; margin-bottom:32px; }}
+  .error {{ color:#ef4444; font-size:12px; display:none; margin-top:16px; }}
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="title">Cymbal StyleSync</div>
+    <p class="subtitle">Sign in with your Google account to access the platform.</p>
+    <div id="g_id_onload"
+        data-client_id="991831686961-dcjb3oc5d7dvs2k5vniulce68vc3fmbp.apps.googleusercontent.com"
+        data-callback="handleSignIn"
+        data-auto_prompt="false">
+    </div>
+    <div class="g_id_signin"
+        data-type="standard"
+        data-size="large"
+        data-theme="filled_black"
+        data-text="sign_in_with"
+        data-shape="pill"
+        data-logo_alignment="left"
+        data-width="300">
+    </div>
+    <p id="signInError" class="error"></p>
+</div>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+var _nextUrl = '{next}';
+function handleSignIn(response) {{
+    try {{
+        var payload = JSON.parse(atob(response.credential.split('.')[1]));
+        var email = payload.email || '';
+        var domain = email.split('@')[1] || '';
+        if (domain !== 'google.com') {{
+            document.getElementById('signInError').textContent = 'Access restricted to @google.com accounts.';
+            document.getElementById('signInError').style.display = 'block';
+            return;
+        }}
+        // Set cookie with the ID token (1 hour expiry matching Google token)
+        document.cookie = 'id_token=' + response.credential + '; path=/; max-age=3600; SameSite=Lax; Secure';
+        // Also store in localStorage for API calls and shopping iframe
+        var user = {{
+            firstName: payload.given_name || 'User',
+            lastName: payload.family_name || '',
+            email: email,
+            customerId: 'CY-' + Math.floor(Math.random()*9000+1000) + '-' + Math.floor(Math.random()*9000+1000),
+            signInTime: new Date().toISOString(),
+            googleIdToken: response.credential,
+            picture: payload.picture || ''
+        }};
+        localStorage.setItem('cymbalUser', JSON.stringify(user));
+        window.location.href = _nextUrl;
+    }} catch(e) {{
+        document.getElementById('signInError').textContent = 'Sign-in failed: ' + e.message;
+        document.getElementById('signInError').style.display = 'block';
+    }}
+}}
+</script>
+</body>
+</html>"""
+    )
+
+
 # Route to serve CRM dashboard from root
 @app.get("/", include_in_schema=False)
 async def read_index():
@@ -80,7 +224,7 @@ async def read_shop():
 
 
 @app.put("/api/v1/approvals/{customer_id}")
-async def update_approval(customer_id: str):
+async def update_approval(customer_id: str, _user=Depends(require_auth)):
     logger.info(f"Received PUT request for customer ID: {customer_id}")
     document = db.collection("customers").document(customer_id).get()
     if document.exists:
@@ -102,7 +246,7 @@ async def update_approval(customer_id: str):
 
 
 @app.get("/api/v1/approvals/{customer_id}")
-async def get_approval(customer_id: str):
+async def get_approval(customer_id: str, _user=Depends(require_auth)):
     logger.info(f"Received GET request for customer ID: {customer_id}")
     document = db.collection("customers").document(customer_id).get()
     if document.exists:
@@ -117,7 +261,7 @@ async def get_approval(customer_id: str):
 #
 # Add a route to reset the cart info with the DEFAULT CART INFO
 @app.post("/api/v1/reset_cart/{customer_id}")
-async def reset_cart(customer_id: str):
+async def reset_cart(customer_id: str, _user=Depends(require_auth)):
     CUSTOMER_CART_INFO = {
         "cart_id": "CART-112233",  # Use example ID for consistency
         "items": {
@@ -140,7 +284,7 @@ async def reset_cart(customer_id: str):
 
 # Add a route to reset approval status back to pending
 @app.post("/api/v1/reset_approval/{customer_id}")
-async def reset_approval_status(customer_id: str):
+async def reset_approval_status(customer_id: str, _user=Depends(require_auth)):
     logger.info(
         f"Received POST request to reset approval status for customer ID: {customer_id}"
     )
@@ -261,7 +405,7 @@ def _list_local_eval_sessions():
 
 
 @app.get("/api/v1/eval/sessions")
-async def list_eval_sessions():
+async def list_eval_sessions(_user=Depends(require_auth)):
     """List all recorded evaluation sessions from GCS or local fallback.
 
     Filters out empty sessions (0 turns) which result from dropped
@@ -275,7 +419,9 @@ async def list_eval_sessions():
 
 
 @app.post("/api/v1/eval/run/{filename}")
-async def run_evaluation(filename: str, use_vertex: bool = True):
+async def run_evaluation(
+    filename: str, use_vertex: bool = True, _user=Depends(require_auth)
+):
     """Run evaluation on a specific session log (GCS or local)."""
     # Try local first
     filepath = os.path.realpath(os.path.join(EVAL_LOG_DIR, filename))
@@ -334,7 +480,7 @@ async def run_evaluation(filename: str, use_vertex: bool = True):
 
 
 @app.get("/api/v1/eval/results/{filename}")
-async def get_eval_results(filename: str):
+async def get_eval_results(filename: str, _user=Depends(require_auth)):
     """Get evaluation results from GCS (authoritative source)."""
     results_name = filename.replace(".json", "_eval_results.json")
 
@@ -363,7 +509,9 @@ async def get_eval_results(filename: str):
 
 
 @app.put("/api/v1/eval/results/{filename}")
-async def put_eval_results(filename: str, request: fastapi.Request):
+async def put_eval_results(
+    filename: str, request: fastapi.Request, _user=Depends(require_auth)
+):
     """Upload eval results directly to GCS and clear local cache."""
     results_name = filename.replace(".json", "_eval_results.json")
     body = await request.json()
@@ -404,7 +552,7 @@ async def put_eval_results(filename: str, request: fastapi.Request):
 
 
 @app.get("/api/v1/eval/analytics")
-async def eval_analytics():
+async def eval_analytics(_user=Depends(require_auth)):
     """Return aggregate analytics across all evaluated sessions."""
     sessions = _list_gcs_eval_sessions()
     if not sessions:

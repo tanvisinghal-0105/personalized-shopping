@@ -1,3 +1,18 @@
+// Authenticated fetch helper -- adds Bearer token from localStorage
+function authFetch(url, options = {}) {
+    const saved = localStorage.getItem('cymbalUser');
+    if (saved) {
+        try {
+            const user = JSON.parse(saved);
+            if (user.googleIdToken) {
+                options.headers = options.headers || {};
+                options.headers['Authorization'] = 'Bearer ' + user.googleIdToken;
+            }
+        } catch(e) {}
+    }
+    return fetch(url, options);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM fully loaded and parsed.');
     const customerIdInput = document.getElementById('customerId');
@@ -120,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             console.log(`Fetching status for customer ID: ${customerId} from ${API_BASE_URL}/${customerId}`);
-            const response = await fetch(`${API_BASE_URL}/${customerId}`);
+            const response = await authFetch(`${API_BASE_URL}/${customerId}`);
             console.log('Received response:', response);
             const data = await response.json();
 
@@ -152,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             console.log(`Sending PUT request to approve customer ID: ${customerId} at ${API_BASE_URL}/${customerId}`);
-            const response = await fetch(`${API_BASE_URL}/${customerId}`, {
+            const response = await authFetch(`${API_BASE_URL}/${customerId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -191,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
         statusDisplay.textContent = 'Resetting cart...'; // Show loading message
 
         try {
-            const response = await fetch(resetApiUrl, {
+            const response = await authFetch(resetApiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -231,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
         statusDisplay.textContent = 'Resetting approval status...';
 
         try {
-            const response = await fetch(resetApprovalApiUrl, {
+            const response = await authFetch(resetApprovalApiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
