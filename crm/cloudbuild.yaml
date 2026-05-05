@@ -3,6 +3,7 @@ substitutions:
   _REGION: us-central1
   _SERVICE_NAME: cymbal-frontend
   _SA_NAME: live-agent-backend
+  _OAUTH_CLIENT_ID: ""
 
 steps:
 # Step 1: Validate assets + formatting checks
@@ -67,7 +68,7 @@ steps:
   - '--port'
   - '8080'
   - '--set-env-vars'
-  - 'PROJECT_ID=${PROJECT_ID},LOG_LEVEL=INFO,GCS_BUCKET_NAME=${PROJECT_ID}-shopping-assets'
+  - 'PROJECT_ID=${PROJECT_ID},LOG_LEVEL=INFO,GCS_BUCKET_NAME=${PROJECT_ID}-shopping-assets,OAUTH_CLIENT_ID=${_OAUTH_CLIENT_ID}'
   - '--service-account'
   - '${_SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com'
   - '--cpu'

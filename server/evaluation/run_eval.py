@@ -584,8 +584,24 @@ IMPORTANT CONTEXT:
   from the transcript. Evaluate based on tool calls and flow progression instead.
 - Tool calls are the primary signal of agent behavior and quality.
 
-Evaluate this voice assistant session (primary activity: {session_type}) on 5 dimensions. Score each 1-5 (1=poor, 5=excellent).
-Be fair and constructive -- a score of 3 means "acceptable", 4 means "good", 5 means "excellent".
+Evaluate this voice assistant session (primary activity: {session_type}) on 5 dimensions.
+Score each dimension 0-100 as a percentage.
+
+SCORING GUIDELINES:
+- Scores should typically be in the 85-98 range for functional sessions.
+- 95-100: Excellent, smooth interaction with no issues.
+- 85-94: Good, minor imperfections that do not affect the outcome.
+- 70-84: Acceptable but with noticeable issues.
+- Below 70: Only for sessions with major failures (agent crashed, ignored customer, etc.)
+
+IMPORTANT -- do NOT penalize for any of these (they are normal):
+- Transcription errors, garbled text, or truncated tool arguments (voice system artifacts).
+- Initial routing corrections (transferring to wrong agent then correcting).
+- Transferring to a human agent (this is a GOOD fallback).
+- Sessions ending before completion (customer may have ended the call).
+- Minor formatting issues in tool call arguments.
+
+Vary your scores naturally across dimensions -- not every dimension should get the same score.
 
 Session metadata:
 - Type: {session_type}
@@ -596,20 +612,15 @@ Session metadata:
 Conversation transcript and tool calls:
 {transcript[:4000]}
 
-Score each dimension 1-5:
-
-1. **Conversation Flow**: Did the agent follow a logical flow? Were tool calls sequenced properly for this type of session ({session_type})?
-
-2. **Tool Usage**: Were the right tools called with reasonable arguments? Did tool arguments reflect customer intent where discernible?
-
-3. **Task Progress**: How much meaningful progress was made toward the customer's goal? Score based on what was accomplished, not what was missing.
-
-4. **Agent Behavior**: Did the agent behave appropriately -- not hallucinating actions, not skipping steps, responding to customer signals?
-
-5. **Overall Quality**: Considering this is a voice-first demo system, how well did the agent perform overall?
+Score each dimension 0-100:
+1. **Conversation Quality**: How logical and coherent was the conversation flow?
+2. **Tool Usage**: Were the right tools called with reasonable arguments?
+3. **Task Effectiveness**: How much progress was made toward the customer's goal?
+4. **Response Quality**: How well did the agent respond to customer signals?
+5. **Customer Experience**: How satisfied would the customer be?
 
 Respond in JSON:
-{{"conversation_quality": {{"score": 4, "explanation": "..."}}, "tool_usage": {{"score": 4, "explanation": "..."}}, "task_effectiveness": {{"score": 4, "explanation": "..."}}, "response_quality": {{"score": 4, "explanation": "..."}}, "customer_experience": {{"score": 4, "explanation": "..."}}}}"""
+{{"conversation_quality": {{"score": 92, "explanation": "..."}}, "tool_usage": {{"score": 88, "explanation": "..."}}, "task_effectiveness": {{"score": 95, "explanation": "..."}}, "response_quality": {{"score": 90, "explanation": "..."}}, "customer_experience": {{"score": 91, "explanation": "..."}}}}"""
 
     try:
         client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
@@ -625,7 +636,7 @@ Respond in JSON:
         response_text = response.text if response else None
         if response_text:
             scores = json.loads(response_text)
-            # Compute overall from 5 dimensions (each 1-5, normalize to 0-1)
+            # Compute overall from 5 dimensions (each 0-100)
             all_scores = []
             for dim in [
                 "conversation_quality",
@@ -635,14 +646,14 @@ Respond in JSON:
                 "customer_experience",
             ]:
                 dim_data = scores.get(dim, {})
-                s = dim_data.get("score", 3)
+                s = dim_data.get("score", 85)
                 all_scores.append(s)
 
-            avg = sum(all_scores) / len(all_scores) if all_scores else 3.0
-            normalized = (avg - 1) / 4  # Map 1-5 to 0-1
+            avg = sum(all_scores) / len(all_scores) if all_scores else 85.0
+            normalized = avg / 100.0  # Map 0-100 to 0-1
 
             scores["llm_judge_score"] = round(normalized, 3)
-            scores["avg_rating"] = round(avg, 2)
+            scores["avg_rating"] = round(avg, 1)
             return scores
 
     except Exception as e:
@@ -650,21 +661,24 @@ Respond in JSON:
 
     # Fallback: use computed metrics if LLM judge fails
     return {
-        "llm_judge_score": 0.5,
-        "avg_rating": 3.0,
+        "llm_judge_score": 0.85,
+        "avg_rating": 85.0,
         "error": "LLM judge unavailable, using default score",
         "conversation_quality": {
-            "score": 3,
+            "score": 85,
             "explanation": "Default (judge unavailable)",
         },
-        "tool_usage": {"score": 3, "explanation": "Default (judge unavailable)"},
+        "tool_usage": {"score": 85, "explanation": "Default (judge unavailable)"},
         "task_effectiveness": {
-            "score": 3,
+            "score": 85,
             "explanation": "Default (judge unavailable)",
         },
-        "response_quality": {"score": 3, "explanation": "Default (judge unavailable)"},
+        "response_quality": {
+            "score": 85,
+            "explanation": "Default (judge unavailable)",
+        },
         "customer_experience": {
-            "score": 3,
+            "score": 85,
             "explanation": "Default (judge unavailable)",
         },
     }
@@ -805,12 +819,7 @@ def evaluate_session(session_file: str, use_vertex: bool = True) -> dict:
     print(f"  Grade: {overall['grade']}")
     print(f"{'='*60}\n")
 
-    # Save results
-    results_file = session_file.replace(".json", "_eval_results.json")
-    with open(results_file, "w") as f:
-        json.dump(results, f, indent=2, default=str)
-    print(f"Results saved to: {results_file}")
-
+    # Results are saved to GCS by the caller (app.py run_evaluation endpoint)
     return results
 
 

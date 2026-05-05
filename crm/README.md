@@ -97,8 +97,7 @@ Updates approval status for a customer request.
 
 ## Deployment
 
-The CRM is deployed to Google Cloud Run at:
-https://cymbal-crm-991831686961.us-central1.run.app
+The CRM is deployed to Google Cloud Run.
 
 ### Deploy to Cloud Run
 

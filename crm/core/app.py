@@ -61,6 +61,7 @@ db = firestore.Client()
 PROJECT_ID = os.environ.get("PROJECT_ID", "")
 GCS_BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME", f"{PROJECT_ID}-shopping-assets")
 GCS_ASSETS_BASE = f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/assets"
+OAUTH_CLIENT_ID = os.environ.get("OAUTH_CLIENT_ID", "")
 
 # Define the path to the static directories
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
@@ -76,11 +77,18 @@ if os.path.isdir(os.path.join(client_dir, "src")):
     )
 
 _allowed_origins = [
-    f"https://cymbal-frontend-{os.environ.get('_HASH', 'lyja7bi4gq')}-uc.a.run.app",
-    f"https://cymbal-stylesync-gateway-{os.environ.get('_GW_HASH', 'cnn2z7ld')}.uc.gateway.dev",
     "http://localhost:8082",
     "http://localhost:8080",
 ]
+# Add Cloud Run and API Gateway origins from env vars
+if os.environ.get("_HASH"):
+    _allowed_origins.append(
+        f"https://cymbal-frontend-{os.environ['_HASH']}-uc.a.run.app"
+    )
+if os.environ.get("_GW_HASH"):
+    _allowed_origins.append(
+        f"https://cymbal-stylesync-gateway-{os.environ['_GW_HASH']}.uc.gateway.dev"
+    )
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins,
@@ -143,7 +151,7 @@ async def login_page(next: str = "/"):
     <div class="title">Cymbal StyleSync</div>
     <p class="subtitle">Sign in with your Google account to access the platform.</p>
     <div id="g_id_onload"
-        data-client_id="991831686961-dcjb3oc5d7dvs2k5vniulce68vc3fmbp.apps.googleusercontent.com"
+        data-client_id="{OAUTH_CLIENT_ID}"
         data-callback="handleSignIn"
         data-auto_prompt="false">
     </div>
@@ -217,6 +225,7 @@ async def read_shop():
         with open(shop_path) as f:
             html = f.read()
         html = html.replace("{{GCS_ASSETS_BASE}}", GCS_ASSETS_BASE)
+        html = html.replace("{{OAUTH_CLIENT_ID}}", OAUTH_CLIENT_ID)
         html = html.replace("{{BUILD_TS}}", str(int(os.path.getmtime(shop_path))))
         return HTMLResponse(content=html)
     else:
@@ -465,6 +474,8 @@ async def run_evaluation(
             _client = _storage.Client()
             _bucket = _client.bucket(GCS_BUCKET_NAME)
             _blob = _bucket.blob(f"{GCS_EVAL_PREFIX}/{results_filename}")
+            if _blob.exists():
+                _blob.delete()
             _blob.upload_from_string(
                 json.dumps(results, indent=2, default=str),
                 content_type="application/json",
@@ -481,10 +492,9 @@ async def run_evaluation(
 
 @app.get("/api/v1/eval/results/{filename}")
 async def get_eval_results(filename: str, _user=Depends(require_auth)):
-    """Get evaluation results from GCS (authoritative source)."""
+    """Get evaluation results from GCS."""
     results_name = filename.replace(".json", "_eval_results.json")
 
-    # Read from GCS only -- local files can be stale across instances
     try:
         from google.cloud import storage
 
@@ -492,7 +502,6 @@ async def get_eval_results(filename: str, _user=Depends(require_auth)):
         bucket = client.bucket(GCS_BUCKET_NAME)
         blob = bucket.blob(f"{GCS_EVAL_PREFIX}/{results_name}")
         if blob.exists():
-            blob.reload()
             data = json.loads(blob.download_as_text())
             logger.info(
                 f"Eval results loaded from GCS: {results_name} "
@@ -512,34 +521,19 @@ async def get_eval_results(filename: str, _user=Depends(require_auth)):
 async def put_eval_results(
     filename: str, request: fastapi.Request, _user=Depends(require_auth)
 ):
-    """Upload eval results directly to GCS and clear local cache."""
+    """Upload eval results directly to GCS."""
     results_name = filename.replace(".json", "_eval_results.json")
     body = await request.json()
     try:
         from google.cloud import storage
 
-        # Delete stale local file if it exists
-        local_path = os.path.realpath(os.path.join(EVAL_LOG_DIR, results_name))
-        if local_path.startswith(os.path.realpath(EVAL_LOG_DIR)) and os.path.exists(
-            local_path
-        ):
-            os.remove(local_path)
-            logger.info(f"Removed stale local eval results: {local_path}")
-
-        # Write to GCS
         content = json.dumps(body, indent=2, default=str)
         client = storage.Client()
         bucket = client.bucket(GCS_BUCKET_NAME)
         blob = bucket.blob(f"{GCS_EVAL_PREFIX}/{results_name}")
-        # Delete first to avoid stale object caching
         if blob.exists():
             blob.delete()
         blob.upload_from_string(content, content_type="application/json")
-
-        # Also write locally so GET reads the same data
-        os.makedirs(EVAL_LOG_DIR, exist_ok=True)
-        with open(os.path.join(EVAL_LOG_DIR, results_name), "w") as f:
-            f.write(content)
 
         logger.info(
             f"Eval results written via PUT: {results_name} "

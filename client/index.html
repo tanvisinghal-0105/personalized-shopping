@@ -922,7 +922,7 @@
     <!-- Google Sign-In button -->
     <div id="googleSignInContainer" style="display:flex;flex-direction:column;align-items:center;gap:16px;">
       <div id="g_id_onload"
-        data-client_id="991831686961-dcjb3oc5d7dvs2k5vniulce68vc3fmbp.apps.googleusercontent.com"
+        data-client_id="{{OAUTH_CLIENT_ID}}"
         data-callback="handleGoogleSignIn"
         data-auto_prompt="false">
       </div>
@@ -1010,7 +1010,7 @@ function refreshGoogleIdToken() {
 
     // Re-initialize with the same client ID but use a one-shot callback
     google.accounts.id.initialize({
-      client_id: '991831686961-dcjb3oc5d7dvs2k5vniulce68vc3fmbp.apps.googleusercontent.com',
+      client_id: '{{OAUTH_CLIENT_ID}}',
       callback: (response) => {
         clearTimeout(timeoutId);
         if (response.credential) {
